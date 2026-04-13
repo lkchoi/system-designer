@@ -563,8 +563,9 @@ function Canvas() {
   const onPanelResizeStartY = useCallback(
     (e: React.PointerEvent) => {
       const initial = panelHeight;
+      const maxH = window.innerHeight * 0.7;
       startResize(e, "y", (delta) => {
-        setPanelHeight(Math.max(150, Math.min(500, initial - delta)));
+        setPanelHeight(Math.max(150, Math.min(maxH, initial - delta)));
       });
     },
     [panelHeight, startResize],

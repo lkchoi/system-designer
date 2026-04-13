@@ -1304,7 +1304,8 @@
   width: auto;
   min-width: 0;
   height: 260px;
-  min-height: 200px;
+  min-height: 150px;
+  max-height: 70vh;
   border-left: none;
   border-top: 1px solid var(--border);
   overflow-y: auto;
