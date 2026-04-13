@@ -50,3 +50,11 @@ export interface StickyNoteData {
   color: StickyColor;
   [key: string]: unknown;
 }
+
+export type TextSize = 'small' | 'medium' | 'large';
+
+export interface TextNodeData {
+  text: string;
+  size: TextSize;
+  [key: string]: unknown;
+}

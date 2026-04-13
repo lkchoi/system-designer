@@ -41,6 +41,18 @@ export default function Sidebar() {
           </div>
           <span>Sticky Note</span>
         </div>
+        <div
+          className="sidebar-item"
+          draggable
+          onDragStart={e => onDragStart(e, 'text')}
+        >
+          <div className="sidebar-icon text-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+            </svg>
+          </div>
+          <span>Text</span>
+        </div>
       </div>
       <div className="sidebar-footer">
         Drag components to canvas to build your system

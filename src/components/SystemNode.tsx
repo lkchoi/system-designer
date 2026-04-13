@@ -18,15 +18,16 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
 
   return (
     <>
-      <NodeResizer
-        isVisible={!!selected}
-        minWidth={180}
-        minHeight={100}
-        lineStyle={{ border: '1px solid var(--accent)' }}
-        handleStyle={{ width: 8, height: 8, background: 'var(--accent)', border: 'none', borderRadius: 2 }}
-      />
-      <Handle type="target" position={Position.Left} id="left-target" className="system-handle system-handle-left" />
-      <Handle type="source" position={Position.Left} id="left-source" className="system-handle system-handle-left" />
+      {selected && (
+        <NodeResizer
+          minWidth={180}
+          minHeight={100}
+          lineStyle={{ border: '1px solid var(--accent)', zIndex: 0 }}
+          handleStyle={{ width: 8, height: 8, background: 'var(--accent)', border: 'none', borderRadius: 2, zIndex: 5 }}
+        />
+      )}
+      <Handle type="source" position={Position.Top} id="top" className="system-handle" />
+      <Handle type="source" position={Position.Left} id="left" className="system-handle" />
       <div className={`system-node${selected ? ' selected' : ''}`}>
         <div className="system-node-header">
           <div className="system-node-icon" style={{ background: def.color }}>
@@ -71,8 +72,8 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
           </button>
         </div>
       </div>
-      <Handle type="target" position={Position.Right} id="right-target" className="system-handle system-handle-right" />
-      <Handle type="source" position={Position.Right} id="right-source" className="system-handle system-handle-right" />
+      <Handle type="source" position={Position.Right} id="right" className="system-handle" />
+      <Handle type="source" position={Position.Bottom} id="bottom" className="system-handle" />
     </>
   );
 }

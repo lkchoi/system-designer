@@ -52,19 +52,10 @@ export default function LabeledEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: selected ? '#6366f180' : '#6366f140',
+          stroke: selected ? '#6366f1' : '#6366f180',
           strokeWidth: selected ? 3 : 2,
         }}
       />
-      <circle r="3" fill="#6366f1" filter="url(#flow-glow)">
-        <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} keyPoints="1;0" keyTimes="0;1" />
-      </circle>
-      <circle r="3" fill="#6366f1" filter="url(#flow-glow)">
-        <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} keyPoints="1;0" keyTimes="0;1" begin="0.66s" />
-      </circle>
-      <circle r="3" fill="#6366f1" filter="url(#flow-glow)">
-        <animateMotion dur="2s" repeatCount="indefinite" path={edgePath} keyPoints="1;0" keyTimes="0;1" begin="1.33s" />
-      </circle>
       <EdgeLabelRenderer>
         <div
           className="edge-label-container"

@@ -8,6 +8,7 @@ import {
   BackgroundVariant,
   ReactFlowProvider,
   useReactFlow,
+  ConnectionMode,
 } from '@xyflow/react';
 import type { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect, NodeChange } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -17,23 +18,21 @@ import Sidebar from './components/Sidebar';
 import PropertiesPanel from './components/PropertiesPanel';
 import SystemNode from './components/SystemNode';
 import StickyNote from './components/StickyNote';
+import TextNode from './components/TextNode';
 import LabeledEdge from './components/LabeledEdge';
 import { getComponentDef, randomMetrics } from './data';
-import type { SystemNodeData, StickyNoteData, ComponentType } from './types';
+import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType } from './types';
+import { ulid } from 'ulid';
 
 type SystemFlowNode = Node<SystemNodeData, 'system'>;
 type StickyFlowNode = Node<StickyNoteData, 'sticky'>;
-type AppNode = SystemFlowNode | StickyFlowNode;
+type TextFlowNode = Node<TextNodeData, 'text'>;
+type AppNode = SystemFlowNode | StickyFlowNode | TextFlowNode;
 
-const nodeTypes = { system: SystemNode, sticky: StickyNote };
+const nodeTypes = { system: SystemNode, sticky: StickyNote, text: TextNode };
 const edgeTypes = { labeled: LabeledEdge };
 
-let nodeIdCounter = 0;
 const typeCounters: Record<string, number> = {};
-
-function generateNodeId() {
-  return `node-${++nodeIdCounter}`;
-}
 
 function generateLabel(type: ComponentType): string {
   const def = getComponentDef(type);
@@ -42,10 +41,13 @@ function generateLabel(type: ComponentType): string {
   return `${short}-${typeCounters[type]}`;
 }
 
+export type Mode = 'plan' | 'stress' | 'monitor' | 'price';
+
 function Canvas() {
   const [nodes, setNodes] = useState<AppNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>('plan');
   const canvasRef = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
@@ -77,6 +79,7 @@ function Canvas() {
         addEdge(
           {
             ...params,
+            id: ulid(),
             type: 'labeled',
             data: { label: '' },
           },
@@ -110,16 +113,25 @@ function Canvas() {
 
       if (type === 'sticky') {
         const newNode: StickyFlowNode = {
-          id: generateNodeId(),
+          id: ulid(),
           type: 'sticky',
           position,
           style: { width: 200, height: 150 },
           data: { text: '', color: '#fde68a' },
         };
         setNodes(nds => [...nds, newNode]);
+      } else if (type === 'text') {
+        const newNode: TextFlowNode = {
+          id: ulid(),
+          type: 'text',
+          position,
+          style: { width: 260, height: 40 },
+          data: { text: '', size: 'large' },
+        };
+        setNodes(nds => [...nds, newNode]);
       } else {
         const newNode: SystemFlowNode = {
-          id: generateNodeId(),
+          id: ulid(),
           type: 'system',
           position,
           data: {
@@ -157,7 +169,6 @@ function Canvas() {
     setEdges([]);
     setSelectedNodeId(null);
     Object.keys(typeCounters).forEach(k => delete typeCounters[k]);
-    nodeIdCounter = 0;
   }, []);
 
   const connectionCount = edges.length;
@@ -169,6 +180,26 @@ function Canvas() {
         <header className="topbar">
           <div className="topbar-left">
             <h1 className="topbar-title">System Designer</h1>
+            <nav className="topbar-tabs">
+              <button className={`topbar-tab${mode === 'plan' ? ' active' : ''}`} onClick={() => setMode('plan')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                Plan
+              </button>
+              <button className={`topbar-tab${mode === 'stress' ? ' active' : ''}`} onClick={() => setMode('stress')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Stress
+              </button>
+              <button className={`topbar-tab${mode === 'monitor' ? ' active' : ''}`} onClick={() => setMode('monitor')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                Monitor
+              </button>
+              <button className={`topbar-tab${mode === 'price' ? ' active' : ''}`} onClick={() => setMode('price')}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                Price
+              </button>
+            </nav>
+          </div>
+          <div className="topbar-right">
             <span className="topbar-stat">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
               {nodes.length} nodes
@@ -177,13 +208,13 @@ function Canvas() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
               {connectionCount} connections
             </span>
+            <button className="clear-btn" onClick={clearCanvas}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+              </svg>
+              Clear Canvas
+            </button>
           </div>
-          <button className="clear-btn" onClick={clearCanvas}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-            </svg>
-            Clear Canvas
-          </button>
         </header>
         <ReactFlow
           nodes={nodes}
@@ -198,6 +229,7 @@ function Canvas() {
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={{ type: 'labeled' }}
+          connectionMode={ConnectionMode.Loose}
           fitView={false}
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
           proOptions={{ hideAttribution: true }}
@@ -206,17 +238,6 @@ function Canvas() {
           className="system-flow"
         >
           <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2a2b35" />
-          <svg width="0" height="0">
-            <defs>
-              <filter id="flow-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-          </svg>
         </ReactFlow>
       </div>
       {selectedNode && selectedNode.type === 'system' && (
