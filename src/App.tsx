@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect, createContext, useContext } from 'react';
 import {
   ReactFlow,
   applyNodeChanges,
@@ -42,6 +42,9 @@ function generateLabel(type: ComponentType): string {
 }
 
 export type Mode = 'plan' | 'stress' | 'monitor' | 'price';
+
+export const ModeContext = createContext<Mode>('plan');
+export function useMode() { return useContext(ModeContext); }
 
 function Canvas() {
   const [nodes, setNodes] = useState<AppNode[]>([]);
@@ -139,6 +142,7 @@ function Canvas() {
             componentType: type as ComponentType,
             status: 'healthy',
             metrics: randomMetrics(),
+            plan: {},
           },
         };
         setNodes(nds => [...nds, newNode]);
@@ -174,6 +178,7 @@ function Canvas() {
   const connectionCount = edges.length;
 
   return (
+    <ModeContext.Provider value={mode}>
     <div className="app-layout">
       <Sidebar />
       <div className="canvas-area" ref={canvasRef}>
@@ -243,11 +248,13 @@ function Canvas() {
       {selectedNode && selectedNode.type === 'system' && (
         <PropertiesPanel
           node={selectedNode as SystemFlowNode}
+          mode={mode}
           onUpdate={onUpdateNodeData}
           onClose={() => setSelectedNodeId(null)}
         />
       )}
     </div>
+    </ModeContext.Provider>
   );
 }
 

@@ -558,6 +558,46 @@
   background: linear-gradient(90deg, #ec4899, #f472b6);
 }
 
+/* ─── Plan Fields ──────────────────────────────────── */
+.plan-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.plan-field + .plan-field {
+  margin-top: 8px;
+}
+
+.plan-field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.plan-field-input {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: var(--text-bright);
+  font-size: 13px;
+  font-family: var(--sans);
+  outline: none;
+  resize: vertical;
+  min-height: 28px;
+  transition: border-color 0.15s;
+}
+
+.plan-field-input:focus {
+  border-color: var(--accent);
+}
+
+.plan-field-input::placeholder {
+  color: var(--text-dim);
+  font-style: italic;
+}
+
 /* ─── Position ─────────────────────────────────────── */
 .position-grid {
   display: grid;

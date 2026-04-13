@@ -9,7 +9,8 @@ export type ComponentType =
   | 'load-balancer'
   | 'firewall'
   | 'webhook'
-  | 'cron';
+  | 'cron'
+  | 'client';
 
 export type NodeStatus = 'healthy' | 'warning' | 'error' | 'idle';
 
@@ -20,11 +21,18 @@ export interface NodeMetrics {
   latency: number;
 }
 
+export interface PlanFieldDef {
+  key: string;
+  label: string;
+  placeholder?: string;
+}
+
 export interface SystemNodeData {
   label: string;
   componentType: ComponentType;
   status: NodeStatus;
   metrics: NodeMetrics;
+  plan: Record<string, string>;
   [key: string]: unknown;
 }
 

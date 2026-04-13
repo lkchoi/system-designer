@@ -1,4 +1,4 @@
-import type { ComponentDefinition, NodeMetrics } from './types';
+import type { ComponentDefinition, ComponentType, NodeMetrics, PlanFieldDef } from './types';
 
 export const COMPONENTS: ComponentDefinition[] = [
   { type: 'database', label: 'Database', color: '#6366f1', icon: 'M4 7v10c0 2.2 3.6 4 8 4s8-1.8 8-4V7M4 7c0 2.2 3.6 4 8 4s8-1.8 8-4M4 7c0-2.2 3.6-4 8-4s8 1.8 8 4M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4' },
@@ -12,6 +12,7 @@ export const COMPONENTS: ComponentDefinition[] = [
   { type: 'firewall', label: 'Firewall', color: '#ef4444', icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' },
   { type: 'webhook', label: 'Webhook', color: '#06b6d4', icon: 'M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3M8 12h8' },
   { type: 'cron', label: 'Cron', color: '#8b5cf6', icon: 'M12 2a10 10 0 100 20 10 10 0 000-20zm0 4v6l4 2' },
+  { type: 'client', label: 'Client', color: '#f59e0b', icon: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z' },
 ];
 
 export function getComponentDef(type: string): ComponentDefinition {
@@ -26,6 +27,81 @@ export function randomMetrics(): NodeMetrics {
     latency: Math.round(Math.random() * 400 + 10),
   };
 }
+
+export const PLAN_FIELDS: Record<ComponentType, PlanFieldDef[]> = {
+  database: [
+    { key: 'tables', label: 'Tables', placeholder: 'users, orders, products' },
+    { key: 'primaryKey', label: 'Primary Key', placeholder: 'id (UUID)' },
+    { key: 'sortKey', label: 'Sort Key', placeholder: 'created_at' },
+    { key: 'indexes', label: 'Indexes', placeholder: 'email_idx, status_idx' },
+    { key: 'engine', label: 'Engine', placeholder: 'PostgreSQL, DynamoDB' },
+  ],
+  'api-gateway': [
+    { key: 'routes', label: 'Routes', placeholder: '/api/v1/users, /api/v1/orders' },
+    { key: 'authMethod', label: 'Auth Method', placeholder: 'JWT, API Key, OAuth' },
+    { key: 'rateLimit', label: 'Rate Limit', placeholder: '1000 req/min' },
+    { key: 'cors', label: 'CORS', placeholder: '*.example.com' },
+  ],
+  service: [
+    { key: 'endpoints', label: 'Endpoints', placeholder: 'GET /users, POST /orders' },
+    { key: 'language', label: 'Language', placeholder: 'Go, Node.js, Python' },
+    { key: 'replicas', label: 'Replicas', placeholder: '3' },
+    { key: 'dependencies', label: 'Dependencies', placeholder: 'database, cache' },
+  ],
+  cache: [
+    { key: 'strategy', label: 'Strategy', placeholder: 'Write-through, Write-back' },
+    { key: 'ttl', label: 'TTL', placeholder: '3600s' },
+    { key: 'eviction', label: 'Eviction Policy', placeholder: 'LRU, LFU' },
+    { key: 'maxSize', label: 'Max Size', placeholder: '512 MB' },
+  ],
+  'message-queue': [
+    { key: 'topics', label: 'Topics', placeholder: 'user.created, order.placed' },
+    { key: 'retention', label: 'Retention', placeholder: '7 days' },
+    { key: 'deliveryMode', label: 'Delivery', placeholder: 'At-least-once, Exactly-once' },
+    { key: 'partitions', label: 'Partitions', placeholder: '12' },
+  ],
+  storage: [
+    { key: 'bucketName', label: 'Bucket / Path', placeholder: 's3://my-bucket' },
+    { key: 'replication', label: 'Replication', placeholder: 'Cross-region' },
+    { key: 'encryption', label: 'Encryption', placeholder: 'AES-256' },
+    { key: 'lifecycle', label: 'Lifecycle', placeholder: 'Archive after 90d' },
+  ],
+  cdn: [
+    { key: 'origins', label: 'Origins', placeholder: 'api.example.com' },
+    { key: 'cacheRules', label: 'Cache Rules', placeholder: 'static/* 30d' },
+    { key: 'edgeLocations', label: 'Edge Locations', placeholder: 'Global' },
+  ],
+  'load-balancer': [
+    { key: 'algorithm', label: 'Algorithm', placeholder: 'Round Robin, Least Conn' },
+    { key: 'healthCheck', label: 'Health Check', placeholder: '/health, 10s interval' },
+    { key: 'targets', label: 'Targets', placeholder: 'service-a, service-b' },
+    { key: 'protocol', label: 'Protocol', placeholder: 'HTTP, gRPC, TCP' },
+  ],
+  firewall: [
+    { key: 'inboundRules', label: 'Inbound Rules', placeholder: '443/tcp, 80/tcp' },
+    { key: 'outboundRules', label: 'Outbound Rules', placeholder: 'All traffic' },
+    { key: 'allowedIPs', label: 'Allowed IPs', placeholder: '10.0.0.0/8' },
+    { key: 'waf', label: 'WAF Rules', placeholder: 'OWASP Top 10' },
+  ],
+  webhook: [
+    { key: 'url', label: 'URL', placeholder: 'https://api.example.com/hook' },
+    { key: 'method', label: 'Method', placeholder: 'POST' },
+    { key: 'headers', label: 'Headers', placeholder: 'Authorization, Content-Type' },
+    { key: 'retries', label: 'Retries', placeholder: '3 with exponential backoff' },
+  ],
+  cron: [
+    { key: 'schedule', label: 'Schedule', placeholder: '0 */6 * * *' },
+    { key: 'command', label: 'Command', placeholder: 'node cleanup.js' },
+    { key: 'timeout', label: 'Timeout', placeholder: '300s' },
+    { key: 'alertOn', label: 'Alert On', placeholder: 'Failure, timeout' },
+  ],
+  client: [
+    { key: 'platform', label: 'Platform', placeholder: 'Web, iOS, Android' },
+    { key: 'framework', label: 'Framework', placeholder: 'React, Swift, Kotlin' },
+    { key: 'authFlow', label: 'Auth Flow', placeholder: 'OAuth 2.0 PKCE' },
+    { key: 'version', label: 'Version', placeholder: 'v2.1.0' },
+  ],
+};
 
 export function displayType(type: string): string {
   return type

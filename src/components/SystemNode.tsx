@@ -2,6 +2,7 @@ import { Handle, Position, useReactFlow, NodeResizer } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import type { SystemNodeData } from '../types';
 import { getComponentDef } from '../data';
+import { useMode } from '../App';
 
 const STATUS_COLORS: Record<string, string> = {
   healthy: '#22c55e',
@@ -14,6 +15,7 @@ type SystemNode = Node<SystemNodeData, 'system'>;
 
 export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>) {
   const { deleteElements } = useReactFlow();
+  const mode = useMode();
   const def = getComponentDef(data.componentType);
 
   return (
@@ -38,16 +40,18 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
           <span className="system-node-label">{data.label}</span>
           <span className="system-node-status" style={{ background: STATUS_COLORS[data.status] }} />
         </div>
-        <div className="system-node-metrics">
-          <div className="system-node-metric">
-            <span>CPU</span>
-            <span className="metric-value">{data.metrics.cpu}%</span>
+        {mode !== 'plan' && (
+          <div className="system-node-metrics">
+            <div className="system-node-metric">
+              <span>CPU</span>
+              <span className="metric-value">{data.metrics.cpu}%</span>
+            </div>
+            <div className="system-node-metric">
+              <span>Memory</span>
+              <span className="metric-value">{data.metrics.memory}%</span>
+            </div>
           </div>
-          <div className="system-node-metric">
-            <span>Memory</span>
-            <span className="metric-value">{data.metrics.memory}%</span>
-          </div>
-        </div>
+        )}
         <div className="system-node-actions">
           <button
             className="node-action-btn connect-btn"
