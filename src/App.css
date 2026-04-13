@@ -7,8 +7,8 @@
 
 /* ─── Sidebar ──────────────────────────────────────── */
 .sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 260px;
+  min-width: 260px;
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -735,8 +735,8 @@
 
 /* ─── Properties Panel ─────────────────────────────── */
 .properties-panel {
-  width: 280px;
-  min-width: 280px;
+  width: 340px;
+  min-width: 340px;
   background: var(--surface);
   border-left: 1px solid var(--border);
   display: flex;
