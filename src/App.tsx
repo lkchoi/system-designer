@@ -314,6 +314,18 @@ function Canvas() {
     })));
   }, []);
 
+  const togglePathMode = useCallback(() => {
+    setIsPathMode(prev => {
+      if (!prev) setFlowPath([]);
+      return !prev;
+    });
+  }, []);
+
+  const clearPath = useCallback(() => {
+    setFlowPath([]);
+    setActiveFlowId(null);
+  }, []);
+
   const hotkeyActions = useMemo<Record<string, () => void>>(() => ({
     'mode-plan':    () => setMode('plan'),
     'mode-stress':  () => setMode('stress'),
@@ -390,18 +402,6 @@ function Canvas() {
     },
     [nodes],
   );
-
-  const togglePathMode = useCallback(() => {
-    setIsPathMode(prev => {
-      if (!prev) setFlowPath([]);
-      return !prev;
-    });
-  }, []);
-
-  const clearPath = useCallback(() => {
-    setFlowPath([]);
-    setActiveFlowId(null);
-  }, []);
 
   const saveFlow = useCallback(() => {
     if (!saveName.trim() || flowPath.length === 0) return;
