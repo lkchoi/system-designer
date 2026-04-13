@@ -12,6 +12,7 @@ interface Props {
   panelPosition: PanelPosition;
   onTogglePanelPosition: () => void;
   mode: Mode;
+  size?: number;
 }
 
 export default function EdgePropertiesPanel({
@@ -23,11 +24,15 @@ export default function EdgePropertiesPanel({
   panelPosition,
   onTogglePanelPosition,
   mode,
+  size,
 }: Props) {
   const data = edge.data!;
 
   return (
-    <aside className={`properties-panel${panelPosition === "bottom" ? " bottom" : ""}`}>
+    <aside
+      className={`properties-panel${panelPosition === "bottom" ? " bottom" : ""}`}
+      style={size ? (panelPosition === "bottom" ? { height: size } : { width: size, minWidth: size }) : undefined}
+    >
       <div className="properties-header">
         <h2>Connection</h2>
         <div className="properties-header-actions">

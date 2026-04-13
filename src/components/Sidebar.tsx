@@ -15,6 +15,7 @@ interface SidebarProps {
   getNodeLabel: (id: string) => string;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  width?: number;
 }
 
 export default function Sidebar({
@@ -25,6 +26,7 @@ export default function Sidebar({
   getNodeLabel,
   collapsed,
   onToggleCollapse,
+  width,
 }: SidebarProps) {
   function onDragStart(e: React.DragEvent, type: string) {
     e.dataTransfer.setData("application/system-designer", type);
@@ -32,7 +34,7 @@ export default function Sidebar({
   }
 
   return (
-    <aside className={`sidebar${collapsed ? " collapsed" : ""}`}>
+    <aside className={`sidebar${collapsed ? " collapsed" : ""}`} style={width ? { width, minWidth: width } : undefined}>
       <div className="sidebar-collapse-row">
         {!collapsed && (
           <h2 className="sidebar-title" style={{ padding: 0 }}>

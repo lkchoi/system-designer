@@ -271,6 +271,37 @@
   cursor: default;
 }
 
+/* ─── Resize Handles ──────────────────────────────── */
+.resize-handle-x {
+  width: 5px;
+  cursor: col-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.resize-handle-x:hover,
+.resize-handle-x:active {
+  background: var(--accent);
+}
+
+.resize-handle-y {
+  height: 5px;
+  cursor: row-resize;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.resize-handle-y:hover,
+.resize-handle-y:active {
+  background: var(--accent);
+}
+
 /* ─── Topbar ───────────────────────────────────────── */
 .topbar {
   display: flex;

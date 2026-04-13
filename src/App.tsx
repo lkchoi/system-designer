@@ -107,6 +107,9 @@ function Canvas() {
   const [mode, setMode] = useState<Mode>("plan");
   const [panelPosition, setPanelPosition] = useState<PanelPosition>("right");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const [panelWidth, setPanelWidth] = useState(340);
+  const [panelHeight, setPanelHeight] = useState(260);
   const [flowPath, setFlowPath] = useState<string[]>([]);
   const [isPathMode, setIsPathMode] = useState(false);
   const [savedFlows, setSavedFlows] = useState<SavedFlow[]>([]);
@@ -511,6 +514,64 @@ function Canvas() {
     }
   }, [flowPath]);
 
+  const startResize = useCallback(
+    (
+      e: React.PointerEvent,
+      axis: "x" | "y",
+      onMove: (delta: number) => void,
+    ) => {
+      e.preventDefault();
+      const startPos = axis === "x" ? e.clientX : e.clientY;
+      const onPointerMove = (ev: PointerEvent) => {
+        const current = axis === "x" ? ev.clientX : ev.clientY;
+        onMove(current - startPos);
+      };
+      const onPointerUp = () => {
+        document.removeEventListener("pointermove", onPointerMove);
+        document.removeEventListener("pointerup", onPointerUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+      document.body.style.cursor = axis === "x" ? "col-resize" : "row-resize";
+      document.body.style.userSelect = "none";
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+    },
+    [],
+  );
+
+  const onSidebarResizeStart = useCallback(
+    (e: React.PointerEvent) => {
+      const initial = sidebarWidth;
+      startResize(e, "x", (delta) => {
+        setSidebarWidth(Math.max(180, Math.min(400, initial + delta)));
+      });
+    },
+    [sidebarWidth, startResize],
+  );
+
+  const onPanelResizeStartX = useCallback(
+    (e: React.PointerEvent) => {
+      const initial = panelWidth;
+      startResize(e, "x", (delta) => {
+        setPanelWidth(Math.max(260, Math.min(600, initial - delta)));
+      });
+    },
+    [panelWidth, startResize],
+  );
+
+  const onPanelResizeStartY = useCallback(
+    (e: React.PointerEvent) => {
+      const initial = panelHeight;
+      startResize(e, "y", (delta) => {
+        setPanelHeight(Math.max(150, Math.min(500, initial - delta)));
+      });
+    },
+    [panelHeight, startResize],
+  );
+
+  const showPanel = (selectedNode && selectedNode.type === "system") || selectedEdge;
+
   return (
     <ModeContext.Provider value={mode}>
       <StressContext.Provider value={stressCtx}>
@@ -523,7 +584,11 @@ function Canvas() {
             getNodeLabel={getNodeLabel}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+            width={sidebarCollapsed ? undefined : sidebarWidth}
           />
+          {!sidebarCollapsed && (
+            <div className="resize-handle-x" onPointerDown={onSidebarResizeStart} />
+          )}
           <div className={`main-content${panelPosition === "bottom" ? " panel-bottom" : ""}`}>
             <div className="canvas-area" ref={canvasRef}>
               <header className="topbar">
@@ -807,6 +872,12 @@ function Canvas() {
                 <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2a2b35" />
               </ReactFlow>
             </div>
+            {showPanel && (
+              <div
+                className={panelPosition === "bottom" ? "resize-handle-y" : "resize-handle-x"}
+                onPointerDown={panelPosition === "bottom" ? onPanelResizeStartY : onPanelResizeStartX}
+              />
+            )}
             {selectedNode && selectedNode.type === "system" && (
               <PropertiesPanel
                 node={selectedNode as SystemFlowNode}
@@ -816,6 +887,7 @@ function Canvas() {
                 panelPosition={panelPosition}
                 onTogglePanelPosition={togglePanelPosition}
                 stressEffect={stressEffects.get(selectedNode.id)}
+                size={panelPosition === "bottom" ? panelHeight : panelWidth}
               />
             )}
             {selectedEdge && (
@@ -828,6 +900,7 @@ function Canvas() {
                 panelPosition={panelPosition}
                 onTogglePanelPosition={togglePanelPosition}
                 mode={mode}
+                size={panelPosition === "bottom" ? panelHeight : panelWidth}
               />
             )}
           </div>

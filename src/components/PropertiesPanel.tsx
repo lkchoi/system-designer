@@ -29,6 +29,7 @@ interface Props {
   panelPosition: PanelPosition;
   onTogglePanelPosition: () => void;
   stressEffect?: EffectiveStress;
+  size?: number;
 }
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -41,6 +42,7 @@ export default function PropertiesPanel({
   panelPosition,
   onTogglePanelPosition,
   stressEffect,
+  size,
 }: Props) {
   const { data } = node;
   const entry = registry.getOrDefault(data.componentType);
@@ -71,7 +73,10 @@ export default function PropertiesPanel({
   }
 
   return (
-    <aside className={`properties-panel${panelPosition === "bottom" ? " bottom" : ""}`}>
+    <aside
+      className={`properties-panel${panelPosition === "bottom" ? " bottom" : ""}`}
+      style={size ? (panelPosition === "bottom" ? { height: size } : { width: size, minWidth: size }) : undefined}
+    >
       <div className="properties-header">
         <h2>Properties</h2>
         <div className="properties-header-actions">
