@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
 import type { EdgeData } from '../types';
+import { useMode, useStress } from '../App';
 
 export default function LabeledEdge({
   id,
@@ -27,11 +28,18 @@ export default function LabeledEdge({
     targetPosition,
   });
 
+  const mode = useMode();
+  const { partitionedEdges } = useStress();
+  const isStressMode = mode === 'stress';
+  const isPartitioned = partitionedEdges.has(id);
+
   const edgeData = data as EdgeData | undefined;
   const label = edgeData?.label ?? '';
   const protocol = edgeData?.protocol ?? '';
   const format = edgeData?.format ?? '';
   const hasTags = protocol || format;
+
+  const isBroken = isStressMode && isPartitioned;
 
   useEffect(() => {
     if (editing) {
@@ -57,8 +65,9 @@ export default function LabeledEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: selected ? '#6366f1' : '#6366f180',
+          stroke: isBroken ? '#ef4444' : selected ? '#6366f1' : '#6366f180',
           strokeWidth: selected ? 3 : 2,
+          strokeDasharray: isBroken ? '8 4' : undefined,
         }}
       />
       <EdgeLabelRenderer>
@@ -74,6 +83,12 @@ export default function LabeledEdge({
             startEdit();
           }}
         >
+          {isBroken && (
+            <div className="edge-partition-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              <span>SPLIT</span>
+            </div>
+          )}
           {editing ? (
             <input
               ref={inputRef}

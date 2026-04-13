@@ -600,6 +600,102 @@
   cursor: not-allowed;
 }
 
+/* ─── Hotkey Help Overlay ─────────────────────────── */
+.hotkey-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.hotkey-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 28px;
+  width: 520px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
+}
+
+.hotkey-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 20px;
+}
+
+.hotkey-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.hotkey-close:hover {
+  background: var(--surface-3);
+  color: var(--text-bright);
+}
+
+.hotkey-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px 32px;
+}
+
+.hotkey-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hotkey-category {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.hotkey-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.hotkey-label {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.hotkey-kbd {
+  font-family: var(--mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-bright);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
 /* ─── System Node ──────────────────────────────────── */
 .system-node {
   background: var(--surface);
@@ -1251,6 +1347,195 @@
   font-weight: 700;
   color: var(--text-bright);
   font-family: var(--mono);
+}
+
+/* ─── Stress Mode ──────────────────────────────────── */
+.system-node.stress-down {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 1px #ef4444, 0 0 16px rgba(239, 68, 68, 0.25);
+  opacity: 0.7;
+  position: relative;
+}
+
+.system-node.stress-overloaded {
+  border-color: #eab308;
+  box-shadow: 0 0 0 1px #eab308, 0 0 16px rgba(234, 179, 8, 0.2);
+  animation: stress-pulse 2s ease-in-out infinite;
+}
+
+.system-node.stress-cascade {
+  border-style: dashed;
+  border-color: #eab308;
+}
+
+.system-node.stress-partition-unavailable {
+  border-style: dashed;
+  border-color: #ef4444;
+}
+
+@keyframes stress-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px #eab308, 0 0 16px rgba(234, 179, 8, 0.2); }
+  50% { box-shadow: 0 0 0 2px #eab308, 0 0 24px rgba(234, 179, 8, 0.35); }
+}
+
+.stress-down-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: 12px;
+  pointer-events: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #ef4444;
+}
+
+.stress-reset-btn {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 5px 14px;
+}
+
+/* ─── CAP Badge ────────────────────────────────────── */
+.cap-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.cap-badge.cp {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.cap-badge.ap {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.cap-badge.ca {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.25);
+}
+
+/* ─── CAP Selector (Properties Panel) ─────────────── */
+.cap-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cap-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  text-align: left;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.cap-option:hover {
+  background: var(--surface-3);
+}
+
+.cap-option.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.cap-option-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-bright);
+  min-width: 24px;
+}
+
+.cap-option-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.cap-help {
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+/* ─── Stress State Display ─────────────────────────── */
+.stress-state-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.stress-state-indicator.none {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.stress-state-indicator.overloaded {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+}
+
+.stress-state-indicator.down {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.stress-state-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.cascade-info {
+  font-size: 13px;
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.08);
+  border: 1px solid rgba(234, 179, 8, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  line-height: 1.4;
+}
+
+/* ─── Edge Partition Badge ─────────────────────────── */
+.edge-partition-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 999px;
+  margin-bottom: 4px;
+}
+
+.edge-partition-badge span {
+  font-size: 10px;
+  font-weight: 700;
+  color: #ef4444;
+  letter-spacing: 0.05em;
 }
 
 /* ─── Shard Toggle ─────────────────────────────────── */

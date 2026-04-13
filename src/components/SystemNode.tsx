@@ -2,7 +2,7 @@ import { Handle, Position, useReactFlow, NodeResizer } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import type { SystemNodeData } from '../types';
 import { registry } from '../registry';
-import { useMode } from '../App';
+import { useMode, useStress } from '../App';
 
 const STATUS_COLORS: Record<string, string> = {
   healthy: '#22c55e',
@@ -16,7 +16,22 @@ type SystemNode = Node<SystemNodeData, 'system'>;
 export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>) {
   const { deleteElements } = useReactFlow();
   const mode = useMode();
+  const { effects } = useStress();
   const def = registry.getOrDefault(data.componentType);
+
+  const isStressMode = mode === 'stress';
+  const stressEffect = effects.get(id);
+  const failureState = data.stressFailure || 'none';
+  const displayStatus = isStressMode && stressEffect ? stressEffect.status : data.status;
+
+  const stressClass = isStressMode ? (
+    failureState === 'down' ? ' stress-down' :
+    failureState === 'overloaded' ? ' stress-overloaded' :
+    stressEffect?.reason === 'cascade' ? ' stress-cascade' :
+    stressEffect?.reason === 'partition-cp' ? ' stress-partition-unavailable' :
+    stressEffect?.reason === 'partition-ap' ? ' stress-cascade' :
+    ''
+  ) : '';
 
   return (
     <>
@@ -30,7 +45,7 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
       )}
       <Handle type="source" position={Position.Top} id="top" className="system-handle" />
       <Handle type="source" position={Position.Left} id="left" className="system-handle" />
-      <div className={`system-node${selected ? ' selected' : ''}`}>
+      <div className={`system-node${selected ? ' selected' : ''}${stressClass}`}>
         <div className="system-node-header">
           <div className="system-node-icon" style={{ background: def.color }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -38,8 +53,13 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             </svg>
           </div>
           <span className="system-node-label">{data.label}</span>
-          <span className="system-node-status" style={{ background: STATUS_COLORS[data.status] }} />
+          <span className="system-node-status" style={{ background: STATUS_COLORS[displayStatus] }} />
         </div>
+        {isStressMode && data.capClassification && (
+          <div className={`cap-badge ${data.capClassification.toLowerCase()}`}>
+            {data.capClassification}
+          </div>
+        )}
         {data.sharded && (
           <div className="shard-badge">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -86,6 +106,9 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             </svg>
           </button>
         </div>
+        {isStressMode && failureState === 'down' && (
+          <div className="stress-down-overlay">OFFLINE</div>
+        )}
       </div>
       <Handle type="source" position={Position.Right} id="right" className="system-handle" />
       <Handle type="source" position={Position.Bottom} id="bottom" className="system-handle" />

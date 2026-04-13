@@ -1,7 +1,7 @@
 import type { Edge } from '@xyflow/react';
 import type { EdgeData, EdgeProtocol, EdgeFormat } from '../types';
 import { EDGE_PROTOCOLS, EDGE_FORMATS } from '../types';
-import type { PanelPosition } from '../App';
+import type { Mode, PanelPosition } from '../App';
 
 interface Props {
   edge: Edge<EdgeData>;
@@ -11,9 +11,10 @@ interface Props {
   onClose: () => void;
   panelPosition: PanelPosition;
   onTogglePanelPosition: () => void;
+  mode: Mode;
 }
 
-export default function EdgePropertiesPanel({ edge, sourceLabel, targetLabel, onUpdate, onClose, panelPosition, onTogglePanelPosition }: Props) {
+export default function EdgePropertiesPanel({ edge, sourceLabel, targetLabel, onUpdate, onClose, panelPosition, onTogglePanelPosition, mode }: Props) {
   const data = edge.data!;
 
   return (
@@ -85,6 +86,24 @@ export default function EdgePropertiesPanel({ edge, sourceLabel, targetLabel, on
             ))}
           </div>
         </div>
+
+        {mode === 'stress' && (
+          <div className="prop-group">
+            <label className="prop-label">Network Partition</label>
+            <div className="shard-toggle-row">
+              <span className="shard-toggle-label">
+                {data.partitioned ? 'Partitioned' : 'Connected'}
+              </span>
+              <button
+                className={`shard-toggle-track${data.partitioned ? ' active' : ''}`}
+                style={data.partitioned ? { background: '#ef4444', borderColor: '#ef4444' } : undefined}
+                onClick={() => onUpdate(edge.id, { partitioned: !data.partitioned })}
+              >
+                <span className="shard-toggle-thumb" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Node } from '@xyflow/react';
-import type { SystemNodeData, NodeStatus, Endpoint } from '../types';
+import type { SystemNodeData, NodeStatus, Endpoint, CAPClassification, EffectiveStress } from '../types';
 import type { Mode, PanelPosition } from '../App';
 import { displayType } from '../data';
 import { registry } from '../registry';
@@ -22,11 +22,12 @@ interface Props {
   onClose: () => void;
   panelPosition: PanelPosition;
   onTogglePanelPosition: () => void;
+  stressEffect?: EffectiveStress;
 }
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-export default function PropertiesPanel({ node, mode, onUpdate, onClose, panelPosition, onTogglePanelPosition }: Props) {
+export default function PropertiesPanel({ node, mode, onUpdate, onClose, panelPosition, onTogglePanelPosition, stressEffect }: Props) {
   const { data } = node;
   const entry = registry.getOrDefault(data.componentType);
   const planFields = entry.planFields;
@@ -92,7 +93,7 @@ export default function PropertiesPanel({ node, mode, onUpdate, onClose, panelPo
           <div className="prop-value-box">{displayType(data.componentType)}</div>
         </div>
 
-        {(mode === 'stress' || mode === 'monitor') && (
+        {mode === 'monitor' && (
           <div className="prop-group">
             <label className="prop-label">Status</label>
             <div className="status-grid">
@@ -108,6 +109,51 @@ export default function PropertiesPanel({ node, mode, onUpdate, onClose, panelPo
               ))}
             </div>
           </div>
+        )}
+
+        {mode === 'stress' && (
+          <>
+            <div className="prop-group">
+              <label className="prop-label">CAP Classification</label>
+              <div className="cap-selector">
+                {(['CP', 'AP', 'CA'] as CAPClassification[]).map(cap => (
+                  <button
+                    key={cap}
+                    className={`cap-option${data.capClassification === cap ? ' active' : ''}`}
+                    onClick={() => onUpdate(node.id, { capClassification: data.capClassification === cap ? '' : cap })}
+                  >
+                    <span className="cap-option-label">{cap}</span>
+                    <span className="cap-option-desc">
+                      {cap === 'CP' ? 'Consistent + Partition tolerant' :
+                       cap === 'AP' ? 'Available + Partition tolerant' :
+                       'Consistent + Available'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="cap-help">
+                {data.capClassification === 'CP' ? 'Sacrifices availability during partitions — will become unavailable.' :
+                 data.capClassification === 'AP' ? 'Sacrifices consistency during partitions — will serve stale data.' :
+                 data.capClassification === 'CA' ? 'No partition tolerance — only works as single node.' :
+                 'How does this node behave during network partitions?'}
+              </p>
+            </div>
+            <div className="prop-group">
+              <label className="prop-label">Failure State</label>
+              <div className={`stress-state-indicator ${data.stressFailure || 'none'}`}>
+                {data.stressFailure === 'down' ? 'DOWN' :
+                 data.stressFailure === 'overloaded' ? 'OVERLOADED' :
+                 'HEALTHY'}
+              </div>
+              <span className="stress-state-hint">Click node on canvas to cycle state</span>
+            </div>
+            {stressEffect && stressEffect.reason !== 'healthy' && stressEffect.reason !== 'direct' && (
+              <div className="prop-group">
+                <label className="prop-label">Cascade Effect</label>
+                <div className="cascade-info">{stressEffect.explanation}</div>
+              </div>
+            )}
+          </>
         )}
 
         {mode === 'plan' && data.componentType === 'api-gateway' && (
