@@ -67,12 +67,105 @@
   flex-shrink: 0;
 }
 
+.sidebar-paths {
+  overflow-y: auto;
+  padding: 0 8px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-path {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+}
+
+.sidebar-path:hover {
+  background: var(--surface-2);
+}
+
+.sidebar-path.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+
+.sidebar-path-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sidebar-path-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-path-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: all 0.15s;
+}
+
+.sidebar-path:hover .sidebar-path-delete {
+  opacity: 1;
+}
+
+.sidebar-path-delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.sidebar-path-desc {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.sidebar-path-steps {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.sidebar-path-arrow {
+  color: var(--text-dim);
+  margin: 0 2px;
+}
+
 .sidebar-footer {
   padding: 16px;
   font-size: 12px;
   color: var(--text-dim);
   line-height: 1.4;
   border-top: 1px solid var(--border);
+  margin-top: auto;
 }
 
 /* ─── Canvas ───────────────────────────────────────── */
@@ -179,6 +272,248 @@
 .clear-btn:hover {
   background: var(--surface-3);
   color: var(--text-bright);
+}
+
+/* ─── Flow Path ───────────────────────────────────── */
+.topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.path-toggle {
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 5px 14px;
+  flex-shrink: 0;
+}
+
+.path-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  margin: 0 16px;
+  padding: 4px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  height: 34px;
+  overflow: hidden;
+}
+
+.path-placeholder {
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.path-steps {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.path-steps::-webkit-scrollbar {
+  display: none;
+}
+
+.path-step-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.path-arrow {
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.path-step {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-bright);
+  background: var(--surface-3);
+  padding: 3px 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.path-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.path-clear:hover {
+  background: var(--surface-3);
+  color: var(--text-bright);
+}
+
+.path-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.path-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.path-save-btn:hover {
+  background: var(--accent-bg);
+}
+
+/* ─── Save Form ───────────────────────────────────── */
+.save-form-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.save-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.5);
+}
+
+.save-form-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 20px;
+}
+
+.save-form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+.save-form-input {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-bright);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.save-form-input:focus {
+  border-color: var(--accent);
+}
+
+.save-form-textarea {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-bright);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+
+.save-form-textarea:focus {
+  border-color: var(--accent);
+}
+
+.save-form-path-preview {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.save-form-arrow {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin: 0 2px;
+}
+
+.save-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.save-form-cancel {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+
+.save-form-cancel:hover {
+  background: var(--surface-3);
+  color: var(--text-bright);
+}
+
+.save-form-submit {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  background: var(--accent);
+  transition: all 0.15s;
+}
+
+.save-form-submit:hover {
+  filter: brightness(1.1);
+}
+
+.save-form-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* ─── System Node ──────────────────────────────────── */

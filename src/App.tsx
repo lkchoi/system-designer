@@ -24,6 +24,13 @@ import { getComponentDef, randomMetrics } from './data';
 import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType } from './types';
 import { ulid } from 'ulid';
 
+interface SavedFlow {
+  id: string;
+  name: string;
+  description: string;
+  steps: string[];
+}
+
 type SystemFlowNode = Node<SystemNodeData, 'system'>;
 type StickyFlowNode = Node<StickyNoteData, 'sticky'>;
 type TextFlowNode = Node<TextNodeData, 'text'>;
@@ -51,7 +58,16 @@ function Canvas() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('plan');
+  const [flowPath, setFlowPath] = useState<string[]>([]);
+  const [isPathMode, setIsPathMode] = useState(false);
+  const [savedFlows, setSavedFlows] = useState<SavedFlow[]>([]);
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [saveName, setSaveName] = useState('');
+  const [saveDesc, setSaveDesc] = useState('');
+  const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const pathStepsRef = useRef<HTMLDivElement>(null);
+  const saveNameRef = useRef<HTMLInputElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const selectedNode = useMemo(
@@ -115,28 +131,31 @@ function Canvas() {
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
 
       if (type === 'sticky') {
+        const w = 200, h = 150;
         const newNode: StickyFlowNode = {
           id: ulid(),
           type: 'sticky',
-          position,
-          style: { width: 200, height: 150 },
+          position: { x: position.x - w / 2, y: position.y - h / 2 },
+          style: { width: w, height: h },
           data: { text: '', color: '#fde68a' },
         };
         setNodes(nds => [...nds, newNode]);
       } else if (type === 'text') {
+        const w = 260, h = 40;
         const newNode: TextFlowNode = {
           id: ulid(),
           type: 'text',
-          position,
-          style: { width: 260, height: 40 },
+          position: { x: position.x - w / 2, y: position.y - h / 2 },
+          style: { width: w, height: h },
           data: { text: '', size: 'large' },
         };
         setNodes(nds => [...nds, newNode]);
       } else {
+        const w = 180, h = 50;
         const newNode: SystemFlowNode = {
           id: ulid(),
           type: 'system',
-          position,
+          position: { x: position.x - w / 2, y: position.y - h / 2 },
           data: {
             label: generateLabel(type as ComponentType),
             componentType: type as ComponentType,
@@ -152,8 +171,17 @@ function Canvas() {
   );
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: AppNode) => {
+    if (isPathMode && node.type === 'system') {
+      setFlowPath(prev => {
+        if (prev.length > 0 && prev[prev.length - 1] === node.id) {
+          return prev.slice(0, -1);
+        }
+        return [...prev, node.id];
+      });
+      return;
+    }
     setSelectedNodeId(node.id);
-  }, []);
+  }, [isPathMode]);
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
@@ -177,10 +205,69 @@ function Canvas() {
 
   const connectionCount = edges.length;
 
+  const getNodeLabel = useCallback(
+    (id: string) => {
+      const node = nodes.find(n => n.id === id);
+      if (!node || node.type !== 'system') return id;
+      return (node.data as SystemNodeData).label;
+    },
+    [nodes],
+  );
+
+  const togglePathMode = useCallback(() => {
+    setIsPathMode(prev => {
+      if (!prev) setFlowPath([]);
+      return !prev;
+    });
+  }, []);
+
+  const clearPath = useCallback(() => {
+    setFlowPath([]);
+    setActiveFlowId(null);
+  }, []);
+
+  const saveFlow = useCallback(() => {
+    if (!saveName.trim() || flowPath.length === 0) return;
+    const flow: SavedFlow = {
+      id: ulid(),
+      name: saveName.trim(),
+      description: saveDesc.trim(),
+      steps: [...flowPath],
+    };
+    setSavedFlows(prev => [...prev, flow]);
+    setShowSaveForm(false);
+    setSaveName('');
+    setSaveDesc('');
+    setActiveFlowId(flow.id);
+  }, [saveName, saveDesc, flowPath]);
+
+  const deleteFlow = useCallback((id: string) => {
+    setSavedFlows(prev => prev.filter(f => f.id !== id));
+    if (activeFlowId === id) setActiveFlowId(null);
+  }, [activeFlowId]);
+
+  const loadFlow = useCallback((flow: SavedFlow) => {
+    setFlowPath(flow.steps);
+    setActiveFlowId(flow.id);
+    setIsPathMode(true);
+  }, []);
+
+  useEffect(() => {
+    if (pathStepsRef.current) {
+      pathStepsRef.current.scrollLeft = pathStepsRef.current.scrollWidth;
+    }
+  }, [flowPath]);
+
   return (
     <ModeContext.Provider value={mode}>
     <div className="app-layout">
-      <Sidebar />
+      <Sidebar
+        savedFlows={savedFlows}
+        activeFlowId={activeFlowId}
+        onLoadFlow={loadFlow}
+        onDeleteFlow={deleteFlow}
+        getNodeLabel={getNodeLabel}
+      />
       <div className="canvas-area" ref={canvasRef}>
         <header className="topbar">
           <div className="topbar-left">
@@ -203,7 +290,41 @@ function Canvas() {
                 Price
               </button>
             </nav>
+            <div className="topbar-divider" />
+            <button className={`topbar-tab path-toggle${isPathMode ? ' active' : ''}`} onClick={togglePathMode}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Flow Path
+            </button>
           </div>
+          {isPathMode && (
+            <div className="path-bar">
+              {flowPath.length === 0 ? (
+                <span className="path-placeholder">Click nodes to build a flow path...</span>
+              ) : (
+                <>
+                  <div className="path-steps" ref={pathStepsRef}>
+                    {flowPath.map((id, i) => (
+                      <span key={`${id}-${i}`} className="path-step-wrapper">
+                        {i > 0 && (
+                          <svg className="path-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        )}
+                        <span className="path-step">{getNodeLabel(id)}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="path-actions">
+                    <button className="path-save-btn" onClick={() => { setShowSaveForm(true); setTimeout(() => saveNameRef.current?.focus(), 0); }} title="Save flow">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                      Save
+                    </button>
+                    <button className="path-clear" onClick={clearPath} title="Clear path">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div className="topbar-right">
             <span className="topbar-stat">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -254,6 +375,47 @@ function Canvas() {
         />
       )}
     </div>
+    {showSaveForm && (
+      <div className="save-form-overlay" onClick={() => setShowSaveForm(false)}>
+        <div className="save-form" onClick={e => e.stopPropagation()}>
+          <div className="save-form-header">Save Flow Path</div>
+          <label className="save-form-label">
+            Name
+            <input
+              ref={saveNameRef}
+              className="save-form-input"
+              value={saveName}
+              onChange={e => setSaveName(e.target.value)}
+              placeholder="e.g. Post a comment"
+              onKeyDown={e => { if (e.key === 'Enter') saveFlow(); if (e.key === 'Escape') setShowSaveForm(false); }}
+            />
+          </label>
+          <label className="save-form-label">
+            Description
+            <textarea
+              className="save-form-textarea"
+              value={saveDesc}
+              onChange={e => setSaveDesc(e.target.value)}
+              placeholder="Describe what this flow does..."
+              rows={3}
+              onKeyDown={e => { if (e.key === 'Escape') setShowSaveForm(false); }}
+            />
+          </label>
+          <div className="save-form-path-preview">
+            {flowPath.map((id, i) => (
+              <span key={`${id}-${i}`}>
+                {i > 0 && <span className="save-form-arrow">&rarr;</span>}
+                <span className="path-step">{getNodeLabel(id)}</span>
+              </span>
+            ))}
+          </div>
+          <div className="save-form-actions">
+            <button className="save-form-cancel" onClick={() => setShowSaveForm(false)}>Cancel</button>
+            <button className="save-form-submit" onClick={saveFlow} disabled={!saveName.trim()}>Save Flow</button>
+          </div>
+        </div>
+      </div>
+    )}
     </ModeContext.Provider>
   );
 }

@@ -1,6 +1,21 @@
 import { COMPONENTS } from '../data';
 
-export default function Sidebar() {
+interface SavedFlow {
+  id: string;
+  name: string;
+  description: string;
+  steps: string[];
+}
+
+interface SidebarProps {
+  savedFlows: SavedFlow[];
+  activeFlowId: string | null;
+  onLoadFlow: (flow: SavedFlow) => void;
+  onDeleteFlow: (id: string) => void;
+  getNodeLabel: (id: string) => string;
+}
+
+export default function Sidebar({ savedFlows, activeFlowId, onLoadFlow, onDeleteFlow, getNodeLabel }: SidebarProps) {
   function onDragStart(e: React.DragEvent, type: string) {
     e.dataTransfer.setData('application/system-designer', type);
     e.dataTransfer.effectAllowed = 'move';
@@ -54,6 +69,42 @@ export default function Sidebar() {
           <span>Text</span>
         </div>
       </div>
+      {savedFlows.length > 0 && (
+        <>
+          <h2 className="sidebar-title" style={{ paddingTop: '12px' }}>Paths</h2>
+          <div className="sidebar-paths">
+            {savedFlows.map(flow => (
+              <div
+                key={flow.id}
+                className={`sidebar-path${activeFlowId === flow.id ? ' active' : ''}`}
+                onClick={() => onLoadFlow(flow)}
+              >
+                <div className="sidebar-path-header">
+                  <span className="sidebar-path-name">{flow.name}</span>
+                  <button
+                    className="sidebar-path-delete"
+                    onClick={e => { e.stopPropagation(); onDeleteFlow(flow.id); }}
+                    title="Delete flow"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                {flow.description && (
+                  <span className="sidebar-path-desc">{flow.description}</span>
+                )}
+                <div className="sidebar-path-steps">
+                  {flow.steps.map((id, i) => (
+                    <span key={`${id}-${i}`}>
+                      {i > 0 && <span className="sidebar-path-arrow">&rarr;</span>}
+                      <span>{getNodeLabel(id)}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <div className="sidebar-footer">
         Drag components to canvas to build your system
       </div>
