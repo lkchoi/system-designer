@@ -13,17 +13,30 @@ interface SidebarProps {
   onLoadFlow: (flow: SavedFlow) => void;
   onDeleteFlow: (id: string) => void;
   getNodeLabel: (id: string) => string;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export default function Sidebar({ savedFlows, activeFlowId, onLoadFlow, onDeleteFlow, getNodeLabel }: SidebarProps) {
+export default function Sidebar({ savedFlows, activeFlowId, onLoadFlow, onDeleteFlow, getNodeLabel, collapsed, onToggleCollapse }: SidebarProps) {
   function onDragStart(e: React.DragEvent, type: string) {
     e.dataTransfer.setData('application/system-designer', type);
     e.dataTransfer.effectAllowed = 'move';
   }
 
   return (
-    <aside className="sidebar">
-      <h2 className="sidebar-title">Components</h2>
+    <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
+      <div className="sidebar-collapse-row">
+        {!collapsed && <h2 className="sidebar-title" style={{ padding: 0 }}>Components</h2>}
+        <button className="sidebar-collapse-btn" onClick={onToggleCollapse} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {collapsed ? (
+              <><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></>
+            ) : (
+              <><polyline points="11 17 6 12 11 7"/><line x1="6" y1="12" x2="18" y2="12"/></>
+            )}
+          </svg>
+        </button>
+      </div>
       <div className="sidebar-list">
         {registry.getBuiltins().map(entry => (
           <div
@@ -31,45 +44,81 @@ export default function Sidebar({ savedFlows, activeFlowId, onLoadFlow, onDelete
             className="sidebar-item"
             draggable
             onDragStart={e => onDragStart(e, entry.id)}
+            data-tooltip={entry.label}
           >
             <div className="sidebar-icon" style={{ background: entry.color }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d={entry.icon} />
               </svg>
             </div>
-            <span>{entry.label}</span>
+            {!collapsed && <span>{entry.label}</span>}
           </div>
         ))}
       </div>
-      <h2 className="sidebar-title" style={{ paddingTop: '12px' }}>Annotations</h2>
-      <div className="sidebar-list" style={{ flex: 'none', paddingBottom: '8px' }}>
-        <div
-          className="sidebar-item"
-          draggable
-          onDragStart={e => onDragStart(e, 'sticky')}
-        >
-          <div className="sidebar-icon sticky-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
-              <polyline points="14 3 14 8 21 8" />
-            </svg>
+      {!collapsed && (
+        <>
+          <h2 className="sidebar-title" style={{ paddingTop: '12px' }}>Annotations</h2>
+          <div className="sidebar-list" style={{ flex: 'none', paddingBottom: '8px' }}>
+            <div
+              className="sidebar-item"
+              draggable
+              onDragStart={e => onDragStart(e, 'sticky')}
+              data-tooltip="Sticky Note"
+            >
+              <div className="sidebar-icon sticky-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
+                  <polyline points="14 3 14 8 21 8" />
+                </svg>
+              </div>
+              <span>Sticky Note</span>
+            </div>
+            <div
+              className="sidebar-item"
+              draggable
+              onDragStart={e => onDragStart(e, 'text')}
+              data-tooltip="Text"
+            >
+              <div className="sidebar-icon text-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+                </svg>
+              </div>
+              <span>Text</span>
+            </div>
           </div>
-          <span>Sticky Note</span>
-        </div>
-        <div
-          className="sidebar-item"
-          draggable
-          onDragStart={e => onDragStart(e, 'text')}
-        >
-          <div className="sidebar-icon text-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-            </svg>
+        </>
+      )}
+      {collapsed && (
+        <div className="sidebar-list" style={{ flex: 'none', paddingBottom: '8px', borderTop: '1px solid var(--border)', paddingTop: '8px' }}>
+          <div
+            className="sidebar-item"
+            draggable
+            onDragStart={e => onDragStart(e, 'sticky')}
+            data-tooltip="Sticky Note"
+          >
+            <div className="sidebar-icon sticky-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
+                <polyline points="14 3 14 8 21 8" />
+              </svg>
+            </div>
           </div>
-          <span>Text</span>
+          <div
+            className="sidebar-item"
+            draggable
+            onDragStart={e => onDragStart(e, 'text')}
+            data-tooltip="Text"
+          >
+            <div className="sidebar-icon text-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 7V4h16v3M9 20h6M12 4v16" />
+              </svg>
+            </div>
+          </div>
         </div>
-      </div>
-      {savedFlows.length > 0 && (
+      )}
+      {!collapsed && savedFlows.length > 0 && (
         <>
           <h2 className="sidebar-title" style={{ paddingTop: '12px' }}>Paths</h2>
           <div className="sidebar-paths">
@@ -105,9 +154,11 @@ export default function Sidebar({ savedFlows, activeFlowId, onLoadFlow, onDelete
           </div>
         </>
       )}
-      <div className="sidebar-footer">
-        Drag components to canvas to build your system
-      </div>
+      {!collapsed && (
+        <div className="sidebar-footer">
+          Drag components to canvas to build your system
+        </div>
+      )}
     </aside>
   );
 }

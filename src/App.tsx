@@ -23,7 +23,8 @@ import LabeledEdge from './components/LabeledEdge';
 import EdgePropertiesPanel from './components/EdgePropertiesPanel';
 import { randomMetrics } from './data';
 import { registry } from './registry';
-import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType, EdgeData } from './types';
+import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType, EdgeData, EffectiveStress, StressFailure } from './types';
+import { computeStressEffects } from './stressEngine';
 import { ulid } from 'ulid';
 
 interface SavedFlow {
@@ -55,6 +56,13 @@ export type Mode = 'plan' | 'stress' | 'monitor' | 'price';
 export const ModeContext = createContext<Mode>('plan');
 export function useMode() { return useContext(ModeContext); }
 
+export interface StressContextValue {
+  effects: Map<string, EffectiveStress>;
+  partitionedEdges: Set<string>;
+}
+export const StressContext = createContext<StressContextValue>({ effects: new Map(), partitionedEdges: new Set() });
+export function useStress() { return useContext(StressContext); }
+
 export type PanelPosition = 'right' | 'bottom';
 
 function Canvas() {
@@ -64,6 +72,7 @@ function Canvas() {
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('plan');
   const [panelPosition, setPanelPosition] = useState<PanelPosition>('right');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [flowPath, setFlowPath] = useState<string[]>([]);
   const [isPathMode, setIsPathMode] = useState(false);
   const [savedFlows, setSavedFlows] = useState<SavedFlow[]>([]);
@@ -125,7 +134,7 @@ function Canvas() {
             ...params,
             id: ulid(),
             type: 'labeled',
-            data: { label: '', protocol: '', format: '' },
+            data: { label: '', protocol: '', format: '', partitioned: false },
           },
           eds,
         ),
@@ -190,6 +199,8 @@ function Canvas() {
             sharded: false,
             shardKey: '',
             endpoints: [],
+            capClassification: '',
+            stressFailure: 'none',
           },
         };
         setNodes(nds => [...nds, newNode]);
@@ -208,14 +219,24 @@ function Canvas() {
       });
       return;
     }
+    if (mode === 'stress' && node.type === 'system') {
+      const data = node.data as SystemNodeData;
+      const cycle: StressFailure[] = ['none', 'overloaded', 'down'];
+      const nextIdx = (cycle.indexOf(data.stressFailure || 'none') + 1) % cycle.length;
+      onUpdateNodeData(node.id, { stressFailure: cycle[nextIdx] });
+    }
     setSelectedNodeId(node.id);
     setSelectedEdgeId(null);
-  }, [isPathMode]);
+  }, [isPathMode, mode, onUpdateNodeData]);
 
   const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    if (mode === 'stress') {
+      const edgeData = edge.data as EdgeData | undefined;
+      onUpdateEdgeData(edge.id, { partitioned: !edgeData?.partitioned });
+    }
     setSelectedEdgeId(edge.id);
     setSelectedNodeId(null);
-  }, []);
+  }, [mode, onUpdateEdgeData]);
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
@@ -253,6 +274,40 @@ function Canvas() {
   }, []);
 
   const connectionCount = edges.length;
+
+  const stressEffects = useMemo(() => {
+    if (mode !== 'stress') return new Map<string, EffectiveStress>();
+    const systemNodes = nodes.filter(
+      (n): n is Node<SystemNodeData, 'system'> => n.type === 'system',
+    );
+    return computeStressEffects(systemNodes, edges);
+  }, [mode, nodes, edges]);
+
+  const partitionedEdges = useMemo(() => {
+    const set = new Set<string>();
+    if (mode !== 'stress') return set;
+    for (const edge of edges) {
+      if ((edge.data as EdgeData | undefined)?.partitioned) set.add(edge.id);
+    }
+    return set;
+  }, [mode, edges]);
+
+  const stressCtx = useMemo<StressContextValue>(
+    () => ({ effects: stressEffects, partitionedEdges }),
+    [stressEffects, partitionedEdges],
+  );
+
+  const resetStress = useCallback(() => {
+    setNodes(nds => nds.map(n =>
+      n.type === 'system'
+        ? { ...n, data: { ...n.data, stressFailure: 'none' } } as typeof n
+        : n,
+    ));
+    setEdges(eds => eds.map(e => ({
+      ...e,
+      data: { ...e.data, partitioned: false },
+    })));
+  }, []);
 
   const getNodeLabel = useCallback(
     (id: string) => {
@@ -309,6 +364,7 @@ function Canvas() {
 
   return (
     <ModeContext.Provider value={mode}>
+    <StressContext.Provider value={stressCtx}>
     <div className="app-layout">
       <Sidebar
         savedFlows={savedFlows}
@@ -316,6 +372,8 @@ function Canvas() {
         onLoadFlow={loadFlow}
         onDeleteFlow={deleteFlow}
         getNodeLabel={getNodeLabel}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
       />
       <div className={`main-content${panelPosition === 'bottom' ? ' panel-bottom' : ''}`}>
       <div className="canvas-area" ref={canvasRef}>
@@ -345,6 +403,12 @@ function Canvas() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
               Flow Path
             </button>
+            {mode === 'stress' && (
+              <button className="topbar-tab stress-reset-btn" onClick={resetStress}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 109-9M3 3v9h9"/></svg>
+                Reset Stress
+              </button>
+            )}
           </div>
           {isPathMode && (
             <div className="path-bar">
@@ -426,6 +490,7 @@ function Canvas() {
           onClose={() => setSelectedNodeId(null)}
           panelPosition={panelPosition}
           onTogglePanelPosition={togglePanelPosition}
+          stressEffect={stressEffects.get(selectedNode.id)}
         />
       )}
       {selectedEdge && (
@@ -437,6 +502,7 @@ function Canvas() {
           onClose={() => setSelectedEdgeId(null)}
           panelPosition={panelPosition}
           onTogglePanelPosition={togglePanelPosition}
+          mode={mode}
         />
       )}
       </div>
@@ -482,6 +548,7 @@ function Canvas() {
         </div>
       </div>
     )}
+    </StressContext.Provider>
     </ModeContext.Provider>
   );
 }
