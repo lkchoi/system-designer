@@ -40,6 +40,17 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
           <span className="system-node-label">{data.label}</span>
           <span className="system-node-status" style={{ background: STATUS_COLORS[data.status] }} />
         </div>
+        {data.sharded && (
+          <div className="shard-badge">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="1" y="1" width="6" height="6" rx="1" />
+              <rect x="9" y="1" width="6" height="6" rx="1" />
+              <rect x="1" y="9" width="6" height="6" rx="1" />
+              <rect x="9" y="9" width="6" height="6" rx="1" />
+            </svg>
+            <span>{data.shardKey || 'Sharded'}</span>
+          </div>
+        )}
         {mode !== 'plan' && (
           <div className="system-node-metrics">
             <div className="system-node-metric">

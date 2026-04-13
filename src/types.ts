@@ -10,7 +10,13 @@ export type ComponentType =
   | 'firewall'
   | 'webhook'
   | 'cron'
-  | 'client';
+  | 'client'
+  | 'search-engine'
+  | 'dns'
+  | 'serverless'
+  | 'container-orchestration'
+  | 'stream-processor'
+  | 'data-warehouse';
 
 export type NodeStatus = 'healthy' | 'warning' | 'error' | 'idle';
 
@@ -25,6 +31,21 @@ export interface PlanFieldDef {
   key: string;
   label: string;
   placeholder?: string;
+  type?: 'text' | 'technology';
+}
+
+export interface TechnologyInfo {
+  name: string;
+  throughput: string;
+  limits: string;
+  purpose: string;
+  providers: string[];
+}
+
+export interface Endpoint {
+  id: string;
+  method: string;
+  path: string;
 }
 
 export interface SystemNodeData {
@@ -33,6 +54,9 @@ export interface SystemNodeData {
   status: NodeStatus;
   metrics: NodeMetrics;
   plan: Record<string, string>;
+  sharded: boolean;
+  shardKey: string;
+  endpoints: Endpoint[];
   [key: string]: unknown;
 }
 

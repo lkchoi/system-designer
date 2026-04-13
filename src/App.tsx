@@ -162,6 +162,9 @@ function Canvas() {
             status: 'healthy',
             metrics: randomMetrics(),
             plan: {},
+            sharded: false,
+            shardKey: '',
+            endpoints: [],
           },
         };
         setNodes(nds => [...nds, newNode]);
