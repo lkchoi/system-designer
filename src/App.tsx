@@ -214,6 +214,24 @@ function Canvas() {
     [screenToFlowPosition],
   );
 
+  const onUpdateNodeData = useCallback(
+    (id: string, partial: Partial<SystemNodeData>) => {
+      setNodes(nds =>
+        nds.map(n => (n.id === id ? { ...n, data: { ...n.data, ...partial } } as typeof n : n)),
+      );
+    },
+    [],
+  );
+
+  const onUpdateEdgeData = useCallback(
+    (id: string, partial: Partial<EdgeData>) => {
+      setEdges(eds =>
+        eds.map(e => (e.id === id ? { ...e, data: { ...e.data, ...partial } } : e)),
+      );
+    },
+    [],
+  );
+
   const onNodeClick = useCallback((_: React.MouseEvent, node: AppNode) => {
     if (isPathMode && node.type === 'system') {
       setFlowPath(prev => {
@@ -247,24 +265,6 @@ function Canvas() {
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
   }, []);
-
-  const onUpdateNodeData = useCallback(
-    (id: string, partial: Partial<SystemNodeData>) => {
-      setNodes(nds =>
-        nds.map(n => (n.id === id ? { ...n, data: { ...n.data, ...partial } } as typeof n : n)),
-      );
-    },
-    [],
-  );
-
-  const onUpdateEdgeData = useCallback(
-    (id: string, partial: Partial<EdgeData>) => {
-      setEdges(eds =>
-        eds.map(e => (e.id === id ? { ...e, data: { ...e.data, ...partial } } : e)),
-      );
-    },
-    [],
-  );
 
   const togglePanelPosition = useCallback(() => {
     setPanelPosition(prev => (prev === 'right' ? 'bottom' : 'right'));
