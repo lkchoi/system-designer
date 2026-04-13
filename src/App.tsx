@@ -55,12 +55,15 @@ export type Mode = 'plan' | 'stress' | 'monitor' | 'price';
 export const ModeContext = createContext<Mode>('plan');
 export function useMode() { return useContext(ModeContext); }
 
+export type PanelPosition = 'right' | 'bottom';
+
 function Canvas() {
   const [nodes, setNodes] = useState<AppNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('plan');
+  const [panelPosition, setPanelPosition] = useState<PanelPosition>('right');
   const [flowPath, setFlowPath] = useState<string[]>([]);
   const [isPathMode, setIsPathMode] = useState(false);
   const [savedFlows, setSavedFlows] = useState<SavedFlow[]>([]);
@@ -237,6 +240,10 @@ function Canvas() {
     [],
   );
 
+  const togglePanelPosition = useCallback(() => {
+    setPanelPosition(prev => (prev === 'right' ? 'bottom' : 'right'));
+  }, []);
+
   const clearCanvas = useCallback(() => {
     setNodes([]);
     setEdges([]);
@@ -310,6 +317,7 @@ function Canvas() {
         onDeleteFlow={deleteFlow}
         getNodeLabel={getNodeLabel}
       />
+      <div className={`main-content${panelPosition === 'bottom' ? ' panel-bottom' : ''}`}>
       <div className="canvas-area" ref={canvasRef}>
         <header className="topbar">
           <div className="topbar-left">
@@ -416,6 +424,8 @@ function Canvas() {
           mode={mode}
           onUpdate={onUpdateNodeData}
           onClose={() => setSelectedNodeId(null)}
+          panelPosition={panelPosition}
+          onTogglePanelPosition={togglePanelPosition}
         />
       )}
       {selectedEdge && (
@@ -425,8 +435,11 @@ function Canvas() {
           targetLabel={getNodeLabel(selectedEdge.target)}
           onUpdate={onUpdateEdgeData}
           onClose={() => setSelectedEdgeId(null)}
+          panelPosition={panelPosition}
+          onTogglePanelPosition={togglePanelPosition}
         />
       )}
+      </div>
     </div>
     {showSaveForm && (
       <div className="save-form-overlay" onClick={() => setShowSaveForm(false)}>

@@ -1,6 +1,7 @@
 import type { Edge } from '@xyflow/react';
 import type { EdgeData, EdgeProtocol, EdgeFormat } from '../types';
 import { EDGE_PROTOCOLS, EDGE_FORMATS } from '../types';
+import type { PanelPosition } from '../App';
 
 interface Props {
   edge: Edge<EdgeData>;
@@ -8,16 +9,31 @@ interface Props {
   targetLabel: string;
   onUpdate: (id: string, data: Partial<EdgeData>) => void;
   onClose: () => void;
+  panelPosition: PanelPosition;
+  onTogglePanelPosition: () => void;
 }
 
-export default function EdgePropertiesPanel({ edge, sourceLabel, targetLabel, onUpdate, onClose }: Props) {
+export default function EdgePropertiesPanel({ edge, sourceLabel, targetLabel, onUpdate, onClose, panelPosition, onTogglePanelPosition }: Props) {
   const data = edge.data!;
 
   return (
-    <aside className="properties-panel">
+    <aside className={`properties-panel${panelPosition === 'bottom' ? ' bottom' : ''}`}>
       <div className="properties-header">
         <h2>Connection</h2>
-        <button className="properties-close" onClick={onClose}>&times;</button>
+        <div className="properties-header-actions">
+          <button
+            className="properties-dock-btn"
+            onClick={onTogglePanelPosition}
+            title={panelPosition === 'right' ? 'Dock to bottom' : 'Dock to right'}
+          >
+            {panelPosition === 'right' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            )}
+          </button>
+          <button className="properties-close" onClick={onClose}>&times;</button>
+        </div>
       </div>
 
       <div className="properties-body">

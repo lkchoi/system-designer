@@ -168,6 +168,18 @@
   margin-top: auto;
 }
 
+/* ─── Main Content ────────────────────────────────── */
+.main-content {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.main-content.panel-bottom {
+  flex-direction: column;
+}
+
 /* ─── Canvas ───────────────────────────────────────── */
 .canvas-area {
   flex: 1;
@@ -175,6 +187,7 @@
   flex-direction: column;
   position: relative;
   min-width: 0;
+  min-height: 0;
 }
 
 .system-flow {
@@ -745,17 +758,50 @@
   overflow-y: auto;
 }
 
+.properties-panel.bottom {
+  width: auto;
+  min-width: 0;
+  height: 260px;
+  min-height: 200px;
+  border-left: none;
+  border-top: 1px solid var(--border);
+  overflow-y: auto;
+}
+
 .properties-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
 }
 
 .properties-header h2 {
   font-size: 16px;
   font-weight: 700;
+  color: var(--text-bright);
+}
+
+.properties-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.properties-dock-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+
+.properties-dock-btn:hover {
+  background: var(--surface-2);
   color: var(--text-bright);
 }
 

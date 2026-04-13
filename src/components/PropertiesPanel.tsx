@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Node } from '@xyflow/react';
 import type { SystemNodeData, NodeStatus, Endpoint } from '../types';
-import type { Mode } from '../App';
+import type { Mode, PanelPosition } from '../App';
 import { displayType } from '../data';
 import { registry } from '../registry';
 import { ulid } from 'ulid';
@@ -20,11 +20,13 @@ interface Props {
   mode: Mode;
   onUpdate: (id: string, data: Partial<SystemNodeData>) => void;
   onClose: () => void;
+  panelPosition: PanelPosition;
+  onTogglePanelPosition: () => void;
 }
 
 const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
-export default function PropertiesPanel({ node, mode, onUpdate, onClose }: Props) {
+export default function PropertiesPanel({ node, mode, onUpdate, onClose, panelPosition, onTogglePanelPosition }: Props) {
   const { data } = node;
   const entry = registry.getOrDefault(data.componentType);
   const planFields = entry.planFields;
@@ -56,10 +58,23 @@ export default function PropertiesPanel({ node, mode, onUpdate, onClose }: Props
   }
 
   return (
-    <aside className="properties-panel">
+    <aside className={`properties-panel${panelPosition === 'bottom' ? ' bottom' : ''}`}>
       <div className="properties-header">
         <h2>Properties</h2>
-        <button className="properties-close" onClick={onClose}>&times;</button>
+        <div className="properties-header-actions">
+          <button
+            className="properties-dock-btn"
+            onClick={onTogglePanelPosition}
+            title={panelPosition === 'right' ? 'Dock to bottom' : 'Dock to right'}
+          >
+            {panelPosition === 'right' ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            )}
+          </button>
+          <button className="properties-close" onClick={onClose}>&times;</button>
+        </div>
       </div>
 
       <div className="properties-body">
