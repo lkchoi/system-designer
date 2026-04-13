@@ -5,7 +5,7 @@ export interface HotkeyDef {
   shift?: boolean;
   guard?: boolean;
   label: string;
-  category: 'Mode' | 'Canvas' | 'Flow Path' | 'Panels' | 'Quick Add' | 'Help';
+  category: 'Mode' | 'Canvas' | 'Flow Path' | 'Panels' | 'Quick Add' | 'Tools' | 'Help';
 }
 
 export const HOTKEYS: HotkeyDef[] = [
@@ -35,6 +35,9 @@ export const HOTKEYS: HotkeyDef[] = [
   // Quick add
   { id: 'add-sticky', key: 's', guard: true, label: 'Add sticky note', category: 'Quick Add' },
   { id: 'add-text',   key: 't', guard: true, label: 'Add text node',   category: 'Quick Add' },
+
+  // Tools
+  { id: 'show-capacity-calc', key: 'c', guard: true, label: 'Capacity calculator', category: 'Tools' },
 
   // Help
   { id: 'show-help', key: '?', guard: true, label: 'Show shortcuts', category: 'Help' },
