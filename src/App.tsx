@@ -21,6 +21,8 @@ import StickyNote from './components/StickyNote';
 import TextNode from './components/TextNode';
 import LabeledEdge from './components/LabeledEdge';
 import EdgePropertiesPanel from './components/EdgePropertiesPanel';
+import HotkeyHelpOverlay from './components/HotkeyHelpOverlay';
+import { useHotkeys } from './hooks/useHotkeys';
 import { randomMetrics } from './data';
 import { registry } from './registry';
 import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType, EdgeData, EffectiveStress, StressFailure } from './types';
@@ -80,10 +82,11 @@ function Canvas() {
   const [saveName, setSaveName] = useState('');
   const [saveDesc, setSaveDesc] = useState('');
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
+  const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const pathStepsRef = useRef<HTMLDivElement>(null);
   const saveNameRef = useRef<HTMLInputElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, zoomIn, zoomOut, fitView, getViewport } = useReactFlow();
 
   const selectedNode = useMemo(
     () => nodes.find(n => n.id === selectedNodeId) ?? null,
@@ -308,6 +311,72 @@ function Canvas() {
       data: { ...e.data, partitioned: false },
     })));
   }, []);
+
+  const hotkeyActions = useMemo<Record<string, () => void>>(() => ({
+    'mode-plan':    () => setMode('plan'),
+    'mode-stress':  () => setMode('stress'),
+    'mode-monitor': () => setMode('monitor'),
+    'mode-price':   () => setMode('price'),
+
+    'zoom-in':      () => zoomIn(),
+    'zoom-out':     () => zoomOut(),
+    'zoom-fit':     () => fitView({ padding: 0.2 }),
+    'clear-canvas': () => clearCanvas(),
+    'select-all':   () => setNodes(nds => nds.map(n => ({ ...n, selected: true }))),
+
+    'toggle-path':  () => togglePathMode(),
+    'save-path':    () => {
+      if (isPathMode && flowPath.length > 0) {
+        setShowSaveForm(true);
+        setTimeout(() => saveNameRef.current?.focus(), 0);
+      }
+    },
+    'clear-path':   () => { if (isPathMode) clearPath(); },
+
+    'close-or-deselect': () => {
+      if (showHotkeyHelp) { setShowHotkeyHelp(false); return; }
+      if (showSaveForm) { setShowSaveForm(false); return; }
+      if (selectedNodeId || selectedEdgeId) {
+        setSelectedNodeId(null);
+        setSelectedEdgeId(null);
+      }
+    },
+    'toggle-dock':    () => { if (selectedNodeId || selectedEdgeId) togglePanelPosition(); },
+    'toggle-sidebar': () => setSidebarCollapsed(prev => !prev),
+
+    'add-sticky': () => {
+      const vp = getViewport();
+      const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
+      const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
+      const node: StickyFlowNode = {
+        id: ulid(), type: 'sticky',
+        position: { x: cx - 100, y: cy - 75 },
+        style: { width: 200, height: 150 },
+        data: { text: '', color: '#fde68a' },
+      };
+      setNodes(nds => [...nds, node]);
+    },
+    'add-text': () => {
+      const vp = getViewport();
+      const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
+      const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
+      const node: TextFlowNode = {
+        id: ulid(), type: 'text',
+        position: { x: cx - 130, y: cy - 20 },
+        style: { width: 260, height: 40 },
+        data: { text: '', size: 'large' },
+      };
+      setNodes(nds => [...nds, node]);
+    },
+
+    'show-help': () => setShowHotkeyHelp(prev => !prev),
+  }), [
+    zoomIn, zoomOut, fitView, getViewport, clearCanvas, togglePathMode,
+    clearPath, togglePanelPosition, isPathMode, flowPath.length,
+    showHotkeyHelp, showSaveForm, selectedNodeId, selectedEdgeId,
+  ]);
+
+  useHotkeys(hotkeyActions);
 
   const getNodeLabel = useCallback(
     (id: string) => {
@@ -548,6 +617,7 @@ function Canvas() {
         </div>
       </div>
     )}
+    <HotkeyHelpOverlay open={showHotkeyHelp} onClose={() => setShowHotkeyHelp(false)} />
     </StressContext.Provider>
     </ModeContext.Provider>
   );
