@@ -640,78 +640,6 @@ function Canvas() {
                     </button>
                   )}
                 </div>
-                {isPathMode && (
-                  <div className="path-bar">
-                    {flowPath.length === 0 ? (
-                      <span className="path-placeholder">Click nodes to build a flow path...</span>
-                    ) : (
-                      <>
-                        <div className="path-steps" ref={pathStepsRef}>
-                          {flowPath.map((id, i) => (
-                            <span key={`${id}-${i}`} className="path-step-wrapper">
-                              {i > 0 && (
-                                <svg
-                                  className="path-arrow"
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <path d="M5 12h14M12 5l7 7-7 7" />
-                                </svg>
-                              )}
-                              <span className="path-step">{getNodeLabel(id)}</span>
-                            </span>
-                          ))}
-                        </div>
-                        <div className="path-actions">
-                          <button
-                            className="path-save-btn"
-                            onClick={() => {
-                              setShowSaveForm(true);
-                              setTimeout(() => saveNameRef.current?.focus(), 0);
-                            }}
-                            title="Save flow"
-                          >
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                              <polyline points="17 21 17 13 7 13 7 21" />
-                              <polyline points="7 3 7 8 15 8" />
-                            </svg>
-                            Save
-                          </button>
-                          <button className="path-clear" onClick={clearPath} title="Clear path">
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
                 <div className="topbar-right">
                   <button
                     className={`topbar-icon-btn${showCapacityCalc ? " active" : ""}`}
@@ -781,6 +709,78 @@ function Canvas() {
                   </button>
                 </div>
               </header>
+              {isPathMode && (
+                <div className="path-bar">
+                  {flowPath.length === 0 ? (
+                    <span className="path-placeholder">Click nodes to build a flow path...</span>
+                  ) : (
+                    <>
+                      <div className="path-steps" ref={pathStepsRef}>
+                        {flowPath.map((id, i) => (
+                          <span key={`${id}-${i}`} className="path-step-wrapper">
+                            {i > 0 && (
+                              <svg
+                                className="path-arrow"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M5 12h14M12 5l7 7-7 7" />
+                              </svg>
+                            )}
+                            <span className="path-step">{getNodeLabel(id)}</span>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="path-actions">
+                        <button
+                          className="path-save-btn"
+                          onClick={() => {
+                            setShowSaveForm(true);
+                            setTimeout(() => saveNameRef.current?.focus(), 0);
+                          }}
+                          title="Save flow"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
+                          </svg>
+                          Save
+                        </button>
+                        <button className="path-clear" onClick={clearPath} title="Clear path">
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M18 6L6 18M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <ReactFlow
                 nodes={nodes}
                 edges={edges}
