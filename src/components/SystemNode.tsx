@@ -1,7 +1,7 @@
 import { Handle, Position, useReactFlow, NodeResizer } from '@xyflow/react';
 import type { NodeProps, Node } from '@xyflow/react';
 import type { SystemNodeData } from '../types';
-import { getComponentDef } from '../data';
+import { registry } from '../registry';
 import { useMode } from '../App';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -16,7 +16,7 @@ type SystemNode = Node<SystemNodeData, 'system'>;
 export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>) {
   const { deleteElements } = useReactFlow();
   const mode = useMode();
-  const def = getComponentDef(data.componentType);
+  const def = registry.getOrDefault(data.componentType);
 
   return (
     <>

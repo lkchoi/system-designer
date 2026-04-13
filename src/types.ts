@@ -48,6 +48,18 @@ export interface Endpoint {
   path: string;
 }
 
+export type EdgeProtocol = 'HTTP' | 'HTTPS' | 'gRPC' | 'WebSocket' | 'SSE' | 'TCP' | 'UDP' | 'AMQP' | 'MQTT' | '';
+export type EdgeFormat = 'JSON' | 'Protobuf' | 'Avro' | 'XML' | 'Binary' | 'Plain Text' | 'MessagePack' | '';
+
+export const EDGE_PROTOCOLS: EdgeProtocol[] = ['HTTP', 'HTTPS', 'gRPC', 'WebSocket', 'SSE', 'TCP', 'UDP', 'AMQP', 'MQTT'];
+export const EDGE_FORMATS: EdgeFormat[] = ['JSON', 'Protobuf', 'Avro', 'XML', 'Binary', 'Plain Text', 'MessagePack'];
+
+export interface EdgeData {
+  label: string;
+  protocol: EdgeProtocol;
+  format: EdgeFormat;
+}
+
 export interface SystemNodeData {
   label: string;
   componentType: ComponentType;

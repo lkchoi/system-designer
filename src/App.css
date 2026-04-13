@@ -1468,3 +1468,85 @@
   font-weight: 500;
   white-space: nowrap;
 }
+
+/* ─── Edge Tags (on canvas) ───────────────────────── */
+.edge-label-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.edge-tags {
+  display: flex;
+  gap: 3px;
+}
+
+.edge-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.edge-tag-protocol {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.edge-tag-format {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+/* ─── Edge Properties Panel ───────────────────────── */
+.edge-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+}
+
+.edge-route-node {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.edge-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.edge-chip {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.edge-chip:hover {
+  background: var(--surface-3);
+  color: var(--text-bright);
+}
+
+.edge-chip.active {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}

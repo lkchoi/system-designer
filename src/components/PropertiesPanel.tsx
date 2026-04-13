@@ -2,8 +2,8 @@ import { useState } from 'react';
 import type { Node } from '@xyflow/react';
 import type { SystemNodeData, NodeStatus, Endpoint } from '../types';
 import type { Mode } from '../App';
-import { getComponentDef, displayType, PLAN_FIELDS } from '../data';
-import { TECHNOLOGY_CATALOG, getTechnology } from '../technologies';
+import { displayType } from '../data';
+import { registry } from '../registry';
 import { ulid } from 'ulid';
 
 const STATUSES: NodeStatus[] = ['healthy', 'warning', 'error', 'idle'];
@@ -26,8 +26,8 @@ const HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
 export default function PropertiesPanel({ node, mode, onUpdate, onClose }: Props) {
   const { data } = node;
-  const def = getComponentDef(data.componentType);
-  const planFields = PLAN_FIELDS[data.componentType] ?? [];
+  const entry = registry.getOrDefault(data.componentType);
+  const planFields = entry.planFields;
   const [editingEndpointId, setEditingEndpointId] = useState<string | null>(null);
 
   function updatePlanField(key: string, value: string) {
@@ -166,12 +166,12 @@ export default function PropertiesPanel({ node, mode, onUpdate, onClose }: Props
                       onChange={e => updatePlanField(field.key, e.target.value)}
                     >
                       <option value="">Select a technology...</option>
-                      {(TECHNOLOGY_CATALOG[data.componentType] ?? []).map(tech => (
+                      {entry.technologies.map(tech => (
                         <option key={tech.name} value={tech.name}>{tech.name}</option>
                       ))}
                     </select>
                     {data.plan?.[field.key] && (() => {
-                      const tech = getTechnology(data.componentType, data.plan[field.key]);
+                      const tech = entry.technologies.find(t => t.name === data.plan[field.key]);
                       if (!tech) return null;
                       return (
                         <div className="tech-info-card">
@@ -217,7 +217,7 @@ export default function PropertiesPanel({ node, mode, onUpdate, onClose }: Props
 
             <div className="metric-card">
               <div className="metric-card-header">
-                <div className="metric-icon" style={{ background: def.color + '33', color: def.color }}>
+                <div className="metric-icon" style={{ background: entry.color + '33', color: entry.color }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                 </div>
                 <span>CPU Usage</span>

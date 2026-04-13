@@ -1,4 +1,4 @@
-import { COMPONENTS } from '../data';
+import { registry } from '../registry';
 
 interface SavedFlow {
   id: string;
@@ -25,19 +25,19 @@ export default function Sidebar({ savedFlows, activeFlowId, onLoadFlow, onDelete
     <aside className="sidebar">
       <h2 className="sidebar-title">Components</h2>
       <div className="sidebar-list">
-        {COMPONENTS.map(comp => (
+        {registry.getBuiltins().map(entry => (
           <div
-            key={comp.type}
+            key={entry.id}
             className="sidebar-item"
             draggable
-            onDragStart={e => onDragStart(e, comp.type)}
+            onDragStart={e => onDragStart(e, entry.id)}
           >
-            <div className="sidebar-icon" style={{ background: comp.color }}>
+            <div className="sidebar-icon" style={{ background: entry.color }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d={comp.icon} />
+                <path d={entry.icon} />
               </svg>
             </div>
-            <span>{comp.label}</span>
+            <span>{entry.label}</span>
           </div>
         ))}
       </div>

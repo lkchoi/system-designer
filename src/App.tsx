@@ -10,7 +10,7 @@ import {
   useReactFlow,
   ConnectionMode,
 } from '@xyflow/react';
-import type { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect, NodeChange } from '@xyflow/react';
+import type { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect, NodeChange, Connection } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './App.css';
 
@@ -20,8 +20,10 @@ import SystemNode from './components/SystemNode';
 import StickyNote from './components/StickyNote';
 import TextNode from './components/TextNode';
 import LabeledEdge from './components/LabeledEdge';
-import { getComponentDef, randomMetrics } from './data';
-import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType } from './types';
+import EdgePropertiesPanel from './components/EdgePropertiesPanel';
+import { randomMetrics } from './data';
+import { registry } from './registry';
+import type { SystemNodeData, StickyNoteData, TextNodeData, ComponentType, EdgeData } from './types';
 import { ulid } from 'ulid';
 
 interface SavedFlow {
@@ -42,8 +44,8 @@ const edgeTypes = { labeled: LabeledEdge };
 const typeCounters: Record<string, number> = {};
 
 function generateLabel(type: ComponentType): string {
-  const def = getComponentDef(type);
-  const short = def.label.toLowerCase().split(' ')[0].slice(0, 6);
+  const entry = registry.getOrDefault(type);
+  const short = entry.label.toLowerCase().split(' ')[0].slice(0, 6);
   typeCounters[type] = (typeCounters[type] ?? 0) + 1;
   return `${short}-${typeCounters[type]}`;
 }
@@ -57,6 +59,7 @@ function Canvas() {
   const [nodes, setNodes] = useState<AppNode[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>('plan');
   const [flowPath, setFlowPath] = useState<string[]>([]);
   const [isPathMode, setIsPathMode] = useState(false);
@@ -73,6 +76,11 @@ function Canvas() {
   const selectedNode = useMemo(
     () => nodes.find(n => n.id === selectedNodeId) ?? null,
     [nodes, selectedNodeId],
+  );
+
+  const selectedEdge = useMemo(
+    () => (selectedEdgeId ? edges.find(e => e.id === selectedEdgeId) ?? null : null) as Edge<EdgeData> | null,
+    [edges, selectedEdgeId],
   );
 
   const onNodesChange: OnNodesChange<AppNode> = useCallback(
@@ -92,6 +100,20 @@ function Canvas() {
     [],
   );
 
+  const isValidConnection = useCallback(
+    (connection: Connection) => {
+      if (connection.source === connection.target) return false;
+      const sourceNode = nodes.find(n => n.id === connection.source);
+      const targetNode = nodes.find(n => n.id === connection.target);
+      if (!sourceNode || !targetNode) return true;
+      if (sourceNode.type !== 'system' || targetNode.type !== 'system') return true;
+      const sourceType = (sourceNode.data as SystemNodeData).componentType;
+      const targetType = (targetNode.data as SystemNodeData).componentType;
+      return registry.canConnect(sourceType, targetType);
+    },
+    [nodes],
+  );
+
   const onConnect: OnConnect = useCallback(
     params =>
       setEdges(eds =>
@@ -100,7 +122,7 @@ function Canvas() {
             ...params,
             id: ulid(),
             type: 'labeled',
-            data: { label: '' },
+            data: { label: '', protocol: '', format: '' },
           },
           eds,
         ),
@@ -184,10 +206,17 @@ function Canvas() {
       return;
     }
     setSelectedNodeId(node.id);
+    setSelectedEdgeId(null);
   }, [isPathMode]);
+
+  const onEdgeClick = useCallback((_: React.MouseEvent, edge: Edge) => {
+    setSelectedEdgeId(edge.id);
+    setSelectedNodeId(null);
+  }, []);
 
   const onPaneClick = useCallback(() => {
     setSelectedNodeId(null);
+    setSelectedEdgeId(null);
   }, []);
 
   const onUpdateNodeData = useCallback(
@@ -199,10 +228,20 @@ function Canvas() {
     [],
   );
 
+  const onUpdateEdgeData = useCallback(
+    (id: string, partial: Partial<EdgeData>) => {
+      setEdges(eds =>
+        eds.map(e => (e.id === id ? { ...e, data: { ...e.data, ...partial } } : e)),
+      );
+    },
+    [],
+  );
+
   const clearCanvas = useCallback(() => {
     setNodes([]);
     setEdges([]);
     setSelectedNodeId(null);
+    setSelectedEdgeId(null);
     Object.keys(typeCounters).forEach(k => delete typeCounters[k]);
   }, []);
 
@@ -354,10 +393,12 @@ function Canvas() {
           onDrop={onDrop}
           onDragOver={onDragOver}
           onNodeClick={onNodeClick}
+          onEdgeClick={onEdgeClick}
           onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           defaultEdgeOptions={{ type: 'labeled' }}
+          isValidConnection={isValidConnection}
           connectionMode={ConnectionMode.Loose}
           fitView={false}
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
@@ -375,6 +416,15 @@ function Canvas() {
           mode={mode}
           onUpdate={onUpdateNodeData}
           onClose={() => setSelectedNodeId(null)}
+        />
+      )}
+      {selectedEdge && (
+        <EdgePropertiesPanel
+          edge={selectedEdge}
+          sourceLabel={getNodeLabel(selectedEdge.source)}
+          targetLabel={getNodeLabel(selectedEdge.target)}
+          onUpdate={onUpdateEdgeData}
+          onClose={() => setSelectedEdgeId(null)}
         />
       )}
     </div>

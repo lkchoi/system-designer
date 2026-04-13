@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
+import type { EdgeData } from '../types';
 
 export default function LabeledEdge({
   id,
@@ -26,7 +27,11 @@ export default function LabeledEdge({
     targetPosition,
   });
 
-  const label = (data?.label as string) ?? '';
+  const edgeData = data as EdgeData | undefined;
+  const label = edgeData?.label ?? '';
+  const protocol = edgeData?.protocol ?? '';
+  const format = edgeData?.format ?? '';
+  const hasTags = protocol || format;
 
   useEffect(() => {
     if (editing) {
@@ -81,11 +86,21 @@ export default function LabeledEdge({
                 if (e.key === 'Escape') setEditing(false);
               }}
             />
-          ) : label ? (
-            <span className="edge-label">{label}</span>
-          ) : selected ? (
-            <span className="edge-label edge-label-hint">double-click to label</span>
-          ) : null}
+          ) : (
+            <div className="edge-label-group">
+              {hasTags && (
+                <div className="edge-tags">
+                  {protocol && <span className="edge-tag edge-tag-protocol">{protocol}</span>}
+                  {format && <span className="edge-tag edge-tag-format">{format}</span>}
+                </div>
+              )}
+              {label ? (
+                <span className="edge-label">{label}</span>
+              ) : selected && !hasTags ? (
+                <span className="edge-label edge-label-hint">double-click to label</span>
+              ) : null}
+            </div>
+          )}
         </div>
       </EdgeLabelRenderer>
     </>
