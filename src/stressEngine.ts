@@ -1,5 +1,5 @@
-import type { Node, Edge } from '@xyflow/react';
-import type { SystemNodeData, EdgeData, EffectiveStress, NodeStatus } from './types';
+import type { Node, Edge } from "@xyflow/react";
+import type { SystemNodeData, EdgeData, EffectiveStress, NodeStatus } from "./types";
 
 /**
  * Computes effective stress state for every system node based on
@@ -13,17 +13,21 @@ export function computeStressEffects(
   edges: Edge[],
 ): Map<string, EffectiveStress> {
   const result = new Map<string, EffectiveStress>();
-  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
 
   // Phase 1: Direct failures
   for (const node of nodes) {
-    const failure = node.data.stressFailure || 'none';
-    if (failure === 'down') {
-      result.set(node.id, { status: 'error', reason: 'direct', explanation: 'Node is down' });
-    } else if (failure === 'overloaded') {
-      result.set(node.id, { status: 'warning', reason: 'direct', explanation: 'Node is overloaded' });
+    const failure = node.data.stressFailure || "none";
+    if (failure === "down") {
+      result.set(node.id, { status: "error", reason: "direct", explanation: "Node is down" });
+    } else if (failure === "overloaded") {
+      result.set(node.id, {
+        status: "warning",
+        reason: "direct",
+        explanation: "Node is overloaded",
+      });
     } else {
-      result.set(node.id, { status: 'healthy', reason: 'healthy', explanation: '' });
+      result.set(node.id, { status: "healthy", reason: "healthy", explanation: "" });
     }
   }
 
@@ -36,23 +40,23 @@ export function computeStressEffects(
       const node = nodeMap.get(nodeId);
       if (!node) continue;
       const current = result.get(nodeId);
-      if (current && current.reason === 'direct') continue; // direct failure takes precedence
+      if (current && current.reason === "direct") continue; // direct failure takes precedence
 
-      const cap = node.data.capClassification || '';
+      const cap = node.data.capClassification || "";
       const otherNodeId = nodeId === edge.source ? edge.target : edge.source;
       const otherLabel = nodeMap.get(otherNodeId)?.data.label ?? otherNodeId;
 
-      if (cap === 'CP' || cap === 'CA') {
+      if (cap === "CP" || cap === "CA") {
         applyIfWorse(result, nodeId, {
-          status: 'error',
-          reason: 'partition-cp',
+          status: "error",
+          reason: "partition-cp",
           explanation: `Unavailable: network partition with ${otherLabel}`,
         });
       } else {
         // AP or unclassified — degrades but stays available
         applyIfWorse(result, nodeId, {
-          status: 'warning',
-          reason: 'partition-ap',
+          status: "warning",
+          reason: "partition-ap",
           explanation: `Degraded: serving stale data, partition with ${otherLabel}`,
         });
       }
@@ -65,7 +69,7 @@ export function computeStressEffects(
 
   for (const node of nodes) {
     const effect = result.get(node.id);
-    if (effect && effect.status === 'error') {
+    if (effect && effect.status === "error") {
       frontier.push(node.id);
     }
   }
@@ -84,12 +88,12 @@ export function computeStressEffects(
         const dependentId = edge.source;
         const current = result.get(dependentId);
         if (!current) continue;
-        if (current.reason === 'direct') continue; // direct failure takes precedence
+        if (current.reason === "direct") continue; // direct failure takes precedence
 
         const applied = applyIfWorse(result, dependentId, {
-          status: 'warning',
-          reason: 'cascade',
-          explanation: `Degraded: ${failedLabel} is ${nodeMap.get(failedId)?.data.stressFailure === 'down' ? 'down' : 'unavailable'}`,
+          status: "warning",
+          reason: "cascade",
+          explanation: `Degraded: ${failedLabel} is ${nodeMap.get(failedId)?.data.stressFailure === "down" ? "down" : "unavailable"}`,
         });
         if (applied) {
           next.push(dependentId);

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { HOTKEYS } from '../hotkeys';
-import { isInputFocused, isMac } from '../utils/keyboard';
+import { useEffect } from "react";
+import { HOTKEYS } from "../hotkeys";
+import { isInputFocused, isMac } from "../utils/keyboard";
 
 export type HotkeyActions = Record<string, () => void>;
 
@@ -21,14 +21,12 @@ export function useHotkeys(actions: HotkeyActions) {
         // For letters, also try case-insensitive match
         const target = def.key;
         const pressed = e.key;
-        const match =
-          pressed === target ||
-          pressed.toLowerCase() === target.toLowerCase();
+        const match = pressed === target || pressed.toLowerCase() === target.toLowerCase();
         if (!match) continue;
 
         // For bare (non-shift) keys, reject if shift is held
         // Exception: '?' requires shift on most layouts
-        if (!def.shift && !def.mod && e.shiftKey && target !== '?') continue;
+        if (!def.shift && !def.mod && e.shiftKey && target !== "?") continue;
 
         // Guard: skip when input is focused
         if (def.guard && isInputFocused()) continue;
@@ -43,7 +41,7 @@ export function useHotkeys(actions: HotkeyActions) {
       }
     }
 
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [actions]);
 }

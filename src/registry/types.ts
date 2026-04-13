@@ -1,16 +1,16 @@
-import type { PlanFieldDef, TechnologyInfo } from '../types';
+import type { PlanFieldDef, TechnologyInfo } from "../types";
 
 export type ComponentTypeId = string;
 
 export type ComponentCategory =
-  | 'compute'
-  | 'data'
-  | 'networking'
-  | 'messaging'
-  | 'scheduling'
-  | 'storage'
-  | 'client'
-  | 'custom';
+  | "compute"
+  | "data"
+  | "networking"
+  | "messaging"
+  | "scheduling"
+  | "storage"
+  | "client"
+  | "custom";
 
 export interface ComponentRegistryEntry {
   id: ComponentTypeId;
@@ -21,5 +21,5 @@ export interface ComponentRegistryEntry {
   planFields: PlanFieldDef[];
   technologies: TechnologyInfo[];
   connectsTo: ComponentTypeId[];
-  source: 'builtin' | 'custom';
+  source: "builtin" | "custom";
 }

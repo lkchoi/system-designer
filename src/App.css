@@ -14,7 +14,9 @@
   display: flex;
   flex-direction: column;
   z-index: 10;
-  transition: width 0.2s, min-width 0.2s;
+  transition:
+    width 0.2s,
+    min-width 0.2s;
 }
 
 .sidebar.collapsed {
@@ -1047,14 +1049,18 @@
   min-width: 180px;
   width: 100%;
   height: 100%;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
   box-sizing: border-box;
   overflow: hidden;
 }
 
 .system-node.selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 20px rgba(99, 102, 241, 0.15);
 }
 
 .system-node-header {
@@ -1582,11 +1588,26 @@
   text-transform: uppercase;
 }
 
-.endpoint-method.get { color: #22c55e; background: rgba(34, 197, 94, 0.12); }
-.endpoint-method.post { color: #3b82f6; background: rgba(59, 130, 246, 0.12); }
-.endpoint-method.put { color: #f97316; background: rgba(249, 115, 22, 0.12); }
-.endpoint-method.patch { color: #eab308; background: rgba(234, 179, 8, 0.12); }
-.endpoint-method.delete { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+.endpoint-method.get {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+.endpoint-method.post {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+}
+.endpoint-method.put {
+  color: #f97316;
+  background: rgba(249, 115, 22, 0.12);
+}
+.endpoint-method.patch {
+  color: #eab308;
+  background: rgba(234, 179, 8, 0.12);
+}
+.endpoint-method.delete {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
 
 .endpoint-path {
   flex: 1;
@@ -1694,14 +1715,18 @@
 /* ─── Stress Mode ──────────────────────────────────── */
 .system-node.stress-down {
   border-color: #ef4444;
-  box-shadow: 0 0 0 1px #ef4444, 0 0 16px rgba(239, 68, 68, 0.25);
+  box-shadow:
+    0 0 0 1px #ef4444,
+    0 0 16px rgba(239, 68, 68, 0.25);
   opacity: 0.7;
   position: relative;
 }
 
 .system-node.stress-overloaded {
   border-color: #eab308;
-  box-shadow: 0 0 0 1px #eab308, 0 0 16px rgba(234, 179, 8, 0.2);
+  box-shadow:
+    0 0 0 1px #eab308,
+    0 0 16px rgba(234, 179, 8, 0.2);
   animation: stress-pulse 2s ease-in-out infinite;
 }
 
@@ -1716,8 +1741,17 @@
 }
 
 @keyframes stress-pulse {
-  0%, 100% { box-shadow: 0 0 0 1px #eab308, 0 0 16px rgba(234, 179, 8, 0.2); }
-  50% { box-shadow: 0 0 0 2px #eab308, 0 0 24px rgba(234, 179, 8, 0.35); }
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px #eab308,
+      0 0 16px rgba(234, 179, 8, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px #eab308,
+      0 0 24px rgba(234, 179, 8, 0.35);
+  }
 }
 
 .stress-down-overlay {
@@ -1900,7 +1934,9 @@
   border: 1px solid var(--border);
   position: relative;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
   flex-shrink: 0;
 }
 
@@ -1927,7 +1963,9 @@
 /* ─── Selection ────────────────────────────────────── */
 .react-flow__node.selected .system-node {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(99, 102, 241, 0.15);
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 20px rgba(99, 102, 241, 0.15);
 }
 
 /* ─── Minimap & Controls ───────────────────────────── */
@@ -1959,7 +1997,9 @@
 }
 
 .sticky-note.selected {
-  box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(99, 102, 241, 0.5);
+  box-shadow:
+    2px 3px 8px rgba(0, 0, 0, 0.25),
+    0 0 0 2px rgba(99, 102, 241, 0.5);
 }
 
 .sticky-text {

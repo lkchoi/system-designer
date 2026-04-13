@@ -1,4 +1,4 @@
-export type SizeUnit = 'B' | 'KB' | 'MB';
+export type SizeUnit = "B" | "KB" | "MB";
 
 export interface CapacityInputs {
   tps: number;
@@ -31,9 +31,12 @@ export interface CapacityResults {
 
 function toBytes(value: number, unit: SizeUnit): number {
   switch (unit) {
-    case 'B':  return value;
-    case 'KB': return value * 1024;
-    case 'MB': return value * 1024 * 1024;
+    case "B":
+      return value;
+    case "KB":
+      return value * 1024;
+    case "MB":
+      return value * 1024 * 1024;
   }
 }
 
@@ -69,11 +72,23 @@ export function computeCapacity(inputs: CapacityInputs): CapacityResults {
   const rcus = Math.ceil(readsPerSec * rCUMultiplier);
 
   return {
-    bytesPerSec, dailyGB, monthlyGB, yearlyTB,
-    dailyReplicatedGB, monthlyReplicatedGB, yearlyReplicatedTB,
-    bandwidthMbps, bandwidthReplicatedMbps,
-    storage1y, storage3y, storage5y, retentionStorageTB,
-    writesPerSec, readsPerSec, wcus, rcus,
+    bytesPerSec,
+    dailyGB,
+    monthlyGB,
+    yearlyTB,
+    dailyReplicatedGB,
+    monthlyReplicatedGB,
+    yearlyReplicatedTB,
+    bandwidthMbps,
+    bandwidthReplicatedMbps,
+    storage1y,
+    storage3y,
+    storage5y,
+    retentionStorageTB,
+    writesPerSec,
+    readsPerSec,
+    wcus,
+    rcus,
   };
 }
 
@@ -102,7 +117,7 @@ export function formatBandwidth(mbps: number): string {
 export function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 10_000) return `${(n / 1_000).toFixed(1)}K`;
-  if (n >= 1_000) return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (n >= 1_000) return n.toLocaleString("en-US", { maximumFractionDigits: 0 });
   return n.toFixed(n < 10 && n % 1 !== 0 ? 1 : 0);
 }
 

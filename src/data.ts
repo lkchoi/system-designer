@@ -1,4 +1,4 @@
-import type { NodeMetrics } from './types';
+import type { NodeMetrics } from "./types";
 
 export function randomMetrics(): NodeMetrics {
   return {
@@ -11,7 +11,7 @@ export function randomMetrics(): NodeMetrics {
 
 export function displayType(type: string): string {
   return type
-    .split('-')
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }

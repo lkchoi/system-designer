@@ -1,24 +1,24 @@
 export type ComponentType =
-  | 'database'
-  | 'api-gateway'
-  | 'service'
-  | 'cache'
-  | 'message-queue'
-  | 'storage'
-  | 'cdn'
-  | 'load-balancer'
-  | 'firewall'
-  | 'webhook'
-  | 'cron'
-  | 'client'
-  | 'search-engine'
-  | 'dns'
-  | 'serverless'
-  | 'container-orchestration'
-  | 'stream-processor'
-  | 'data-warehouse';
+  | "database"
+  | "api-gateway"
+  | "service"
+  | "cache"
+  | "message-queue"
+  | "storage"
+  | "cdn"
+  | "load-balancer"
+  | "firewall"
+  | "webhook"
+  | "cron"
+  | "client"
+  | "search-engine"
+  | "dns"
+  | "serverless"
+  | "container-orchestration"
+  | "stream-processor"
+  | "data-warehouse";
 
-export type NodeStatus = 'healthy' | 'warning' | 'error' | 'idle';
+export type NodeStatus = "healthy" | "warning" | "error" | "idle";
 
 export interface NodeMetrics {
   cpu: number;
@@ -31,7 +31,7 @@ export interface PlanFieldDef {
   key: string;
   label: string;
   placeholder?: string;
-  type?: 'text' | 'technology';
+  type?: "text" | "technology";
 }
 
 export interface PricingTier {
@@ -75,11 +75,47 @@ export interface Endpoint {
   path: string;
 }
 
-export type EdgeProtocol = 'HTTP' | 'HTTPS' | 'gRPC' | 'WebSocket' | 'SSE' | 'TCP' | 'UDP' | 'AMQP' | 'MQTT' | '';
-export type EdgeFormat = 'JSON' | 'Protobuf' | 'Avro' | 'XML' | 'Binary' | 'Plain Text' | 'MessagePack' | '';
+export type EdgeProtocol =
+  | "HTTP"
+  | "HTTPS"
+  | "gRPC"
+  | "WebSocket"
+  | "SSE"
+  | "TCP"
+  | "UDP"
+  | "AMQP"
+  | "MQTT"
+  | "";
+export type EdgeFormat =
+  | "JSON"
+  | "Protobuf"
+  | "Avro"
+  | "XML"
+  | "Binary"
+  | "Plain Text"
+  | "MessagePack"
+  | "";
 
-export const EDGE_PROTOCOLS: EdgeProtocol[] = ['HTTP', 'HTTPS', 'gRPC', 'WebSocket', 'SSE', 'TCP', 'UDP', 'AMQP', 'MQTT'];
-export const EDGE_FORMATS: EdgeFormat[] = ['JSON', 'Protobuf', 'Avro', 'XML', 'Binary', 'Plain Text', 'MessagePack'];
+export const EDGE_PROTOCOLS: EdgeProtocol[] = [
+  "HTTP",
+  "HTTPS",
+  "gRPC",
+  "WebSocket",
+  "SSE",
+  "TCP",
+  "UDP",
+  "AMQP",
+  "MQTT",
+];
+export const EDGE_FORMATS: EdgeFormat[] = [
+  "JSON",
+  "Protobuf",
+  "Avro",
+  "XML",
+  "Binary",
+  "Plain Text",
+  "MessagePack",
+];
 
 export interface EdgeData {
   label: string;
@@ -88,12 +124,12 @@ export interface EdgeData {
   partitioned: boolean;
 }
 
-export type CAPClassification = 'CP' | 'AP' | 'CA' | '';
-export type StressFailure = 'none' | 'overloaded' | 'down';
+export type CAPClassification = "CP" | "AP" | "CA" | "";
+export type StressFailure = "none" | "overloaded" | "down";
 
 export interface EffectiveStress {
   status: NodeStatus;
-  reason: 'direct' | 'cascade' | 'partition-cp' | 'partition-ap' | 'healthy';
+  reason: "direct" | "cascade" | "partition-cp" | "partition-ap" | "healthy";
   explanation: string;
 }
 
@@ -118,15 +154,9 @@ export interface ComponentDefinition {
   icon: string;
 }
 
-export type StickyColor = '#fde68a' | '#bbf7d0' | '#bfdbfe' | '#f9a8d4' | '#e9d5ff';
+export type StickyColor = "#fde68a" | "#bbf7d0" | "#bfdbfe" | "#f9a8d4" | "#e9d5ff";
 
-export const STICKY_COLORS: StickyColor[] = [
-  '#fde68a',
-  '#bbf7d0',
-  '#bfdbfe',
-  '#f9a8d4',
-  '#e9d5ff',
-];
+export const STICKY_COLORS: StickyColor[] = ["#fde68a", "#bbf7d0", "#bfdbfe", "#f9a8d4", "#e9d5ff"];
 
 export interface StickyNoteData {
   text: string;
@@ -134,7 +164,7 @@ export interface StickyNoteData {
   [key: string]: unknown;
 }
 
-export type TextSize = 'small' | 'medium' | 'large';
+export type TextSize = "small" | "medium" | "large";
 
 export interface TextNodeData {
   text: string;
