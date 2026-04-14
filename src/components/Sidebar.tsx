@@ -79,6 +79,7 @@ export default function Sidebar({
             draggable
             onDragStart={(e) => onDragStart(e, entry.id)}
             data-tooltip={entry.label}
+            title={entry.label}
           >
             <div className="sidebar-icon" style={{ background: entry.color }}>
               <svg
@@ -109,6 +110,7 @@ export default function Sidebar({
               draggable
               onDragStart={(e) => onDragStart(e, "sticky")}
               data-tooltip="Sticky Note"
+              title="Sticky Note"
             >
               <div className="sidebar-icon sticky-icon">
                 <svg
@@ -132,6 +134,7 @@ export default function Sidebar({
               draggable
               onDragStart={(e) => onDragStart(e, "text")}
               data-tooltip="Text"
+              title="Text"
             >
               <div className="sidebar-icon text-icon">
                 <svg
