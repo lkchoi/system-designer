@@ -22,6 +22,7 @@
 .sidebar.collapsed {
   width: 58px;
   min-width: 58px;
+  overflow: visible;
 }
 
 .sidebar-collapse-row {
@@ -74,6 +75,7 @@
 
 .sidebar.collapsed .sidebar-list {
   padding: 0 4px;
+  overflow: visible;
 }
 
 .sidebar-item {
