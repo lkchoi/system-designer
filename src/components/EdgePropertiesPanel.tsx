@@ -125,7 +125,7 @@ export default function EdgePropertiesPanel({
                 key={p}
                 className={
                   data.protocol === p
-                    ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
+                    ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent border border-accent text-white transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
                     : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
                 }
                 onClick={() =>
@@ -146,7 +146,7 @@ export default function EdgePropertiesPanel({
                 key={f}
                 className={
                   data.format === f
-                    ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
+                    ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent border border-accent text-white transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
                     : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
                 }
                 onClick={() =>

@@ -165,13 +165,13 @@ export default function CapacityCalculator({ open, onClose }: Props) {
             <span className="text-base font-bold text-text-bright">Capacity Calculator</span>
             <div className="flex gap-0.5 bg-surface-2 rounded-lg p-0.5">
               <button
-                className={`text-xs font-medium text-text-dim px-3 py-[5px] rounded-md transition-all duration-150 hover:text-text${tab === "calculator" ? " text-text-bright bg-surface-3" : ""}`}
+                className={`text-xs font-medium text-text-dim px-3 py-[5px] rounded-md transition-all duration-150 hover:text-text${tab === "calculator" ? " text-white bg-accent" : ""}`}
                 onClick={() => setTab("calculator")}
               >
                 Calculator
               </button>
               <button
-                className={`text-xs font-medium text-text-dim px-3 py-[5px] rounded-md transition-all duration-150 hover:text-text${tab === "reference" ? " text-text-bright bg-surface-3" : ""}`}
+                className={`text-xs font-medium text-text-dim px-3 py-[5px] rounded-md transition-all duration-150 hover:text-text${tab === "reference" ? " text-white bg-accent" : ""}`}
                 onClick={() => setTab("reference")}
               >
                 Reference
