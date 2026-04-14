@@ -34,6 +34,20 @@ interface Props {
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
+const METHOD_COLORS: Record<string, string> = {
+  get: "text-[#22c55e] bg-[rgba(34,197,94,0.12)]",
+  post: "text-[#3b82f6] bg-[rgba(59,130,246,0.12)]",
+  put: "text-[#f97316] bg-[rgba(249,115,22,0.12)]",
+  patch: "text-[#eab308] bg-[rgba(234,179,8,0.12)]",
+  delete: "text-[#ef4444] bg-[rgba(239,68,68,0.12)]",
+};
+
+const STRESS_STATE_COLORS: Record<string, string> = {
+  none: "bg-[rgba(34,197,94,0.12)] text-[#22c55e]",
+  overloaded: "bg-[rgba(234,179,8,0.12)] text-[#eab308]",
+  down: "bg-[rgba(239,68,68,0.12)] text-[#ef4444]",
+};
+
 export default function PropertiesPanel({
   node,
   mode,
@@ -74,14 +88,14 @@ export default function PropertiesPanel({
 
   return (
     <aside
-      className={`properties-panel${panelPosition === "bottom" ? " bottom" : ""}`}
+      className={`${panelPosition === "bottom" ? "w-auto min-w-0 h-[260px] min-h-[150px] max-h-[70vh] border-l-0 border-t" : "w-[340px] min-w-[340px] border-l"} bg-surface border-border flex flex-col z-10 overflow-y-auto`}
       style={size ? (panelPosition === "bottom" ? { height: size } : { width: size, minWidth: size }) : undefined}
     >
-      <div className="properties-header">
-        <h2>Properties</h2>
-        <div className="properties-header-actions">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border shrink-0">
+        <h2 className="text-base font-bold text-text-bright">Properties</h2>
+        <div className="flex items-center gap-1">
           <button
-            className="properties-dock-btn"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
             onClick={onTogglePanelPosition}
             title={panelPosition === "right" ? "Dock to bottom" : "Dock to right"}
           >
@@ -115,35 +129,35 @@ export default function PropertiesPanel({
               </svg>
             )}
           </button>
-          <button className="properties-close" onClick={onClose}>
+          <button className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright" onClick={onClose}>
             &times;
           </button>
         </div>
       </div>
 
-      <div className="properties-body">
-        <div className="prop-group">
-          <label className="prop-label">Label</label>
+      <div className="p-4 flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Label</label>
           <input
-            className="prop-input"
+            className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent"
             value={data.label}
             onChange={(e) => onUpdate(node.id, { label: e.target.value })}
           />
         </div>
 
-        <div className="prop-group">
-          <label className="prop-label">Type</label>
-          <div className="prop-value-box">{displayType(data.componentType)}</div>
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Type</label>
+          <div className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm">{displayType(data.componentType)}</div>
         </div>
 
         {mode === "monitor" && (
-          <div className="prop-group">
-            <label className="prop-label">Status</label>
-            <div className="status-grid">
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-text-dim">Status</label>
+            <div className="grid grid-cols-2 gap-1.5">
               {STATUSES.map((s) => (
                 <button
                   key={s}
-                  className={`status-btn${data.status === s ? " active" : ""}`}
+                  className={`px-3 py-[7px] rounded-lg bg-surface-2 border border-border text-[13px] font-medium transition-all duration-150 text-center hover:bg-surface-3 hover:text-text-bright${data.status === s ? " text-text-bright font-semibold" : " text-text"}`}
                   style={
                     data.status === s
                       ? { borderColor: STATUS_COLORS[s], background: STATUS_COLORS[s] + "22" }
@@ -160,21 +174,21 @@ export default function PropertiesPanel({
 
         {mode === "stress" && (
           <>
-            <div className="prop-group">
-              <label className="prop-label">CAP Classification</label>
-              <div className="cap-selector">
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-text-dim">CAP Classification</label>
+              <div className="flex flex-col gap-1">
                 {(["CP", "AP", "CA"] as CAPClassification[]).map((cap) => (
                   <button
                     key={cap}
-                    className={`cap-option${data.capClassification === cap ? " active" : ""}`}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg bg-surface-2 border text-left transition-all duration-150 cursor-pointer hover:bg-surface-3${data.capClassification === cap ? " border-accent bg-accent-bg" : " border-border"}`}
                     onClick={() =>
                       onUpdate(node.id, {
                         capClassification: data.capClassification === cap ? "" : cap,
                       })
                     }
                   >
-                    <span className="cap-option-label">{cap}</span>
-                    <span className="cap-option-desc">
+                    <span className="text-sm font-bold text-text-bright min-w-6">{cap}</span>
+                    <span className="text-xs text-text-dim">
                       {cap === "CP"
                         ? "Consistent + Partition tolerant"
                         : cap === "AP"
@@ -184,7 +198,7 @@ export default function PropertiesPanel({
                   </button>
                 ))}
               </div>
-              <p className="cap-help">
+              <p className="text-xs text-text-dim leading-normal mt-1">
                 {data.capClassification === "CP"
                   ? "Sacrifices availability during partitions — will become unavailable."
                   : data.capClassification === "AP"
@@ -194,33 +208,33 @@ export default function PropertiesPanel({
                       : "How does this node behave during network partitions?"}
               </p>
             </div>
-            <div className="prop-group">
-              <label className="prop-label">Failure State</label>
-              <div className={`stress-state-indicator ${data.stressFailure || "none"}`}>
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-text-dim">Failure State</label>
+              <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[13px] font-bold tracking-wide ${STRESS_STATE_COLORS[data.stressFailure || "none"]}`}>
                 {data.stressFailure === "down"
                   ? "DOWN"
                   : data.stressFailure === "overloaded"
                     ? "OVERLOADED"
                     : "HEALTHY"}
               </div>
-              <span className="stress-state-hint">Click node on canvas to cycle state</span>
+              <span className="text-[11px] text-text-dim mt-1">Click node on canvas to cycle state</span>
             </div>
             {stressEffect &&
               stressEffect.reason !== "healthy" &&
               stressEffect.reason !== "direct" && (
-                <div className="prop-group">
-                  <label className="prop-label">Cascade Effect</label>
-                  <div className="cascade-info">{stressEffect.explanation}</div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[13px] font-semibold text-text-dim">Cascade Effect</label>
+                  <div className="text-[13px] text-[#eab308] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.2)] rounded-lg px-3 py-2 leading-snug">{stressEffect.explanation}</div>
                 </div>
               )}
           </>
         )}
 
         {mode === "plan" && data.componentType === "api-gateway" && (
-          <div className="prop-group">
-            <div className="endpoint-list-header">
-              <label className="prop-label">Endpoints</label>
-              <button className="endpoint-add-btn" onClick={addEndpoint}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-[13px] font-semibold text-text-dim">Endpoints</label>
+              <button className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 hover:bg-accent-bg" onClick={addEndpoint}>
                 <svg
                   width="14"
                   height="14"
@@ -237,14 +251,14 @@ export default function PropertiesPanel({
               </button>
             </div>
             {(data.endpoints ?? []).length === 0 ? (
-              <div className="endpoint-empty">No endpoints defined</div>
+              <div className="text-xs text-text-dim p-3 text-center bg-surface-2 border border-dashed border-border rounded-lg mt-1">No endpoints defined</div>
             ) : (
-              <div className="endpoint-list">
+              <div className="flex flex-col gap-1 mt-1">
                 {(data.endpoints ?? []).map((ep) =>
                   editingEndpointId === ep.id ? (
-                    <div key={ep.id} className="endpoint-item editing">
+                    <div key={ep.id} className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface border-accent rounded-lg transition-[border-color] duration-150 border">
                       <select
-                        className="endpoint-method-select"
+                        className="text-[11px] font-bold px-1 py-[3px] rounded bg-surface-2 border border-border text-text-bright outline-none cursor-pointer shrink-0"
                         value={ep.method}
                         onChange={(e) => updateEndpoint(ep.id, { method: e.target.value })}
                       >
@@ -255,7 +269,7 @@ export default function PropertiesPanel({
                         ))}
                       </select>
                       <input
-                        className="endpoint-path-input"
+                        className="flex-1 text-[13px] font-mono px-1.5 py-0.5 rounded bg-surface-2 border border-border text-text-bright outline-none min-w-0 focus:border-accent"
                         value={ep.path}
                         onChange={(e) => updateEndpoint(ep.id, { path: e.target.value })}
                         placeholder="/api/v1/resource"
@@ -265,7 +279,7 @@ export default function PropertiesPanel({
                         }}
                       />
                       <button
-                        className="endpoint-action-btn"
+                        className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
                         onClick={() => setEditingEndpointId(null)}
                         title="Done"
                       >
@@ -284,14 +298,14 @@ export default function PropertiesPanel({
                       </button>
                     </div>
                   ) : (
-                    <div key={ep.id} className="endpoint-item">
-                      <span className={`endpoint-method ${ep.method.toLowerCase()}`}>
+                    <div key={ep.id} className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface-2 border border-border rounded-lg transition-[border-color] duration-150 hover:border-surface-3">
+                      <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded shrink-0 font-mono uppercase ${METHOD_COLORS[ep.method.toLowerCase()] ?? ""}`}>
                         {ep.method}
                       </span>
-                      <span className="endpoint-path">{ep.path || "/..."}</span>
-                      <div className="endpoint-item-actions">
+                      <span className="flex-1 text-[13px] text-text-bright font-mono whitespace-nowrap overflow-hidden text-ellipsis min-w-0">{ep.path || "/..."}</span>
+                      <div className="flex gap-0.5 opacity-0 transition-opacity duration-150 shrink-0 group-hover:opacity-100">
                         <button
-                          className="endpoint-action-btn"
+                          className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
                           onClick={() => setEditingEndpointId(ep.id)}
                           title="Edit"
                         >
@@ -310,7 +324,7 @@ export default function PropertiesPanel({
                           </svg>
                         </button>
                         <button
-                          className="endpoint-action-btn delete"
+                          className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-[rgba(239,68,68,0.15)] hover:text-[#ef4444]"
                           onClick={() => deleteEndpoint(ep.id)}
                           title="Delete"
                         >
@@ -337,11 +351,11 @@ export default function PropertiesPanel({
         )}
 
         {mode === "plan" ? (
-          <div className="prop-group">
-            <label className="prop-label">Plan</label>
-            {planFields.map((field) => (
-              <div key={field.key} className="plan-field">
-                <label className="plan-field-label">{field.label}</label>
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-text-dim">Plan</label>
+            {planFields.map((field, i) => (
+              <div key={field.key} className={`flex flex-col gap-1${i > 0 ? " mt-2" : ""}`}>
+                <label className="text-xs font-medium text-text-dim">{field.label}</label>
                 {field.type === "technology" ? (
                   <>
                     <select
@@ -363,24 +377,24 @@ export default function PropertiesPanel({
                         );
                         if (!tech) return null;
                         return (
-                          <div className="tech-info-card">
-                            <div className="tech-info-row">
-                              <span className="tech-info-label">Purpose</span>
-                              <span className="tech-info-value">{tech.purpose}</span>
+                          <div className="bg-surface-2 border border-border rounded-lg p-2.5 mt-1.5 flex flex-col gap-2">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Purpose</span>
+                              <span className="text-xs text-text leading-snug">{tech.purpose}</span>
                             </div>
-                            <div className="tech-info-row">
-                              <span className="tech-info-label">Throughput</span>
-                              <span className="tech-info-value">{tech.throughput}</span>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Throughput</span>
+                              <span className="text-xs text-text leading-snug">{tech.throughput}</span>
                             </div>
-                            <div className="tech-info-row">
-                              <span className="tech-info-label">Limits</span>
-                              <span className="tech-info-value">{tech.limits}</span>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Limits</span>
+                              <span className="text-xs text-text leading-snug">{tech.limits}</span>
                             </div>
-                            <div className="tech-info-row">
-                              <span className="tech-info-label">Providers</span>
-                              <div className="tech-provider-tags">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Providers</span>
+                              <div className="flex flex-wrap gap-1 mt-0.5">
                                 {tech.providers.map((p) => (
-                                  <span key={p} className="tech-provider-tag">
+                                  <span key={p} className="text-[11px] px-[7px] py-0.5 bg-accent-bg text-accent rounded font-medium whitespace-nowrap">
                                     {p}
                                   </span>
                                 ))}
@@ -392,7 +406,7 @@ export default function PropertiesPanel({
                   </>
                 ) : (
                   <textarea
-                    className="plan-field-input"
+                    className="bg-surface-2 border border-border rounded-md px-2.5 py-1.5 text-text-bright text-[13px] font-sans outline-none resize-y min-h-7 transition-[border-color] duration-150 focus:border-accent placeholder:text-text-dim placeholder:italic"
                     value={data.plan?.[field.key] ?? ""}
                     onChange={(e) => updatePlanField(field.key, e.target.value)}
                     placeholder={field.placeholder}
@@ -403,120 +417,122 @@ export default function PropertiesPanel({
             ))}
           </div>
         ) : (
-          <div className="prop-group">
-            <label className="prop-label">Metrics</label>
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-text-dim">Metrics</label>
 
-            <div className="metric-card">
-              <div className="metric-card-header">
-                <div
-                  className="metric-icon"
-                  style={{ background: entry.color + "33", color: entry.color }}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
+            <div className="flex flex-col gap-2">
+              <div className="bg-surface-2 border border-border rounded-[10px] p-3">
+                <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
+                  <div
+                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    style={{ background: entry.color + "33", color: entry.color }}
                   >
-                    <rect x="2" y="3" width="20" height="14" rx="2" />
-                    <path d="M8 21h8M12 17v4" />
-                  </svg>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect x="2" y="3" width="20" height="14" rx="2" />
+                      <path d="M8 21h8M12 17v4" />
+                    </svg>
+                  </div>
+                  <span>CPU Usage</span>
                 </div>
-                <span>CPU Usage</span>
+                <div className="text-[28px] font-bold text-text-bright font-mono leading-tight mb-1">
+                  {data.metrics.cpu} <span className="text-sm font-normal text-text-dim">%</span>
+                </div>
+                <div className="h-1.5 bg-surface-3 rounded-[3px] overflow-hidden mt-1.5">
+                  <div
+                    className="h-full rounded-[3px] transition-[width] duration-300 ease-out bg-gradient-to-r from-[#6366f1] to-[#818cf8]"
+                    style={{ width: `${data.metrics.cpu}%` }}
+                  />
+                </div>
               </div>
-              <div className="metric-big-value">
-                {data.metrics.cpu} <span className="metric-unit">%</span>
-              </div>
-              <div className="metric-bar">
-                <div
-                  className="metric-bar-fill cpu-bar"
-                  style={{ width: `${data.metrics.cpu}%` }}
-                />
-              </div>
-            </div>
 
-            <div className="metric-card">
-              <div className="metric-card-header">
-                <div className="metric-icon" style={{ background: "#ec489933", color: "#ec4899" }}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <rect x="2" y="6" width="20" height="12" rx="2" />
-                    <path d="M6 12h4m4 0h4" />
-                  </svg>
+              <div className="bg-surface-2 border border-border rounded-[10px] p-3">
+                <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#ec489933", color: "#ec4899" }}>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <rect x="2" y="6" width="20" height="12" rx="2" />
+                      <path d="M6 12h4m4 0h4" />
+                    </svg>
+                  </div>
+                  <span>Memory Usage</span>
                 </div>
-                <span>Memory Usage</span>
+                <div className="text-[28px] font-bold text-text-bright font-mono leading-tight mb-1">
+                  {data.metrics.memory} <span className="text-sm font-normal text-text-dim">%</span>
+                </div>
+                <div className="h-1.5 bg-surface-3 rounded-[3px] overflow-hidden mt-1.5">
+                  <div
+                    className="h-full rounded-[3px] transition-[width] duration-300 ease-out bg-gradient-to-r from-[#ec4899] to-[#f472b6]"
+                    style={{ width: `${data.metrics.memory}%` }}
+                  />
+                </div>
               </div>
-              <div className="metric-big-value">
-                {data.metrics.memory} <span className="metric-unit">%</span>
-              </div>
-              <div className="metric-bar">
-                <div
-                  className="metric-bar-fill memory-bar"
-                  style={{ width: `${data.metrics.memory}%` }}
-                />
-              </div>
-            </div>
 
-            <div className="metric-card">
-              <div className="metric-card-header">
-                <div className="metric-icon" style={{ background: "#eab30833", color: "#eab308" }}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                  </svg>
+              <div className="bg-surface-2 border border-border rounded-[10px] p-3">
+                <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#eab30833", color: "#eab308" }}>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                  </div>
+                  <span>Requests/sec</span>
                 </div>
-                <span>Requests/sec</span>
+                <div className="text-[28px] font-bold text-text-bright font-mono leading-tight mb-1">
+                  {data.metrics.requestsPerSec} <span className="text-sm font-normal text-text-dim">req/s</span>
+                </div>
               </div>
-              <div className="metric-big-value">
-                {data.metrics.requestsPerSec} <span className="metric-unit">req/s</span>
-              </div>
-            </div>
 
-            <div className="metric-card">
-              <div className="metric-card-header">
-                <div className="metric-icon" style={{ background: "#6366f133", color: "#6366f1" }}>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 6v6l4 2" />
-                  </svg>
+              <div className="bg-surface-2 border border-border rounded-[10px] p-3">
+                <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#6366f133", color: "#6366f1" }}>
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 6v6l4 2" />
+                    </svg>
+                  </div>
+                  <span>Latency</span>
                 </div>
-                <span>Latency</span>
-              </div>
-              <div className="metric-big-value">
-                {data.metrics.latency} <span className="metric-unit">ms</span>
+                <div className="text-[28px] font-bold text-text-bright font-mono leading-tight mb-1">
+                  {data.metrics.latency} <span className="text-sm font-normal text-text-dim">ms</span>
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {mode === "plan" && (
-          <div className="prop-group">
-            <label className="prop-label">Sharding</label>
-            <div className="shard-toggle-row">
-              <span className="shard-toggle-label">{data.sharded ? "Sharded" : "Not Sharded"}</span>
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-text-dim">Sharding</label>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-text">{data.sharded ? "Sharded" : "Not Sharded"}</span>
               <button
-                className={`shard-toggle-track${data.sharded ? " active" : ""}`}
+                className={`w-9 h-5 rounded-[10px] border relative cursor-pointer transition-[background,border-color] duration-150 shrink-0${data.sharded ? " bg-accent border-accent" : " bg-surface-3 border-border"}`}
                 onClick={() =>
                   onUpdate(node.id, {
                     sharded: !data.sharded,
@@ -524,14 +540,14 @@ export default function PropertiesPanel({
                   })
                 }
               >
-                <span className="shard-toggle-thumb" />
+                <span className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.sharded ? " translate-x-4" : ""}`} />
               </button>
             </div>
             {data.sharded && (
-              <div className="plan-field" style={{ marginTop: 8 }}>
-                <label className="plan-field-label">Shard Key</label>
+              <div className="flex flex-col gap-1" style={{ marginTop: 8 }}>
+                <label className="text-xs font-medium text-text-dim">Shard Key</label>
                 <input
-                  className="prop-input"
+                  className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent"
                   value={data.shardKey}
                   onChange={(e) => onUpdate(node.id, { shardKey: e.target.value })}
                   placeholder="e.g. user_id, tenant_id"
@@ -541,16 +557,16 @@ export default function PropertiesPanel({
           </div>
         )}
 
-        <div className="prop-group">
-          <label className="prop-label">Position</label>
-          <div className="position-grid">
-            <div className="position-box">
-              <span className="position-label">X</span>
-              <span className="position-value">{Math.round(node.position.x)}</span>
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Position</label>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-surface-2 border border-border rounded-lg px-3 py-2.5 flex flex-col gap-0.5">
+              <span className="text-xs text-text-dim">X</span>
+              <span className="text-base font-bold text-text-bright font-mono">{Math.round(node.position.x)}</span>
             </div>
-            <div className="position-box">
-              <span className="position-label">Y</span>
-              <span className="position-value">{Math.round(node.position.y)}</span>
+            <div className="bg-surface-2 border border-border rounded-lg px-3 py-2.5 flex flex-col gap-0.5">
+              <span className="text-xs text-text-dim">Y</span>
+              <span className="text-base font-bold text-text-bright font-mono">{Math.round(node.position.y)}</span>
             </div>
           </div>
         </div>

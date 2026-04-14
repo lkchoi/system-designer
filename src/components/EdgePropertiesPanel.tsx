@@ -30,14 +30,14 @@ export default function EdgePropertiesPanel({
 
   return (
     <aside
-      className={`properties-panel${panelPosition === "bottom" ? " bottom" : ""}`}
+      className={`${panelPosition === "bottom" ? "w-auto min-w-0 h-[260px] min-h-[150px] max-h-[70vh] border-l-0 border-t" : "w-[340px] min-w-[340px] border-l"} bg-surface border-border flex flex-col z-10 overflow-y-auto`}
       style={size ? (panelPosition === "bottom" ? { height: size } : { width: size, minWidth: size }) : undefined}
     >
-      <div className="properties-header">
-        <h2>Connection</h2>
-        <div className="properties-header-actions">
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border shrink-0">
+        <h2 className="text-base font-bold text-text-bright">Connection</h2>
+        <div className="flex items-center gap-1">
           <button
-            className="properties-dock-btn"
+            className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
             onClick={onTogglePanelPosition}
             title={panelPosition === "right" ? "Dock to bottom" : "Dock to right"}
           >
@@ -71,17 +71,17 @@ export default function EdgePropertiesPanel({
               </svg>
             )}
           </button>
-          <button className="properties-close" onClick={onClose}>
+          <button className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright" onClick={onClose}>
             &times;
           </button>
         </div>
       </div>
 
-      <div className="properties-body">
-        <div className="prop-group">
-          <label className="prop-label">Route</label>
-          <div className="edge-route">
-            <span className="edge-route-node">{sourceLabel}</span>
+      <div className="p-4 flex flex-col gap-5">
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Route</label>
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-surface-2 border border-border rounded-lg text-text-dim">
+            <span className="text-[13px] font-semibold text-text-bright">{sourceLabel}</span>
             <svg
               width="14"
               height="14"
@@ -94,27 +94,27 @@ export default function EdgePropertiesPanel({
             >
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-            <span className="edge-route-node">{targetLabel}</span>
+            <span className="text-[13px] font-semibold text-text-bright">{targetLabel}</span>
           </div>
         </div>
 
-        <div className="prop-group">
-          <label className="prop-label">Label</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Label</label>
           <input
-            className="prop-input"
+            className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent"
             value={data.label}
             onChange={(e) => onUpdate(edge.id, { label: e.target.value })}
             placeholder="e.g. fetch user data"
           />
         </div>
 
-        <div className="prop-group">
-          <label className="prop-label">Protocol</label>
-          <div className="edge-chip-grid">
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Protocol</label>
+          <div className="flex flex-wrap gap-1.5">
             {EDGE_PROTOCOLS.map((p) => (
               <button
                 key={p}
-                className={`edge-chip${data.protocol === p ? " active" : ""}`}
+                className={data.protocol === p ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright" : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"}
                 onClick={() =>
                   onUpdate(edge.id, { protocol: (data.protocol === p ? "" : p) as EdgeProtocol })
                 }
@@ -125,13 +125,13 @@ export default function EdgePropertiesPanel({
           </div>
         </div>
 
-        <div className="prop-group">
-          <label className="prop-label">Format</label>
-          <div className="edge-chip-grid">
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Format</label>
+          <div className="flex flex-wrap gap-1.5">
             {EDGE_FORMATS.map((f) => (
               <button
                 key={f}
-                className={`edge-chip${data.format === f ? " active" : ""}`}
+                className={data.format === f ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright" : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"}
                 onClick={() =>
                   onUpdate(edge.id, { format: (data.format === f ? "" : f) as EdgeFormat })
                 }
@@ -143,20 +143,20 @@ export default function EdgePropertiesPanel({
         </div>
 
         {mode === "stress" && (
-          <div className="prop-group">
-            <label className="prop-label">Network Partition</label>
-            <div className="shard-toggle-row">
-              <span className="shard-toggle-label">
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-text-dim">Network Partition</label>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-text">
                 {data.partitioned ? "Partitioned" : "Connected"}
               </span>
               <button
-                className={`shard-toggle-track${data.partitioned ? " active" : ""}`}
+                className={`w-9 h-5 rounded-[10px] border relative cursor-pointer transition-[background,border-color] duration-150 shrink-0${data.partitioned ? " bg-accent border-accent" : " bg-surface-3 border-border"}`}
                 style={
                   data.partitioned ? { background: "#ef4444", borderColor: "#ef4444" } : undefined
                 }
                 onClick={() => onUpdate(edge.id, { partitioned: !data.partitioned })}
               >
-                <span className="shard-toggle-thumb" />
+                <span className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.partitioned ? " translate-x-4" : ""}`} />
               </button>
             </div>
           </div>

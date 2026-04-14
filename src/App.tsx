@@ -712,7 +712,7 @@ function Canvas({
   return (
     <ModeContext.Provider value={mode}>
       <StressContext.Provider value={stressCtx}>
-        <div className="app-layout">
+        <div className="flex w-full h-full">
           <Sidebar
             savedFlows={savedFlows}
             activeFlowId={activeFlowId}
@@ -724,17 +724,17 @@ function Canvas({
             width={sidebarCollapsed ? undefined : sidebarWidth}
           />
           {!sidebarCollapsed && (
-            <div className="resize-handle-x" onPointerDown={onSidebarResizeStart} />
+            <div className="w-[5px] cursor-col-resize shrink-0 relative z-20 bg-transparent transition-colors duration-150 hover:bg-accent active:bg-accent" onPointerDown={onSidebarResizeStart} />
           )}
-          <div className={`main-content${panelPosition === "bottom" ? " panel-bottom" : ""}`}>
-            <div className="canvas-area" ref={canvasRef}>
-              <header className="topbar">
-                <div className="topbar-left">
-                  <div className="design-selector" ref={designMenuRef}>
+          <div className={`flex-1 flex min-w-0 min-h-0${panelPosition === "bottom" ? " flex-col" : ""}`}>
+            <div className="flex-1 flex flex-col relative min-w-0 min-h-0" ref={canvasRef}>
+              <header className="flex items-center justify-between px-5 h-[52px] bg-surface border-b border-border z-5 shrink-0">
+                <div className="flex items-center gap-5">
+                  <div className="relative" ref={designMenuRef}>
                     {editingDesignName ? (
                       <input
                         ref={designNameRef}
-                        className="design-name-input"
+                        className="text-sm font-semibold text-text-bright bg-surface-2 border border-accent rounded-md px-2 py-1 outline-none w-[200px]"
                         value={designNameDraft}
                         onChange={(e) => setDesignNameDraft(e.target.value)}
                         onBlur={() => {
@@ -755,7 +755,7 @@ function Canvas({
                       />
                     ) : (
                       <button
-                        className="design-name-btn"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-sm font-semibold text-text-bright bg-transparent cursor-pointer transition-colors duration-150 max-w-[240px] whitespace-nowrap overflow-hidden text-ellipsis hover:bg-surface-2"
                         onDoubleClick={() => {
                           setDesignNameDraft(currentDesign?.name ?? "");
                           setEditingDesignName(true);
@@ -791,12 +791,12 @@ function Canvas({
                       </button>
                     )}
                     {showDesignMenu && (
-                      <div className="design-menu">
-                        <div className="design-menu-label">Designs</div>
+                      <div className="absolute top-[calc(100%+4px)] left-0 min-w-[220px] bg-surface border border-border rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] z-[100] p-1 max-h-[320px] overflow-y-auto">
+                        <div className="text-[11px] font-semibold uppercase text-text-dim px-2.5 pt-1.5 pb-1 tracking-wide">Designs</div>
                         {designs.map((d) => (
                           <div
                             key={d.id}
-                            className={`design-menu-item${d.id === designId ? " active" : ""}`}
+                            className={`group flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] cursor-pointer text-[13px] text-text transition-colors duration-100 hover:bg-surface-2${d.id === designId ? " text-accent font-semibold" : ""}`}
                             onClick={() => {
                               if (d.id !== designId) {
                                 saveDesignState(designId, nodes, edges, getViewport());
@@ -806,10 +806,10 @@ function Canvas({
                               setShowDesignMenu(false);
                             }}
                           >
-                            <span className="design-menu-item-name">{d.name}</span>
+                            <span className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{d.name}</span>
                             {d.id !== designId && designs.length > 1 && (
                               <button
-                                className="design-menu-delete"
+                                className="opacity-0 text-text-dim p-0.5 rounded transition-all duration-100 shrink-0 group-hover:opacity-100 hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.1)]"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   onDeleteDesign(d.id);
@@ -830,9 +830,9 @@ function Canvas({
                             )}
                           </div>
                         ))}
-                        <div className="design-menu-divider" />
+                        <div className="h-px bg-border mx-1.5 my-1" />
                         <div
-                          className="design-menu-item design-menu-new"
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] cursor-pointer text-[13px] transition-colors duration-100 hover:bg-surface-2 text-accent font-medium"
                           onClick={() => {
                             saveDesignState(designId, nodes, edges, getViewport());
                             flushPersist();
@@ -856,9 +856,9 @@ function Canvas({
                       </div>
                     )}
                   </div>
-                  <nav className="topbar-tabs">
+                  <nav className="flex gap-0.5 bg-surface-2 rounded-lg p-[3px]">
                     <button
-                      className={`topbar-tab${mode === "plan" ? " active" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "plan" ? " text-text-bright bg-accent" : ""}`}
                       onClick={() => setMode("plan")}
                     >
                       <svg
@@ -876,7 +876,7 @@ function Canvas({
                       Plan
                     </button>
                     <button
-                      className={`topbar-tab${mode === "stress" ? " active" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "stress" ? " text-text-bright bg-accent" : ""}`}
                       onClick={() => setMode("stress")}
                     >
                       <svg
@@ -894,7 +894,7 @@ function Canvas({
                       Stress
                     </button>
                     <button
-                      className={`topbar-tab${mode === "monitor" ? " active" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "monitor" ? " text-text-bright bg-accent" : ""}`}
                       onClick={() => setMode("monitor")}
                     >
                       <svg
@@ -912,7 +912,7 @@ function Canvas({
                       Monitor
                     </button>
                     <button
-                      className={`topbar-tab${mode === "price" ? " active" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "price" ? " text-text-bright bg-accent" : ""}`}
                       onClick={() => setMode("price")}
                     >
                       <svg
@@ -930,9 +930,9 @@ function Canvas({
                       Price
                     </button>
                   </nav>
-                  <div className="topbar-divider" />
+                  <div className="w-px h-6 bg-border shrink-0" />
                   <button
-                    className={`topbar-tab path-toggle${isPathMode ? " active" : ""}`}
+                    className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2 shrink-0${isPathMode ? " text-text-bright bg-accent" : ""}`}
                     onClick={togglePathMode}
                   >
                     <svg
@@ -950,7 +950,7 @@ function Canvas({
                     Flow Path
                   </button>
                   {mode === "stress" && (
-                    <button className="topbar-tab stress-reset-btn" onClick={resetStress}>
+                    <button className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2" onClick={resetStress}>
                       <svg
                         width="14"
                         height="14"
@@ -967,10 +967,10 @@ function Canvas({
                     </button>
                   )}
                 </div>
-                <div className="topbar-right">
-                  <div className="undo-redo-group">
+                <div className="flex items-center gap-4">
+                  <div className="flex gap-0.5">
                     <button
-                      className="topbar-icon-btn"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright disabled:opacity-30 disabled:pointer-events-none"
                       onClick={undo}
                       disabled={!canUndo}
                       title="Undo (⌘Z)"
@@ -990,7 +990,7 @@ function Canvas({
                       </svg>
                     </button>
                     <button
-                      className="topbar-icon-btn"
+                      className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright disabled:opacity-30 disabled:pointer-events-none"
                       onClick={redo}
                       disabled={!canRedo}
                       title="Redo (⌘⇧Z)"
@@ -1011,7 +1011,7 @@ function Canvas({
                     </button>
                   </div>
                   <button
-                    className={`topbar-icon-btn${showCapacityCalc ? " active" : ""}`}
+                    className={`flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright${showCapacityCalc ? " text-accent bg-accent-bg" : ""}`}
                     onClick={() => setShowCapacityCalc((prev) => !prev)}
                     title="Capacity Calculator (C)"
                   >
@@ -1034,7 +1034,7 @@ function Canvas({
                       <line x1="8" y1="18" x2="14" y2="18" />
                     </svg>
                   </button>
-                  <span className="topbar-stat">
+                  <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
                     <svg
                       width="14"
                       height="14"
@@ -1048,7 +1048,7 @@ function Canvas({
                     </svg>
                     {nodes.length} nodes
                   </span>
-                  <span className="topbar-stat">
+                  <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
                     <svg
                       width="14"
                       height="14"
@@ -1061,7 +1061,7 @@ function Canvas({
                     </svg>
                     {connectionCount} connections
                   </span>
-                  <button className="clear-btn" onClick={clearCanvas}>
+                  <button className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-surface-2 border border-border text-text text-[13px] font-medium transition-all duration-150 hover:bg-surface-3 hover:text-text-bright" onClick={clearCanvas}>
                     <svg
                       width="14"
                       height="14"
@@ -1079,17 +1079,17 @@ function Canvas({
                 </div>
               </header>
               {isPathMode && (
-                <div className="path-bar">
+                <div className="flex items-center gap-2 px-4 py-1.5 bg-surface-2 border-b border-border shrink-0 overflow-hidden">
                   {flowPath.length === 0 ? (
-                    <span className="path-placeholder">Click nodes to build a flow path...</span>
+                    <span className="text-xs text-text-dim whitespace-nowrap">Click nodes to build a flow path...</span>
                   ) : (
                     <>
-                      <div className="path-steps" ref={pathStepsRef}>
+                      <div className="flex items-center gap-0.5 flex-1 min-w-0 overflow-x-auto scrollbar-hide" ref={pathStepsRef}>
                         {flowPath.map((id, i) => (
-                          <span key={`${id}-${i}`} className="path-step-wrapper">
+                          <span key={`${id}-${i}`} className="flex items-center gap-0.5 shrink-0">
                             {i > 0 && (
                               <svg
-                                className="path-arrow"
+                                className="text-text-dim shrink-0"
                                 width="14"
                                 height="14"
                                 viewBox="0 0 24 24"
@@ -1102,13 +1102,13 @@ function Canvas({
                                 <path d="M5 12h14M12 5l7 7-7 7" />
                               </svg>
                             )}
-                            <span className="path-step">{getNodeLabel(id)}</span>
+                            <span className="text-xs font-medium text-text-bright bg-surface-3 px-2.5 py-[3px] rounded whitespace-nowrap">{getNodeLabel(id)}</span>
                           </span>
                         ))}
                       </div>
-                      <div className="path-actions">
+                      <div className="flex items-center gap-1 shrink-0">
                         <button
-                          className="path-save-btn"
+                          className="flex items-center gap-[5px] px-2.5 py-[3px] rounded text-xs font-medium text-accent bg-transparent transition-all duration-150 whitespace-nowrap hover:bg-accent-bg"
                           onClick={() => {
                             setShowSaveForm(true);
                             setTimeout(() => saveNameRef.current?.focus(), 0);
@@ -1131,7 +1131,7 @@ function Canvas({
                           </svg>
                           Save
                         </button>
-                        <button className="path-clear" onClick={clearPath} title="Clear path">
+                        <button className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-3 hover:text-text-bright" onClick={clearPath} title="Clear path">
                           <svg
                             width="12"
                             height="12"
@@ -1172,14 +1172,14 @@ function Canvas({
                 proOptions={{ hideAttribution: true }}
                 edgesReconnectable
                 deleteKeyCode={["Delete", "Backspace"]}
-                className="system-flow"
+                className="flex-1"
               >
                 <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2a2b35" />
               </ReactFlow>
             </div>
             {showPanel && (
               <div
-                className={panelPosition === "bottom" ? "resize-handle-y" : "resize-handle-x"}
+                className={panelPosition === "bottom" ? "h-[5px] cursor-row-resize shrink-0 relative z-20 bg-transparent transition-colors duration-150 hover:bg-accent active:bg-accent" : "w-[5px] cursor-col-resize shrink-0 relative z-20 bg-transparent transition-colors duration-150 hover:bg-accent active:bg-accent"}
                 onPointerDown={panelPosition === "bottom" ? onPanelResizeStartY : onPanelResizeStartX}
               />
             )}
@@ -1211,14 +1211,14 @@ function Canvas({
           </div>
         </div>
         {showSaveForm && (
-          <div className="save-form-overlay" onClick={() => setShowSaveForm(false)}>
-            <div className="save-form" onClick={(e) => e.stopPropagation()}>
-              <div className="save-form-header">Save Flow Path</div>
-              <label className="save-form-label">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowSaveForm(false)}>
+            <div className="bg-surface border border-border rounded-xl p-6 w-[420px] max-w-[90vw] shadow-[0_16px_50px_rgba(0,0,0,0.5)]" onClick={(e) => e.stopPropagation()}>
+              <div className="text-base font-bold text-text-bright mb-5">Save Flow Path</div>
+              <label className="flex flex-col gap-1.5 text-xs font-medium text-text-dim mb-3.5">
                 Name
                 <input
                   ref={saveNameRef}
-                  className="save-form-input"
+                  className="px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent"
                   value={saveName}
                   onChange={(e) => setSaveName(e.target.value)}
                   placeholder="e.g. Post a comment"
@@ -1228,10 +1228,10 @@ function Canvas({
                   }}
                 />
               </label>
-              <label className="save-form-label">
+              <label className="flex flex-col gap-1.5 text-xs font-medium text-text-dim mb-3.5">
                 Description
                 <textarea
-                  className="save-form-textarea"
+                  className="px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-[13px] font-sans outline-none resize-y transition-[border-color] duration-150 focus:border-accent"
                   value={saveDesc}
                   onChange={(e) => setSaveDesc(e.target.value)}
                   placeholder="Describe what this flow does..."
@@ -1241,19 +1241,19 @@ function Canvas({
                   }}
                 />
               </label>
-              <div className="save-form-path-preview">
+              <div className="flex items-center gap-1 flex-wrap px-3 py-2.5 bg-surface-2 rounded-lg mb-5">
                 {flowPath.map((id, i) => (
                   <span key={`${id}-${i}`}>
-                    {i > 0 && <span className="save-form-arrow">&rarr;</span>}
-                    <span className="path-step">{getNodeLabel(id)}</span>
+                    {i > 0 && <span className="text-text-dim text-xs mx-0.5">&rarr;</span>}
+                    <span className="text-xs font-medium text-text-bright bg-surface-3 px-2.5 py-[3px] rounded whitespace-nowrap">{getNodeLabel(id)}</span>
                   </span>
                 ))}
               </div>
-              <div className="save-form-actions">
-                <button className="save-form-cancel" onClick={() => setShowSaveForm(false)}>
+              <div className="flex justify-end gap-2">
+                <button className="px-4 py-2 rounded-lg text-[13px] font-medium text-text bg-surface-2 border border-border transition-all duration-150 hover:bg-surface-3 hover:text-text-bright" onClick={() => setShowSaveForm(false)}>
                   Cancel
                 </button>
-                <button className="save-form-submit" onClick={saveFlow} disabled={!saveName.trim()}>
+                <button className="px-4 py-2 rounded-lg text-[13px] font-semibold text-white bg-accent transition-all duration-150 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed" onClick={saveFlow} disabled={!saveName.trim()}>
                   Save Flow
                 </button>
               </div>

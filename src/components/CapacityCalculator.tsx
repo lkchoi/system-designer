@@ -80,17 +80,17 @@ const ALL_TECHNOLOGIES: FlatTech[] = (Object.keys(TECHNOLOGY_CATALOG) as Compone
 
 function ResultRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="capacity-result-row">
-      <span className="capacity-result-label">{label}</span>
-      <span className="capacity-result-value">{value}</span>
+    <div className="flex items-center justify-between py-[3px]">
+      <span className="text-[13px] text-text">{label}</span>
+      <span className="font-mono text-sm font-semibold text-text-bright">{value}</span>
     </div>
   );
 }
 
 function ResultGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="capacity-result-group">
-      <div className="capacity-result-title">{title}</div>
+    <div className="flex flex-col gap-0.5">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">{title}</div>
       {children}
     </div>
   );
@@ -147,33 +147,33 @@ export default function CapacityCalculator({ open, onClose }: Props) {
   const ret = parseInt(retentionDays) || 365;
 
   return (
-    <div className="capacity-overlay" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={onClose}>
       <div
-        className="capacity-card"
+        className="bg-surface border border-border rounded-xl w-[600px] max-w-[90vw] max-h-[85vh] flex flex-col shadow-[0_16px_50px_rgba(0,0,0,0.5)]"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") onClose();
         }}
       >
-        <div className="capacity-header">
-          <div className="capacity-header-left">
-            <span className="capacity-title">Capacity Calculator</span>
-            <div className="capacity-tabs">
+        <div className="flex items-center justify-between px-6 pt-5 shrink-0">
+          <div className="flex items-center gap-4">
+            <span className="text-base font-bold text-text-bright">Capacity Calculator</span>
+            <div className="flex gap-0.5 bg-surface-2 rounded-lg p-0.5">
               <button
-                className={`capacity-tab${tab === "calculator" ? " active" : ""}`}
+                className={`text-xs font-medium text-text-dim px-3 py-[5px] rounded-md transition-all duration-150 hover:text-text${tab === "calculator" ? " text-text-bright bg-surface-3" : ""}`}
                 onClick={() => setTab("calculator")}
               >
                 Calculator
               </button>
               <button
-                className={`capacity-tab${tab === "reference" ? " active" : ""}`}
+                className={`text-xs font-medium text-text-dim px-3 py-[5px] rounded-md transition-all duration-150 hover:text-text${tab === "reference" ? " text-text-bright bg-surface-3" : ""}`}
                 onClick={() => setTab("reference")}
               >
                 Reference
               </button>
             </div>
           </div>
-          <button className="capacity-close" onClick={onClose}>
+          <button className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-text-bright" onClick={onClose}>
             <svg
               width="14"
               height="14"
@@ -190,12 +190,12 @@ export default function CapacityCalculator({ open, onClose }: Props) {
         </div>
 
         {tab === "calculator" && (
-          <div className="capacity-body">
-            <div className="capacity-inputs">
-              <label className="capacity-field">
-                <span className="capacity-field-label">Transactions per second</span>
+          <div className="px-6 pt-5 pb-6 overflow-y-auto flex-1 min-h-0">
+            <div className="grid grid-cols-2 gap-3.5">
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-xs font-medium text-text-dim">Transactions per second</span>
                 <input
-                  className="capacity-input"
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-sm font-mono outline-none transition-[border-color] duration-150 focus:border-accent"
                   type="number"
                   min="0"
                   value={tps}
@@ -203,11 +203,11 @@ export default function CapacityCalculator({ open, onClose }: Props) {
                   placeholder="1000"
                 />
               </label>
-              <label className="capacity-field">
-                <span className="capacity-field-label">Avg payload / record size</span>
-                <div className="capacity-field-row">
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-xs font-medium text-text-dim">Avg payload / record size</span>
+                <div className="flex gap-1.5 items-center">
                   <input
-                    className="capacity-input"
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-sm font-mono outline-none transition-[border-color] duration-150 focus:border-accent"
                     type="number"
                     min="0"
                     value={payloadSize}
@@ -215,7 +215,7 @@ export default function CapacityCalculator({ open, onClose }: Props) {
                     placeholder="2"
                   />
                   <select
-                    className="capacity-select"
+                    className="px-2.5 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-[13px] outline-none cursor-pointer min-w-14 focus:border-accent"
                     value={payloadUnit}
                     onChange={(e) => setPayloadUnit(e.target.value as SizeUnit)}
                   >
@@ -225,24 +225,24 @@ export default function CapacityCalculator({ open, onClose }: Props) {
                   </select>
                 </div>
               </label>
-              <label className="capacity-field">
-                <span className="capacity-field-label">Read : Write ratio</span>
-                <div className="capacity-field-row">
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-xs font-medium text-text-dim">Read : Write ratio</span>
+                <div className="flex gap-1.5 items-center">
                   <input
-                    className="capacity-input"
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-sm font-mono outline-none transition-[border-color] duration-150 focus:border-accent"
                     type="number"
                     min="0"
                     value={readWriteRatio}
                     onChange={(e) => setReadWriteRatio(e.target.value)}
                     placeholder="10"
                   />
-                  <span className="capacity-field-hint">: 1</span>
+                  <span className="text-[13px] text-text-dim font-medium shrink-0">: 1</span>
                 </div>
               </label>
-              <label className="capacity-field">
-                <span className="capacity-field-label">Replication factor</span>
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-xs font-medium text-text-dim">Replication factor</span>
                 <input
-                  className="capacity-input"
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-sm font-mono outline-none transition-[border-color] duration-150 focus:border-accent"
                   type="number"
                   min="1"
                   max="10"
@@ -251,10 +251,10 @@ export default function CapacityCalculator({ open, onClose }: Props) {
                   placeholder="3"
                 />
               </label>
-              <label className="capacity-field">
-                <span className="capacity-field-label">Retention period (days)</span>
+              <label className="flex flex-col gap-[5px]">
+                <span className="text-xs font-medium text-text-dim">Retention period (days)</span>
                 <input
-                  className="capacity-input"
+                  className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-border bg-surface-2 text-text-bright text-sm font-mono outline-none transition-[border-color] duration-150 focus:border-accent"
                   type="number"
                   min="1"
                   value={retentionDays}
@@ -264,10 +264,10 @@ export default function CapacityCalculator({ open, onClose }: Props) {
               </label>
             </div>
 
-            <div className="capacity-divider" />
+            <div className="h-px bg-border my-5" />
 
             {results ? (
-              <div className="capacity-results">
+              <div className="flex flex-col gap-[18px]">
                 <ResultGroup title="Data Volume">
                   <ResultRow label="Per second" value={formatBytes(results.bytesPerSec)} />
                   <ResultRow label="Per day" value={formatDataSize(results.dailyGB)} />
@@ -310,15 +310,15 @@ export default function CapacityCalculator({ open, onClose }: Props) {
                 </ResultGroup>
               </div>
             ) : (
-              <div className="capacity-empty">Enter TPS and payload size to see estimates</div>
+              <div className="text-center px-4 py-8 text-text-dim text-[13px]">Enter TPS and payload size to see estimates</div>
             )}
           </div>
         )}
 
         {tab === "reference" && (
-          <div className="capacity-body">
+          <div className="px-6 pt-5 pb-6 overflow-y-auto flex-1 min-h-0">
             <input
-              className="capacity-search"
+              className="w-full px-3.5 py-2.5 rounded-lg border border-border bg-surface-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 mb-4 box-border focus:border-accent"
               type="text"
               placeholder="Search constants, technologies, limits..."
               value={search}
@@ -327,13 +327,13 @@ export default function CapacityCalculator({ open, onClose }: Props) {
             />
 
             {filteredConstants.length > 0 && (
-              <div className="capacity-ref-section">
-                <div className="capacity-result-title">Constants</div>
-                <div className="capacity-ref-list">
+              <div className="mb-5 last:mb-0">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">Constants</div>
+                <div className="flex flex-col gap-0.5">
                   {filteredConstants.map((c) => (
-                    <div key={c.name} className="capacity-ref-row">
-                      <span className="capacity-ref-name">{c.name}</span>
-                      <span className="capacity-ref-value">{c.value}</span>
+                    <div key={c.name} className="flex items-center justify-between px-2.5 py-1.5 rounded-md transition-colors duration-100 hover:bg-surface-2">
+                      <span className="text-[13px] text-text">{c.name}</span>
+                      <span className="font-mono text-[13px] font-semibold text-text-bright">{c.value}</span>
                     </div>
                   ))}
                 </div>
@@ -341,22 +341,22 @@ export default function CapacityCalculator({ open, onClose }: Props) {
             )}
 
             {filteredTech.length > 0 && (
-              <div className="capacity-ref-section">
-                <div className="capacity-result-title">Technology Limits</div>
-                <div className="capacity-ref-list">
+              <div className="mb-5 last:mb-0">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">Technology Limits</div>
+                <div className="flex flex-col gap-0.5">
                   {filteredTech.map((t) => (
-                    <div key={`${t.category}-${t.name}`} className="capacity-ref-tech">
-                      <div className="capacity-ref-tech-header">
-                        <span className="capacity-ref-tech-name">{t.name}</span>
-                        <span className="capacity-ref-tech-category">{t.category}</span>
+                    <div key={`${t.category}-${t.name}`} className="px-2.5 py-2 rounded-md border border-border bg-surface-2 mt-1.5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[13px] font-semibold text-text-bright">{t.name}</span>
+                        <span className="text-[11px] text-text-dim bg-surface-3 px-[7px] py-0.5 rounded">{t.category}</span>
                       </div>
-                      <div className="capacity-ref-tech-detail">
-                        <span className="capacity-ref-tech-label">Throughput</span>
-                        <span className="capacity-ref-tech-val">{t.throughput}</span>
+                      <div className="flex gap-2 py-0.5">
+                        <span className="text-[11px] font-semibold text-text-dim min-w-[72px] shrink-0">Throughput</span>
+                        <span className="text-xs text-text leading-snug">{t.throughput}</span>
                       </div>
-                      <div className="capacity-ref-tech-detail">
-                        <span className="capacity-ref-tech-label">Limits</span>
-                        <span className="capacity-ref-tech-val">{t.limits}</span>
+                      <div className="flex gap-2 py-0.5">
+                        <span className="text-[11px] font-semibold text-text-dim min-w-[72px] shrink-0">Limits</span>
+                        <span className="text-xs text-text leading-snug">{t.limits}</span>
                       </div>
                     </div>
                   ))}
@@ -365,7 +365,7 @@ export default function CapacityCalculator({ open, onClose }: Props) {
             )}
 
             {filteredConstants.length === 0 && filteredTech.length === 0 && (
-              <div className="capacity-empty">No results for &ldquo;{search}&rdquo;</div>
+              <div className="text-center px-4 py-8 text-text-dim text-[13px]">No results for &ldquo;{search}&rdquo;</div>
             )}
           </div>
         )}

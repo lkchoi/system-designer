@@ -28,15 +28,15 @@ export default function Sidebar({
   }
 
   return (
-    <aside className={`sidebar${collapsed ? " collapsed" : ""}`} style={width ? { width, minWidth: width } : undefined}>
-      <div className="sidebar-collapse-row">
+    <aside className={`bg-surface border-r border-border flex flex-col z-10 transition-[width,min-width] duration-200${collapsed ? " overflow-visible" : ""}`} style={width ? { width, minWidth: width } : undefined}>
+      <div className={collapsed ? "flex items-center justify-center px-3 pt-4 pb-3 gap-2" : "flex items-center justify-between px-4 pt-4 pb-3 gap-2"}>
         {!collapsed && (
-          <h2 className="sidebar-title" style={{ padding: 0 }}>
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim" style={{ padding: 0 }}>
             Components
           </h2>
         )}
         <button
-          className="sidebar-collapse-btn"
+          className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
           onClick={onToggleCollapse}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -65,17 +65,17 @@ export default function Sidebar({
           </svg>
         </button>
       </div>
-      <div className="sidebar-list">
+      <div className={collapsed ? "px-1 overflow-visible flex flex-col gap-0.5" : "flex-1 overflow-y-auto px-2 flex flex-col gap-0.5"}>
         {registry.getBuiltins().map((entry) => (
           <div
             key={entry.id}
-            className="sidebar-item"
+            className={collapsed ? "sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2" : "relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"}
             draggable
             onDragStart={(e) => onDragStart(e, entry.id)}
             data-tooltip={entry.label}
             title={entry.label}
           >
-            <div className="sidebar-icon" style={{ background: entry.color }}>
+            <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0" style={{ background: entry.color }}>
               <svg
                 width="18"
                 height="18"
@@ -95,18 +95,18 @@ export default function Sidebar({
       </div>
       {!collapsed && (
         <>
-          <h2 className="sidebar-title" style={{ paddingTop: "12px" }}>
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim" style={{ paddingTop: "12px" }}>
             Annotations
           </h2>
-          <div className="sidebar-list" style={{ flex: "none", paddingBottom: "8px" }}>
+          <div className={collapsed ? "px-1 overflow-visible flex flex-col gap-0.5" : "flex-1 overflow-y-auto px-2 flex flex-col gap-0.5"} style={{ flex: "none", paddingBottom: "8px" }}>
             <div
-              className="sidebar-item"
+              className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
               draggable
               onDragStart={(e) => onDragStart(e, "sticky")}
               data-tooltip="Sticky Note"
               title="Sticky Note"
             >
-              <div className="sidebar-icon sticky-icon">
+              <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-[#fde68a]">
                 <svg
                   width="18"
                   height="18"
@@ -124,13 +124,13 @@ export default function Sidebar({
               <span>Sticky Note</span>
             </div>
             <div
-              className="sidebar-item"
+              className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
               draggable
               onDragStart={(e) => onDragStart(e, "text")}
               data-tooltip="Text"
               title="Text"
             >
-              <div className="sidebar-icon text-icon">
+              <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
                 <svg
                   width="18"
                   height="18"
@@ -151,7 +151,7 @@ export default function Sidebar({
       )}
       {collapsed && (
         <div
-          className="sidebar-list"
+          className="px-1 overflow-visible flex flex-col gap-0.5"
           style={{
             flex: "none",
             paddingBottom: "8px",
@@ -160,13 +160,13 @@ export default function Sidebar({
           }}
         >
           <div
-            className="sidebar-item"
+            className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
             draggable
             onDragStart={(e) => onDragStart(e, "sticky")}
             data-tooltip="Sticky Note"
             title="Sticky Note"
           >
-            <div className="sidebar-icon sticky-icon">
+            <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-[#fde68a]">
               <svg
                 width="18"
                 height="18"
@@ -183,13 +183,13 @@ export default function Sidebar({
             </div>
           </div>
           <div
-            className="sidebar-item"
+            className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
             draggable
             onDragStart={(e) => onDragStart(e, "text")}
             data-tooltip="Text"
             title="Text"
           >
-            <div className="sidebar-icon text-icon">
+            <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
               <svg
                 width="18"
                 height="18"
@@ -208,20 +208,20 @@ export default function Sidebar({
       )}
       {!collapsed && savedFlows.length > 0 && (
         <>
-          <h2 className="sidebar-title" style={{ paddingTop: "12px" }}>
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim" style={{ paddingTop: "12px" }}>
             Paths
           </h2>
-          <div className="sidebar-paths">
+          <div className="overflow-y-auto px-2 pb-2 flex flex-col gap-1">
             {savedFlows.map((flow) => (
               <div
                 key={flow.id}
-                className={`sidebar-path${activeFlowId === flow.id ? " active" : ""}`}
+                className={`group px-3 py-2.5 rounded-lg cursor-pointer transition-colors duration-150 border border-transparent hover:bg-surface-2${activeFlowId === flow.id ? " bg-accent-bg border-accent" : ""}`}
                 onClick={() => onLoadFlow(flow)}
               >
-                <div className="sidebar-path-header">
-                  <span className="sidebar-path-name">{flow.name}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[13px] font-semibold text-text-bright whitespace-nowrap overflow-hidden text-ellipsis">{flow.name}</span>
                   <button
-                    className="sidebar-path-delete"
+                    className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim shrink-0 opacity-0 transition-all duration-150 group-hover:opacity-100 hover:bg-[rgba(239,68,68,0.15)] hover:text-[#ef4444]"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteFlow(flow.id);
@@ -242,11 +242,11 @@ export default function Sidebar({
                     </svg>
                   </button>
                 </div>
-                {flow.description && <span className="sidebar-path-desc">{flow.description}</span>}
-                <div className="sidebar-path-steps">
+                {flow.description && <span className="block text-[11px] text-text-dim mt-1 leading-snug overflow-hidden text-ellipsis line-clamp-2">{flow.description}</span>}
+                <div className="flex items-center flex-wrap gap-0.5 mt-1.5 text-[11px] text-text leading-relaxed">
                   {flow.steps.map((id, i) => (
                     <span key={`${id}-${i}`}>
-                      {i > 0 && <span className="sidebar-path-arrow">&rarr;</span>}
+                      {i > 0 && <span className="text-text-dim mx-0.5">&rarr;</span>}
                       <span>{getNodeLabel(id)}</span>
                     </span>
                   ))}
@@ -257,7 +257,7 @@ export default function Sidebar({
         </>
       )}
       {!collapsed && (
-        <div className="sidebar-footer">Drag components to canvas to build your system</div>
+        <div className="p-4 text-xs text-text-dim leading-snug border-t border-border mt-auto">Drag components to canvas to build your system</div>
       )}
     </aside>
   );
