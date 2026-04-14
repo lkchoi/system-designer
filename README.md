@@ -11,7 +11,7 @@ An interactive system architecture designer built with React, TypeScript, and [R
 - Connection validation enforces architectural constraints (e.g., API gateway cannot connect directly to a database)
 - Sticky notes and text annotations for documentation
 - Resizable nodes, editable edge labels, collapsible sidebar
-- Undo/redo for canvas and node edits
+- Undo/redo for all canvas and node edits (Cmd+Z / Cmd+Shift+Z)
 
 ### Modes
 
@@ -92,6 +92,7 @@ src/
   stressEngine.ts      Pure function computing cascading failure effects
   types.ts             Shared TypeScript interfaces
   data.ts              Utility functions (randomMetrics, displayType)
+  hotkeys.ts           Hotkey definitions (key, modifiers, category)
   registry/
     builtin-entries.ts   18 component type definitions
     ComponentRegistry.ts Registry class (get, canConnect, register)
