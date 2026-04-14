@@ -171,3 +171,10 @@ export interface TextNodeData {
   size: TextSize;
   [key: string]: unknown;
 }
+
+export interface SavedFlow {
+  id: string;
+  name: string;
+  description: string;
+  steps: string[];
+}

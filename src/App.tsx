@@ -26,6 +26,7 @@ import type {
   OnConnect,
   NodeChange,
   Connection,
+  Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./App.css";
@@ -50,16 +51,23 @@ import type {
   EdgeData,
   EffectiveStress,
   StressFailure,
+  SavedFlow,
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
 import { ulid } from "ulid";
-
-interface SavedFlow {
-  id: string;
-  name: string;
-  description: string;
-  steps: string[];
-}
+import {
+  initDB,
+  flushPersist,
+  listDesigns,
+  createDesign,
+  renameDesign,
+  deleteDesign,
+  loadDesignState,
+  saveDesignState,
+  saveFlowPath,
+  deleteFlowPath,
+} from "./db";
+import type { Design } from "./db";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
 type StickyFlowNode = Node<StickyNoteData, "sticky">;
@@ -99,9 +107,28 @@ export function useStress() {
 
 export type PanelPosition = "right" | "bottom";
 
-function Canvas() {
-  const [nodes, setNodes] = useState<AppNode[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
+interface CanvasProps {
+  designId: string;
+  designs: Design[];
+  onSwitchDesign: (id: string) => void;
+  onCreateDesign: () => void;
+  onRenameDesign: (id: string, name: string) => void;
+  onDeleteDesign: (id: string) => void;
+}
+
+function Canvas({
+  designId,
+  designs,
+  onSwitchDesign,
+  onCreateDesign,
+  onRenameDesign,
+  onDeleteDesign,
+}: CanvasProps) {
+  const initialState = useMemo(() => loadDesignState(designId), [designId]);
+  const currentDesign = useMemo(() => designs.find((d) => d.id === designId), [designs, designId]);
+
+  const [nodes, setNodes] = useState<AppNode[]>(initialState.nodes as AppNode[]);
+  const [edges, setEdges] = useState<Edge[]>(initialState.edges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("plan");
@@ -112,17 +139,67 @@ function Canvas() {
   const [panelHeight, setPanelHeight] = useState(260);
   const [flowPath, setFlowPath] = useState<string[]>([]);
   const [isPathMode, setIsPathMode] = useState(false);
-  const [savedFlows, setSavedFlows] = useState<SavedFlow[]>([]);
+  const [savedFlows, setSavedFlows] = useState<SavedFlow[]>(initialState.flowPaths);
   const [showSaveForm, setShowSaveForm] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saveDesc, setSaveDesc] = useState("");
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
+  const [showDesignMenu, setShowDesignMenu] = useState(false);
+  const [editingDesignName, setEditingDesignName] = useState(false);
+  const [designNameDraft, setDesignNameDraft] = useState("");
   const canvasRef = useRef<HTMLDivElement>(null);
   const pathStepsRef = useRef<HTMLDivElement>(null);
   const saveNameRef = useRef<HTMLInputElement>(null);
-  const { screenToFlowPosition, zoomIn, zoomOut, fitView, getViewport } = useReactFlow();
+  const designNameRef = useRef<HTMLInputElement>(null);
+  const designMenuRef = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition, zoomIn, zoomOut, fitView, getViewport, setViewport } =
+    useReactFlow();
+
+  // Restore viewport from saved state
+  useEffect(() => {
+    setViewport(initialState.viewport);
+  }, [initialState.viewport, setViewport]);
+
+  // Auto-save nodes and edges
+  const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    autoSaveRef.current = setTimeout(() => {
+      saveDesignState(designId, nodes, edges, getViewport());
+    }, 500);
+    return () => {
+      if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+    };
+  }, [designId, nodes, edges, getViewport]);
+
+  // Save viewport on pan/zoom end
+  const onMoveEnd = useCallback(
+    (_: unknown, viewport: Viewport) => {
+      saveDesignState(designId, nodes, edges, viewport);
+    },
+    [designId, nodes, edges],
+  );
+
+  // Flush pending saves on unmount
+  useEffect(() => {
+    return () => {
+      flushPersist();
+    };
+  }, []);
+
+  // Close design menu on outside click
+  useEffect(() => {
+    if (!showDesignMenu) return;
+    function handleClick(e: MouseEvent) {
+      if (designMenuRef.current && !designMenuRef.current.contains(e.target as HTMLElement)) {
+        setShowDesignMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showDesignMenu]);
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedNodeId) ?? null,
@@ -487,15 +564,17 @@ function Canvas() {
       description: saveDesc.trim(),
       steps: [...flowPath],
     };
+    saveFlowPath(designId, flow);
     setSavedFlows((prev) => [...prev, flow]);
     setShowSaveForm(false);
     setSaveName("");
     setSaveDesc("");
     setActiveFlowId(flow.id);
-  }, [saveName, saveDesc, flowPath]);
+  }, [saveName, saveDesc, flowPath, designId]);
 
   const deleteFlow = useCallback(
     (id: string) => {
+      deleteFlowPath(id);
       setSavedFlows((prev) => prev.filter((f) => f.id !== id));
       if (activeFlowId === id) setActiveFlowId(null);
     },
@@ -594,7 +673,132 @@ function Canvas() {
             <div className="canvas-area" ref={canvasRef}>
               <header className="topbar">
                 <div className="topbar-left">
-                  <h1 className="topbar-title">System Designer</h1>
+                  <div className="design-selector" ref={designMenuRef}>
+                    {editingDesignName ? (
+                      <input
+                        ref={designNameRef}
+                        className="design-name-input"
+                        value={designNameDraft}
+                        onChange={(e) => setDesignNameDraft(e.target.value)}
+                        onBlur={() => {
+                          if (designNameDraft.trim()) {
+                            onRenameDesign(designId, designNameDraft.trim());
+                          }
+                          setEditingDesignName(false);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (designNameDraft.trim()) {
+                              onRenameDesign(designId, designNameDraft.trim());
+                            }
+                            setEditingDesignName(false);
+                          }
+                          if (e.key === "Escape") setEditingDesignName(false);
+                        }}
+                      />
+                    ) : (
+                      <button
+                        className="design-name-btn"
+                        onDoubleClick={() => {
+                          setDesignNameDraft(currentDesign?.name ?? "");
+                          setEditingDesignName(true);
+                          setTimeout(() => designNameRef.current?.select(), 0);
+                        }}
+                        onClick={() => setShowDesignMenu((p) => !p)}
+                        title="Click to switch designs, double-click to rename"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" />
+                          <polyline points="13 2 13 9 20 9" />
+                        </svg>
+                        {currentDesign?.name ?? "Untitled"}
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+                    )}
+                    {showDesignMenu && (
+                      <div className="design-menu">
+                        <div className="design-menu-label">Designs</div>
+                        {designs.map((d) => (
+                          <div
+                            key={d.id}
+                            className={`design-menu-item${d.id === designId ? " active" : ""}`}
+                            onClick={() => {
+                              if (d.id !== designId) {
+                                saveDesignState(designId, nodes, edges, getViewport());
+                                flushPersist();
+                                onSwitchDesign(d.id);
+                              }
+                              setShowDesignMenu(false);
+                            }}
+                          >
+                            <span className="design-menu-item-name">{d.name}</span>
+                            {d.id !== designId && designs.length > 1 && (
+                              <button
+                                className="design-menu-delete"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteDesign(d.id);
+                                }}
+                                title="Delete design"
+                              >
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path d="M18 6L6 18M6 6l12 12" />
+                                </svg>
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <div className="design-menu-divider" />
+                        <div
+                          className="design-menu-item design-menu-new"
+                          onClick={() => {
+                            saveDesignState(designId, nodes, edges, getViewport());
+                            flushPersist();
+                            onCreateDesign();
+                            setShowDesignMenu(false);
+                          }}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          >
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                          </svg>
+                          New Design
+                        </div>
+                      </div>
+                    )}
+                  </div>
                   <nav className="topbar-tabs">
                     <button
                       className={`topbar-tab${mode === "plan" ? " active" : ""}`}
@@ -863,6 +1067,7 @@ function Canvas() {
                 defaultEdgeOptions={{ type: "labeled" }}
                 isValidConnection={isValidConnection}
                 connectionMode={ConnectionMode.Loose}
+                onMoveEnd={onMoveEnd}
                 fitView={false}
                 defaultViewport={{ x: 0, y: 0, zoom: 1 }}
                 proOptions={{ hideAttribution: true }}
@@ -964,9 +1169,77 @@ function Canvas() {
 }
 
 export default function App() {
+  const [dbReady, setDbReady] = useState(false);
+  const [designId, setDesignId] = useState<string | null>(null);
+  const [designs, setDesigns] = useState<Design[]>([]);
+
+  useEffect(() => {
+    initDB().then(() => {
+      let all = listDesigns();
+      if (all.length === 0) {
+        createDesign("Untitled Design");
+        all = listDesigns();
+      }
+      setDesigns(all);
+      setDesignId(all[0].id);
+      setDbReady(true);
+    });
+  }, []);
+
+  const refreshDesigns = useCallback(() => setDesigns(listDesigns()), []);
+
+  const handleCreate = useCallback(() => {
+    const design = createDesign("Untitled Design");
+    refreshDesigns();
+    setDesignId(design.id);
+  }, [refreshDesigns]);
+
+  const handleRename = useCallback(
+    (id: string, name: string) => {
+      renameDesign(id, name);
+      refreshDesigns();
+    },
+    [refreshDesigns],
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteDesign(id);
+      const remaining = listDesigns();
+      if (remaining.length === 0) {
+        const design = createDesign("Untitled Design");
+        setDesigns(listDesigns());
+        setDesignId(design.id);
+      } else {
+        setDesigns(remaining);
+        if (designId === id) setDesignId(remaining[0].id);
+      }
+    },
+    [designId],
+  );
+
+  // Flush to OPFS on page unload
+  useEffect(() => {
+    const onBeforeUnload = () => flushPersist();
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, []);
+
+  if (!dbReady || !designId) {
+    return null;
+  }
+
   return (
     <ReactFlowProvider>
-      <Canvas />
+      <Canvas
+        key={designId}
+        designId={designId}
+        designs={designs}
+        onSwitchDesign={setDesignId}
+        onCreateDesign={handleCreate}
+        onRenameDesign={handleRename}
+        onDeleteDesign={handleDelete}
+      />
     </ReactFlowProvider>
   );
 }

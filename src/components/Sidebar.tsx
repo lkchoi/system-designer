@@ -1,11 +1,5 @@
 import { registry } from "../registry";
-
-interface SavedFlow {
-  id: string;
-  name: string;
-  description: string;
-  steps: string[];
-}
+import type { SavedFlow } from "../types";
 
 interface SidebarProps {
   savedFlows: SavedFlow[];

@@ -330,6 +330,122 @@
   letter-spacing: -0.01em;
 }
 
+/* ─── Design Selector ─────────────────────────────── */
+.design-selector {
+  position: relative;
+}
+
+.design-name-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  background: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.design-name-btn:hover {
+  background: var(--surface-2);
+}
+
+.design-name-input {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  padding: 4px 8px;
+  outline: none;
+  width: 200px;
+}
+
+.design-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  padding: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.design-menu-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 6px 10px 4px;
+  letter-spacing: 0.05em;
+}
+
+.design-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.design-menu-item:hover {
+  background: var(--surface-2);
+}
+.design-menu-item.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+.design-menu-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.design-menu-delete {
+  opacity: 0;
+  color: var(--text-dim);
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.1s;
+  flex-shrink: 0;
+}
+.design-menu-item:hover .design-menu-delete {
+  opacity: 1;
+}
+.design-menu-delete:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.design-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 6px;
+}
+
+.design-menu-new {
+  color: var(--accent);
+  font-weight: 500;
+}
+.design-menu-new svg {
+  flex-shrink: 0;
+}
+
 .topbar-tabs {
   display: flex;
   gap: 2px;
