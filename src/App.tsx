@@ -41,6 +41,7 @@ import EdgePropertiesPanel from "./components/EdgePropertiesPanel";
 import HotkeyHelpOverlay from "./components/HotkeyHelpOverlay";
 import CapacityCalculator from "./components/CapacityCalculator";
 import { useHotkeys } from "./hooks/useHotkeys";
+import { useUndoRedo } from "./hooks/useUndoRedo";
 import { randomMetrics } from "./data";
 import { registry } from "./registry";
 import type {
@@ -157,6 +158,15 @@ function Canvas({
   const { screenToFlowPosition, zoomIn, zoomOut, fitView, getViewport, setViewport } =
     useReactFlow();
 
+  const { takeSnapshot, undo, redo, canUndo, canRedo } = useUndoRedo(
+    nodes,
+    edges,
+    setNodes,
+    setEdges,
+  );
+  const isDraggingRef = useRef(false);
+  const lastDataSnapshotRef = useRef(0);
+
   // Restore viewport from saved state
   useEffect(() => {
     setViewport(initialState.viewport);
@@ -216,6 +226,20 @@ function Canvas({
 
   const onNodesChange: OnNodesChange<AppNode> = useCallback(
     (changes: NodeChange<AppNode>[]) => {
+      const hasRemove = changes.some((c) => c.type === "remove");
+      const hasDragStart = changes.some(
+        (c) => c.type === "position" && c.dragging,
+      );
+      const hasDragEnd = changes.some(
+        (c) => c.type === "position" && !c.dragging,
+      );
+
+      if (hasRemove || (hasDragStart && !isDraggingRef.current)) {
+        takeSnapshot();
+      }
+      if (hasDragStart) isDraggingRef.current = true;
+      if (hasDragEnd) isDraggingRef.current = false;
+
       setNodes((nds) => applyNodeChanges(changes, nds));
       for (const change of changes) {
         if (change.type === "remove" && change.id === selectedNodeId) {
@@ -223,12 +247,15 @@ function Canvas({
         }
       }
     },
-    [selectedNodeId],
+    [selectedNodeId, takeSnapshot],
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [],
+    (changes) => {
+      if (changes.some((c) => c.type === "remove")) takeSnapshot();
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+    },
+    [takeSnapshot],
   );
 
   const isValidConnection = useCallback(
@@ -246,7 +273,8 @@ function Canvas({
   );
 
   const onConnect: OnConnect = useCallback(
-    (params) =>
+    (params) => {
+      takeSnapshot();
       setEdges((eds) =>
         addEdge(
           {
@@ -257,20 +285,22 @@ function Canvas({
           },
           eds,
         ),
-      ),
-    [],
+      );
+    },
+    [takeSnapshot],
   );
 
   useEffect(() => {
     function handleLabelChange(e: Event) {
       const { id, label } = (e as CustomEvent).detail;
+      takeSnapshot();
       setEdges((eds) =>
         eds.map((edge) => (edge.id === id ? { ...edge, data: { ...edge.data, label } } : edge)),
       );
     }
     window.addEventListener("edge-label-change", handleLabelChange);
     return () => window.removeEventListener("edge-label-change", handleLabelChange);
-  }, []);
+  }, [takeSnapshot]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -283,6 +313,7 @@ function Canvas({
       const type = e.dataTransfer.getData("application/system-designer");
       if (!type) return;
 
+      takeSnapshot();
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
 
       if (type === "sticky") {
@@ -330,20 +361,38 @@ function Canvas({
         setNodes((nds) => [...nds, newNode]);
       }
     },
-    [screenToFlowPosition],
+    [screenToFlowPosition, takeSnapshot],
   );
 
-  const onUpdateNodeData = useCallback((id: string, partial: Partial<SystemNodeData>) => {
-    setNodes((nds) =>
-      nds.map((n) => (n.id === id ? ({ ...n, data: { ...n.data, ...partial } } as typeof n) : n)),
-    );
-  }, []);
+  const onUpdateNodeData = useCallback(
+    (id: string, partial: Partial<SystemNodeData>) => {
+      const now = Date.now();
+      if (now - lastDataSnapshotRef.current > 500) {
+        takeSnapshot();
+        lastDataSnapshotRef.current = now;
+      }
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id ? ({ ...n, data: { ...n.data, ...partial } } as typeof n) : n,
+        ),
+      );
+    },
+    [takeSnapshot],
+  );
 
-  const onUpdateEdgeData = useCallback((id: string, partial: Partial<EdgeData>) => {
-    setEdges((eds) =>
-      eds.map((e) => (e.id === id ? { ...e, data: { ...e.data, ...partial } } : e)),
-    );
-  }, []);
+  const onUpdateEdgeData = useCallback(
+    (id: string, partial: Partial<EdgeData>) => {
+      const now = Date.now();
+      if (now - lastDataSnapshotRef.current > 500) {
+        takeSnapshot();
+        lastDataSnapshotRef.current = now;
+      }
+      setEdges((eds) =>
+        eds.map((e) => (e.id === id ? { ...e, data: { ...e.data, ...partial } } : e)),
+      );
+    },
+    [takeSnapshot],
+  );
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: AppNode) => {
@@ -390,12 +439,13 @@ function Canvas({
   }, []);
 
   const clearCanvas = useCallback(() => {
+    takeSnapshot();
     setNodes([]);
     setEdges([]);
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
     Object.keys(typeCounters).forEach((k) => delete typeCounters[k]);
-  }, []);
+  }, [takeSnapshot]);
 
   const connectionCount = edges.length;
 
@@ -456,6 +506,8 @@ function Canvas({
       "mode-monitor": () => setMode("monitor"),
       "mode-price": () => setMode("price"),
 
+      undo: () => undo(),
+      redo: () => redo(),
       "zoom-in": () => zoomIn(),
       "zoom-out": () => zoomOut(),
       "zoom-fit": () => fitView({ padding: 0.2 }),
@@ -497,6 +549,7 @@ function Canvas({
       "toggle-sidebar": () => setSidebarCollapsed((prev) => !prev),
 
       "add-sticky": () => {
+        takeSnapshot();
         const vp = getViewport();
         const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
         const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
@@ -510,6 +563,7 @@ function Canvas({
         setNodes((nds) => [...nds, node]);
       },
       "add-text": () => {
+        takeSnapshot();
         const vp = getViewport();
         const cx = (window.innerWidth / 2 - vp.x) / vp.zoom;
         const cy = (window.innerHeight / 2 - vp.y) / vp.zoom;
@@ -527,6 +581,9 @@ function Canvas({
       "show-capacity-calc": () => setShowCapacityCalc((prev) => !prev),
     }),
     [
+      takeSnapshot,
+      undo,
+      redo,
       zoomIn,
       zoomOut,
       fitView,
@@ -911,6 +968,48 @@ function Canvas({
                   )}
                 </div>
                 <div className="topbar-right">
+                  <div className="undo-redo-group">
+                    <button
+                      className="topbar-icon-btn"
+                      onClick={undo}
+                      disabled={!canUndo}
+                      title="Undo (⌘Z)"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M3 7v6h6" />
+                        <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6.69 3L3 13" />
+                      </svg>
+                    </button>
+                    <button
+                      className="topbar-icon-btn"
+                      onClick={redo}
+                      disabled={!canRedo}
+                      title="Redo (⌘⇧Z)"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M21 7v6h-6" />
+                        <path d="M3 17a9 9 0 019-9 9 9 0 016.69 3L21 13" />
+                      </svg>
+                    </button>
+                  </div>
                   <button
                     className={`topbar-icon-btn${showCapacityCalc ? " active" : ""}`}
                     onClick={() => setShowCapacityCalc((prev) => !prev)}

@@ -16,6 +16,8 @@ export const HOTKEYS: HotkeyDef[] = [
   { id: "mode-price", key: "4", guard: true, label: "Price mode", category: "Mode" },
 
   // Canvas
+  { id: "redo", key: "z", mod: true, shift: true, label: "Redo", category: "Canvas" },
+  { id: "undo", key: "z", mod: true, label: "Undo", category: "Canvas" },
   { id: "zoom-in", key: "=", mod: true, label: "Zoom in", category: "Canvas" },
   { id: "zoom-out", key: "-", mod: true, label: "Zoom out", category: "Canvas" },
   { id: "zoom-fit", key: "0", mod: true, label: "Fit view", category: "Canvas" },

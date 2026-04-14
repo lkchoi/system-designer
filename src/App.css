@@ -1185,6 +1185,16 @@
   background: var(--accent-bg);
 }
 
+.topbar-icon-btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.undo-redo-group {
+  display: flex;
+  gap: 2px;
+}
+
 /* ─── System Node ──────────────────────────────────── */
 .system-node {
   background: var(--surface);

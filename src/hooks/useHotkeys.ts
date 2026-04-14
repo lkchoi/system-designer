@@ -24,9 +24,9 @@ export function useHotkeys(actions: HotkeyActions) {
         const match = pressed === target || pressed.toLowerCase() === target.toLowerCase();
         if (!match) continue;
 
-        // For bare (non-shift) keys, reject if shift is held
+        // Reject if shift is held but not required
         // Exception: '?' requires shift on most layouts
-        if (!def.shift && !def.mod && e.shiftKey && target !== "?") continue;
+        if (!def.shift && e.shiftKey && target !== "?") continue;
 
         // Guard: skip when input is focused
         if (def.guard && isInputFocused()) continue;
