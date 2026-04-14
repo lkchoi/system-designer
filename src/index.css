@@ -16,12 +16,14 @@
   --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 :root {
@@ -55,16 +57,18 @@ body {
   height: 100vh;
 }
 
-button {
-  font-family: inherit;
-  cursor: pointer;
-  border: none;
-  background: none;
-  color: inherit;
-  font-size: inherit;
-}
+@layer base {
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: inherit;
+    font-size: inherit;
+  }
 
-input {
-  font-family: inherit;
-  font-size: inherit;
+  input {
+    font-family: inherit;
+    font-size: inherit;
+  }
 }
