@@ -1,3 +1,4 @@
+import { useRef, useCallback, useEffect } from "react";
 import { useReactFlow, NodeResizer } from "@xyflow/react";
 import type { NodeProps, Node } from "@xyflow/react";
 import type { TextNodeData, TextSize } from "../types";
@@ -11,9 +12,33 @@ const SIZE_STYLES: Record<TextSize, { fontSize: string; fontWeight: number; line
 
 type TextFlowNode = Node<TextNodeData, "text">;
 
+const MIN_HEIGHT = 40;
+const PADDING = 12; // vertical padding from the outer container (p-1.5 = 6px top + 6px bottom)
+const TOOLBAR_HEIGHT = 28; // approximate height of the size/delete toolbar when selected
+
 export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>) {
-  const { updateNodeData, deleteElements } = useReactFlow();
+  const { updateNodeData, deleteElements, setNodes } = useReactFlow();
   const style = SIZE_STYLES[data.size];
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const fitHeight = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    // Reset height to 0 so scrollHeight reflects actual content height
+    ta.style.height = "0px";
+    const contentHeight = ta.scrollHeight + PADDING + (selected ? TOOLBAR_HEIGHT : 0);
+    ta.style.height = "";
+    const newHeight = Math.max(MIN_HEIGHT, contentHeight);
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === id ? { ...n, style: { ...n.style, height: newHeight } } : n,
+      ),
+    );
+  }, [id, selected, setNodes]);
+
+  useEffect(() => {
+    fitHeight();
+  }, [data.text, data.size, fitHeight]);
 
   return (
     <>
@@ -33,6 +58,7 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
       )}
       <div className="p-1.5 w-full h-full box-border flex flex-col min-w-[120px]">
         <textarea
+          ref={textareaRef}
           className={`bg-transparent border-none outline-none resize-none text-text-bright font-sans w-full flex-1 p-0 tracking-tight break-words whitespace-pre-wrap placeholder:text-text-dim${selected ? " border-b border-border pb-1 mb-1.5" : ""}`}
           style={{
             fontSize: style.fontSize,
