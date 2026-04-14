@@ -72,7 +72,7 @@ export default function LabeledEdge({
       />
       <EdgeLabelRenderer>
         <div
-          className="edge-label-container"
+          className="text-xs cursor-pointer"
           style={{
             position: "absolute",
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
@@ -84,7 +84,7 @@ export default function LabeledEdge({
           }}
         >
           {isBroken && (
-            <div className="edge-partition-badge">
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] rounded-full mb-1">
               <svg
                 width="12"
                 height="12"
@@ -97,13 +97,13 @@ export default function LabeledEdge({
               >
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
-              <span>SPLIT</span>
+              <span className="text-[10px] font-bold text-[#ef4444] tracking-wide">SPLIT</span>
             </div>
           )}
           {editing ? (
             <input
               ref={inputRef}
-              className="edge-label-input"
+              className="bg-surface-2 border border-accent text-text-bright px-2 py-0.5 rounded text-xs font-sans outline-none w-[120px]"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onBlur={commit}
@@ -113,17 +113,17 @@ export default function LabeledEdge({
               }}
             />
           ) : (
-            <div className="edge-label-group">
+            <div className="flex flex-col items-center gap-[3px]">
               {hasTags && (
-                <div className="edge-tags">
-                  {protocol && <span className="edge-tag edge-tag-protocol">{protocol}</span>}
-                  {format && <span className="edge-tag edge-tag-format">{format}</span>}
+                <div className="flex gap-[3px]">
+                  {protocol && <span className="text-[10px] font-semibold px-1.5 py-[1px] rounded-[3px] whitespace-nowrap tracking-[0.02em] bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.25)]">{protocol}</span>}
+                  {format && <span className="text-[10px] font-semibold px-1.5 py-[1px] rounded-[3px] whitespace-nowrap tracking-[0.02em] bg-[rgba(16,185,129,0.15)] text-[#34d399] border border-[rgba(16,185,129,0.25)]">{format}</span>}
                 </div>
               )}
               {label ? (
-                <span className="edge-label">{label}</span>
+                <span className="bg-surface-2 border border-border text-text-bright px-2 py-0.5 rounded whitespace-nowrap font-medium">{label}</span>
               ) : selected && !hasTags ? (
-                <span className="edge-label edge-label-hint">double-click to label</span>
+                <span className="bg-surface-2 border-dashed border-border text-text-dim px-2 py-0.5 rounded whitespace-nowrap italic font-normal">double-click to label</span>
               ) : null}
             </div>
           )}

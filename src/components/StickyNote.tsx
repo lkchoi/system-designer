@@ -24,23 +24,23 @@ export default function StickyNote({ id, data, selected }: NodeProps<StickyNode>
         }}
       />
       <div
-        className={`sticky-note${selected ? " selected" : ""}`}
+        className={`w-full h-full rounded p-2.5 box-border flex flex-col shadow-[2px_3px_8px_rgba(0,0,0,0.25)] relative${selected ? " shadow-[2px_3px_8px_rgba(0,0,0,0.25),0_0_0_2px_rgba(99,102,241,0.5)]" : ""}`}
         style={{ background: data.color }}
       >
         <textarea
-          className="sticky-text"
+          className="flex-1 bg-transparent border-none outline-none resize-none font-sans text-[13px] leading-normal text-[#1c1917] p-0 placeholder:text-[rgba(0,0,0,0.3)]"
           value={data.text}
           onChange={(e) => updateNodeData(id, { text: e.target.value })}
           onPointerDown={(e) => e.stopPropagation()}
           placeholder="Type a note..."
         />
         {selected && (
-          <div className="sticky-toolbar">
-            <div className="sticky-colors">
+          <div className="flex items-center justify-between pt-1.5 border-t border-[rgba(0,0,0,0.08)] mt-1.5">
+            <div className="flex gap-1">
               {STICKY_COLORS.map((c) => (
                 <button
                   key={c}
-                  className={`sticky-color-btn${data.color === c ? " active" : ""}`}
+                  className={`w-4 h-4 rounded-full border-2 ${data.color === c ? "border-[rgba(0,0,0,0.35)]" : "border-transparent"} p-0 cursor-pointer transition-transform duration-100 hover:scale-[1.2]`}
                   style={{ background: c }}
                   onClick={() => updateNodeData(id, { color: c as StickyColor })}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -48,7 +48,7 @@ export default function StickyNote({ id, data, selected }: NodeProps<StickyNode>
               ))}
             </div>
             <button
-              className="sticky-delete"
+              className="flex items-center justify-center w-[22px] h-[22px] rounded text-[rgba(0,0,0,0.35)] p-0 transition-all duration-150 hover:bg-[rgba(0,0,0,0.1)] hover:text-[#ef4444]"
               onClick={() => deleteElements({ nodes: [{ id }] })}
               onPointerDown={(e) => e.stopPropagation()}
               title="Delete note"

@@ -31,9 +31,9 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
           }}
         />
       )}
-      <div className={`text-node${selected ? " selected" : ""}`}>
+      <div className="p-1.5 w-full h-full box-border flex flex-col min-w-[120px]">
         <textarea
-          className="text-node-input"
+          className={`bg-transparent border-none outline-none resize-none text-text-bright font-sans w-full flex-1 p-0 tracking-tight break-words whitespace-pre-wrap placeholder:text-text-dim${selected ? " border-b border-border pb-1 mb-1.5" : ""}`}
           style={{
             fontSize: style.fontSize,
             fontWeight: style.fontWeight,
@@ -51,12 +51,12 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
           }
         />
         {selected && (
-          <div className="text-node-toolbar">
-            <div className="text-size-btns">
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex gap-0.5">
               {(["large", "medium", "small"] as TextSize[]).map((s) => (
                 <button
                   key={s}
-                  className={`text-size-btn${data.size === s ? " active" : ""}`}
+                  className={`px-2 py-0.5 rounded text-[11px] text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${data.size === s ? " text-text-bright bg-accent" : ""}`}
                   onClick={() => updateNodeData(id, { size: s })}
                   onPointerDown={(e) => e.stopPropagation()}
                 >
@@ -65,7 +65,7 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
               ))}
             </div>
             <button
-              className="text-node-delete"
+              className="flex items-center justify-center w-5 h-5 rounded text-text-dim p-0 transition-all duration-150 hover:bg-[rgba(239,68,68,0.12)] hover:text-[#ef4444]"
               onClick={() => deleteElements({ nodes: [{ id }] })}
               onPointerDown={(e) => e.stopPropagation()}
               title="Delete"
