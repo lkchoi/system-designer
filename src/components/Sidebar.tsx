@@ -29,7 +29,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`bg-surface border-r border-border flex flex-col z-10 transition-[width,min-width] duration-200${collapsed ? " overflow-visible" : ""}`}
+      className={`bg-surface border-r border-border flex flex-col z-10 transition-[width,min-width] duration-200 min-h-0${collapsed ? " overflow-visible" : " overflow-hidden"}`}
       style={width ? { width, minWidth: width } : undefined}
     >
       <div
