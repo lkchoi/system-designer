@@ -31,9 +31,9 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
           }}
         />
       )}
-      <div className="p-1.5 w-full h-full box-border flex flex-col min-w-[120px]">
+      <div className="p-1.5 w-full h-full box-border flex flex-col min-w-[120px] relative">
         <textarea
-          className={`bg-transparent border-none outline-none resize-none text-text-bright font-sans w-full flex-1 p-0 tracking-tight break-words whitespace-pre-wrap placeholder:text-text-dim${selected ? " border-b border-border pb-1 mb-1.5" : ""}`}
+          className="bg-transparent border-none outline-none resize-none text-text-bright font-sans w-full flex-1 p-0 tracking-tight break-words whitespace-pre-wrap placeholder:text-text-dim"
           style={{
             fontSize: style.fontSize,
             fontWeight: style.fontWeight,
@@ -51,7 +51,7 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
           }
         />
         {selected && (
-          <div className="flex items-center justify-between gap-1.5">
+          <div className="absolute left-0 right-0 top-full mt-1 flex items-center justify-between gap-1.5 px-1.5">
             <div className="flex gap-0.5">
               {(["large", "medium", "small"] as TextSize[]).map((s) => (
                 <button
