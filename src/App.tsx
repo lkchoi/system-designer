@@ -857,7 +857,7 @@ function Canvas({
                   </div>
                   <nav className="flex gap-0.5 bg-surface-2 rounded-lg p-[3px]">
                     <button
-                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "plan" ? " text-text-bright bg-accent" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "plan" ? " text-white bg-accent" : ""}`}
                       onClick={() => setMode("plan")}
                     >
                       <svg
@@ -875,7 +875,7 @@ function Canvas({
                       Plan
                     </button>
                     <button
-                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "stress" ? " text-text-bright bg-accent" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "stress" ? " text-white bg-accent" : ""}`}
                       onClick={() => setMode("stress")}
                     >
                       <svg
@@ -893,7 +893,7 @@ function Canvas({
                       Stress
                     </button>
                     <button
-                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "monitor" ? " text-text-bright bg-accent" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "monitor" ? " text-white bg-accent" : ""}`}
                       onClick={() => setMode("monitor")}
                     >
                       <svg
@@ -911,7 +911,7 @@ function Canvas({
                       Monitor
                     </button>
                     <button
-                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "price" ? " text-text-bright bg-accent" : ""}`}
+                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "price" ? " text-white bg-accent" : ""}`}
                       onClick={() => setMode("price")}
                     >
                       <svg
@@ -931,7 +931,7 @@ function Canvas({
                   </nav>
                   <div className="w-px h-6 bg-border shrink-0" />
                   <button
-                    className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2 shrink-0${isPathMode ? " text-text-bright bg-accent" : ""}`}
+                    className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2 shrink-0${isPathMode ? " text-white bg-accent" : ""}`}
                     onClick={togglePathMode}
                   >
                     <svg
