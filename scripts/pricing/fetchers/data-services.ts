@@ -472,7 +472,7 @@ export const fetcher: Fetcher = {
   async fetch(): Promise<FetchResult[]> {
     log("Data services: using static reference data");
     return Object.entries(STATIC).map(([tech, pricing]) =>
-      toResult(tech, pricing, SOURCES[tech] ?? "vendor pricing page")
+      toResult(tech, pricing, SOURCES[tech] ?? "vendor pricing page"),
     );
   },
 };

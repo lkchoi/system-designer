@@ -90,7 +90,9 @@ function ResultRow({ label, value }: { label: string; value: string }) {
 function ResultGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">{title}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">
+        {title}
+      </div>
       {children}
     </div>
   );
@@ -147,7 +149,10 @@ export default function CapacityCalculator({ open, onClose }: Props) {
   const ret = parseInt(retentionDays) || 365;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+      onClick={onClose}
+    >
       <div
         className="bg-surface border border-border rounded-xl w-[600px] max-w-[90vw] max-h-[85vh] flex flex-col shadow-[0_16px_50px_rgba(0,0,0,0.5)]"
         onClick={(e) => e.stopPropagation()}
@@ -173,7 +178,10 @@ export default function CapacityCalculator({ open, onClose }: Props) {
               </button>
             </div>
           </div>
-          <button className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-text-bright" onClick={onClose}>
+          <button
+            className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+            onClick={onClose}
+          >
             <svg
               width="14"
               height="14"
@@ -310,7 +318,9 @@ export default function CapacityCalculator({ open, onClose }: Props) {
                 </ResultGroup>
               </div>
             ) : (
-              <div className="text-center px-4 py-8 text-text-dim text-[13px]">Enter TPS and payload size to see estimates</div>
+              <div className="text-center px-4 py-8 text-text-dim text-[13px]">
+                Enter TPS and payload size to see estimates
+              </div>
             )}
           </div>
         )}
@@ -328,12 +338,19 @@ export default function CapacityCalculator({ open, onClose }: Props) {
 
             {filteredConstants.length > 0 && (
               <div className="mb-5 last:mb-0">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">Constants</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">
+                  Constants
+                </div>
                 <div className="flex flex-col gap-0.5">
                   {filteredConstants.map((c) => (
-                    <div key={c.name} className="flex items-center justify-between px-2.5 py-1.5 rounded-md transition-colors duration-100 hover:bg-surface-2">
+                    <div
+                      key={c.name}
+                      className="flex items-center justify-between px-2.5 py-1.5 rounded-md transition-colors duration-100 hover:bg-surface-2"
+                    >
                       <span className="text-[13px] text-text">{c.name}</span>
-                      <span className="font-mono text-[13px] font-semibold text-text-bright">{c.value}</span>
+                      <span className="font-mono text-[13px] font-semibold text-text-bright">
+                        {c.value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -342,20 +359,31 @@ export default function CapacityCalculator({ open, onClose }: Props) {
 
             {filteredTech.length > 0 && (
               <div className="mb-5 last:mb-0">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">Technology Limits</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-1">
+                  Technology Limits
+                </div>
                 <div className="flex flex-col gap-0.5">
                   {filteredTech.map((t) => (
-                    <div key={`${t.category}-${t.name}`} className="px-2.5 py-2 rounded-md border border-border bg-surface-2 mt-1.5">
+                    <div
+                      key={`${t.category}-${t.name}`}
+                      className="px-2.5 py-2 rounded-md border border-border bg-surface-2 mt-1.5"
+                    >
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[13px] font-semibold text-text-bright">{t.name}</span>
-                        <span className="text-[11px] text-text-dim bg-surface-3 px-[7px] py-0.5 rounded">{t.category}</span>
+                        <span className="text-[11px] text-text-dim bg-surface-3 px-[7px] py-0.5 rounded">
+                          {t.category}
+                        </span>
                       </div>
                       <div className="flex gap-2 py-0.5">
-                        <span className="text-[11px] font-semibold text-text-dim min-w-[72px] shrink-0">Throughput</span>
+                        <span className="text-[11px] font-semibold text-text-dim min-w-[72px] shrink-0">
+                          Throughput
+                        </span>
                         <span className="text-xs text-text leading-snug">{t.throughput}</span>
                       </div>
                       <div className="flex gap-2 py-0.5">
-                        <span className="text-[11px] font-semibold text-text-dim min-w-[72px] shrink-0">Limits</span>
+                        <span className="text-[11px] font-semibold text-text-dim min-w-[72px] shrink-0">
+                          Limits
+                        </span>
                         <span className="text-xs text-text leading-snug">{t.limits}</span>
                       </div>
                     </div>
@@ -365,7 +393,9 @@ export default function CapacityCalculator({ open, onClose }: Props) {
             )}
 
             {filteredConstants.length === 0 && filteredTech.length === 0 && (
-              <div className="text-center px-4 py-8 text-text-dim text-[13px]">No results for &ldquo;{search}&rdquo;</div>
+              <div className="text-center px-4 py-8 text-text-dim text-[13px]">
+                No results for &ldquo;{search}&rdquo;
+              </div>
             )}
           </div>
         )}

@@ -24,9 +24,12 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
   const failureState = data.stressFailure || "none";
   const displayStatus = isStressMode && stressEffect ? stressEffect.status : data.status;
 
-  const baseClasses = "bg-surface border border-border rounded-xl px-4 pt-3.5 pb-2.5 min-w-[180px] w-full h-full transition-[border-color,box-shadow] duration-150 box-border overflow-hidden";
+  const baseClasses =
+    "bg-surface border border-border rounded-xl px-4 pt-3.5 pb-2.5 min-w-[180px] w-full h-full transition-[border-color,box-shadow] duration-150 box-border overflow-hidden";
 
-  const selectedClasses = selected ? " border-accent shadow-[0_0_0_1px_var(--color-accent),0_0_20px_rgba(99,102,241,0.15)]" : "";
+  const selectedClasses = selected
+    ? " border-accent shadow-[0_0_0_1px_var(--color-accent),0_0_20px_rgba(99,102,241,0.15)]"
+    : "";
 
   const stressClasses = isStressMode
     ? failureState === "down"
@@ -63,7 +66,10 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
       <Handle type="source" position={Position.Left} id="left" className="system-handle" />
       <div className={`${baseClasses}${selectedClasses}${stressClasses}`}>
         <div className="flex items-center gap-2 mb-2.5">
-          <div className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0" style={{ background: def.color }}>
+          <div
+            className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0"
+            style={{ background: def.color }}
+          >
             <svg
               width="16"
               height="16"
@@ -77,18 +83,26 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
               <path d={def.icon} />
             </svg>
           </div>
-          <span className="flex-1 text-sm font-semibold text-text-bright whitespace-nowrap overflow-hidden text-ellipsis">{data.label}</span>
+          <span className="flex-1 text-sm font-semibold text-text-bright whitespace-nowrap overflow-hidden text-ellipsis">
+            {data.label}
+          </span>
           <span
             className="w-2 h-2 rounded-full shrink-0"
             style={{ background: STATUS_COLORS[displayStatus] }}
           />
         </div>
         {isStressMode && data.capClassification && (
-          <div className={`inline-flex items-center px-2 py-0.5 mb-2 rounded-full text-[11px] font-bold tracking-wide${
-            data.capClassification.toLowerCase() === "cp" ? " bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.25)]" :
-            data.capClassification.toLowerCase() === "ap" ? " bg-[rgba(34,197,94,0.15)] text-[#22c55e] border border-[rgba(34,197,94,0.25)]" :
-            data.capClassification.toLowerCase() === "ca" ? " bg-[rgba(234,179,8,0.15)] text-[#eab308] border border-[rgba(234,179,8,0.25)]" : ""
-          }`}>
+          <div
+            className={`inline-flex items-center px-2 py-0.5 mb-2 rounded-full text-[11px] font-bold tracking-wide${
+              data.capClassification.toLowerCase() === "cp"
+                ? " bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.25)]"
+                : data.capClassification.toLowerCase() === "ap"
+                  ? " bg-[rgba(34,197,94,0.15)] text-[#22c55e] border border-[rgba(34,197,94,0.25)]"
+                  : data.capClassification.toLowerCase() === "ca"
+                    ? " bg-[rgba(234,179,8,0.15)] text-[#eab308] border border-[rgba(234,179,8,0.25)]"
+                    : ""
+            }`}
+          >
             {data.capClassification}
           </div>
         )}
@@ -107,7 +121,9 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
               <rect x="1" y="9" width="6" height="6" rx="1" />
               <rect x="9" y="9" width="6" height="6" rx="1" />
             </svg>
-            <span className="whitespace-nowrap overflow-hidden text-ellipsis">{data.shardKey || "Sharded"}</span>
+            <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+              {data.shardKey || "Sharded"}
+            </span>
           </div>
         )}
         {mode !== "plan" && (
@@ -118,7 +134,9 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             </div>
             <div className="flex gap-2 text-xs text-text-dim">
               <span>Memory</span>
-              <span className="text-text-bright font-semibold font-mono">{data.metrics.memory}%</span>
+              <span className="text-text-bright font-semibold font-mono">
+                {data.metrics.memory}%
+              </span>
             </div>
           </div>
         )}
@@ -164,7 +182,9 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
           </button>
         </div>
         {isStressMode && failureState === "down" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(239,68,68,0.08)] rounded-xl pointer-events-none text-[11px] font-bold tracking-widest text-[#ef4444]">OFFLINE</div>
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(239,68,68,0.08)] rounded-xl pointer-events-none text-[11px] font-bold tracking-widest text-[#ef4444]">
+            OFFLINE
+          </div>
         )}
       </div>
       <Handle type="source" position={Position.Right} id="right" className="system-handle" />

@@ -51,9 +51,10 @@ function renderMode(m: { name: string; priceImpact: string; description: string 
 
 function renderPricing(key: string, p: TechnologyPricing): string {
   const lines: string[] = [];
-  const q = key.includes(" ") || key.includes("(") || key.includes("/") || key.includes(".")
-    ? `"${esc(key)}"`
-    : key;
+  const q =
+    key.includes(" ") || key.includes("(") || key.includes("/") || key.includes(".")
+      ? `"${esc(key)}"`
+      : key;
 
   lines.push(`  ${q}: {`);
   // model
@@ -127,80 +128,201 @@ function categorize(tech: string): string {
   // Databases
   if (
     [
-      "postgresql", "mysql", "mongodb", "dynamodb", "cassandra", "cockroachdb",
-      "sql server", "oracle database", "tidb", "scylladb", "mariadb",
-      "amazon aurora", "sqlite", "neo4j", "azure cosmos db", "influxdb",
-      "google cloud firestore", "couchbase",
+      "postgresql",
+      "mysql",
+      "mongodb",
+      "dynamodb",
+      "cassandra",
+      "cockroachdb",
+      "sql server",
+      "oracle database",
+      "tidb",
+      "scylladb",
+      "mariadb",
+      "amazon aurora",
+      "sqlite",
+      "neo4j",
+      "azure cosmos db",
+      "influxdb",
+      "google cloud firestore",
+      "couchbase",
     ].some((d) => t === d.toLowerCase())
-  ) return "DATABASES";
+  )
+    return "DATABASES";
   // API Gateways
-  if (t.includes("api gateway") || t.includes("api management") || ["kong", "apigee", "nginx", "envoy", "traefik"].some((g) => t === g))
+  if (
+    t.includes("api gateway") ||
+    t.includes("api management") ||
+    ["kong", "apigee", "nginx", "envoy", "traefik"].some((g) => t === g)
+  )
     return "API GATEWAYS";
   // Load Balancers
   if (t.includes("load balan") || t.includes("alb") || t.includes("nlb") || t === "haproxy")
     return "LOAD BALANCERS";
   // CDN
-  if (t.includes("cdn") || t.includes("cloudfront") || t.includes("edge network") || ["fastly", "akamai"].some((c) => t === c))
+  if (
+    t.includes("cdn") ||
+    t.includes("cloudfront") ||
+    t.includes("edge network") ||
+    ["fastly", "akamai"].some((c) => t === c)
+  )
     return "CDN";
   // Caches
-  if (["redis", "memcached", "dragonfly", "keydb", "hazelcast", "varnish", "cdn edge cache"].some((c) => t === c))
+  if (
+    ["redis", "memcached", "dragonfly", "keydb", "hazelcast", "varnish", "cdn edge cache"].some(
+      (c) => t === c,
+    )
+  )
     return "CACHES";
   // Message Queues & Streaming
   if (
-    ["apache kafka", "rabbitmq", "amazon sqs", "google pub/sub", "nats", "apache pulsar", "azure service bus", "redis streams"].some(
-      (m) => t === m.toLowerCase(),
-    )
-  ) return "MESSAGE QUEUES & STREAMING";
+    [
+      "apache kafka",
+      "rabbitmq",
+      "amazon sqs",
+      "google pub/sub",
+      "nats",
+      "apache pulsar",
+      "azure service bus",
+      "redis streams",
+    ].some((m) => t === m.toLowerCase())
+  )
+    return "MESSAGE QUEUES & STREAMING";
   // Storage
   if (
-    ["amazon s3", "google cloud storage", "azure blob storage", "minio", "cloudflare r2", "amazon efs", "amazon ebs", "ceph"].some(
-      (s) => t === s.toLowerCase(),
-    )
-  ) return "STORAGE";
+    [
+      "amazon s3",
+      "google cloud storage",
+      "azure blob storage",
+      "minio",
+      "cloudflare r2",
+      "amazon efs",
+      "amazon ebs",
+      "ceph",
+    ].some((s) => t === s.toLowerCase())
+  )
+    return "STORAGE";
   // Firewalls & Security
-  if (t.includes("waf") || t.includes("firewall") || t.includes("security") || t.includes("armor") || t.includes("modsecurity") || t.includes("palo alto"))
+  if (
+    t.includes("waf") ||
+    t.includes("firewall") ||
+    t.includes("security") ||
+    t.includes("armor") ||
+    t.includes("modsecurity") ||
+    t.includes("palo alto")
+  )
     return "FIREWALLS & SECURITY";
   // DNS
   if (t.includes("dns") || t.includes("route 53") || t.includes("coredns") || t.includes("ns1"))
     return "DNS";
   // Serverless
-  if (t.includes("lambda") || t.includes("cloud functions") || t.includes("azure functions") || t.includes("workers") || t.includes("vercel functions"))
+  if (
+    t.includes("lambda") ||
+    t.includes("cloud functions") ||
+    t.includes("azure functions") ||
+    t.includes("workers") ||
+    t.includes("vercel functions")
+  )
     return "SERVERLESS";
   // Containers
   if (
-    t.includes("fargate") || t.includes("cloud run") || t.includes("kubernetes") || t.includes("ecs") || t.includes("docker") ||
-    t.includes("nomad") || t.includes("openshift") || t.includes("gke")
-  ) return "CONTAINERS & ORCHESTRATION";
+    t.includes("fargate") ||
+    t.includes("cloud run") ||
+    t.includes("kubernetes") ||
+    t.includes("ecs") ||
+    t.includes("docker") ||
+    t.includes("nomad") ||
+    t.includes("openshift") ||
+    t.includes("gke")
+  )
+    return "CONTAINERS & ORCHESTRATION";
   // Stream Processors
-  if (t.includes("kafka streams") || t.includes("flink") || t.includes("spark streaming") || t.includes("kinesis") || t.includes("dataflow") || t.includes("firehose") || t.includes("risingwave"))
+  if (
+    t.includes("kafka streams") ||
+    t.includes("flink") ||
+    t.includes("spark streaming") ||
+    t.includes("kinesis") ||
+    t.includes("dataflow") ||
+    t.includes("firehose") ||
+    t.includes("risingwave")
+  )
     return "STREAM PROCESSORS";
   // Data Warehouses
-  if (["snowflake", "google bigquery", "amazon redshift", "databricks (lakehouse)", "clickhouse", "apache druid", "duckdb"].some((w) => t === w.toLowerCase()))
+  if (
+    [
+      "snowflake",
+      "google bigquery",
+      "amazon redshift",
+      "databricks (lakehouse)",
+      "clickhouse",
+      "apache druid",
+      "duckdb",
+    ].some((w) => t === w.toLowerCase())
+  )
     return "DATA WAREHOUSES";
   // Webhooks
-  if (["svix", "hookdeck", "zapier webhooks", "ngrok"].some((w) => t === w.toLowerCase()) || t.includes("custom (express"))
+  if (
+    ["svix", "hookdeck", "zapier webhooks", "ngrok"].some((w) => t === w.toLowerCase()) ||
+    t.includes("custom (express")
+  )
     return "WEBHOOKS";
   // Scheduling
   if (
-    ["aws eventbridge scheduler", "gcp cloud scheduler", "cron (linux)", "kubernetes cronjob", "celery beat", "temporal", "azure logic apps"].some(
-      (s) => t === s.toLowerCase(),
-    ) || t.includes("eventbridge") && t.includes("scheduler")
-  ) return "SCHEDULING";
+    [
+      "aws eventbridge scheduler",
+      "gcp cloud scheduler",
+      "cron (linux)",
+      "kubernetes cronjob",
+      "celery beat",
+      "temporal",
+      "azure logic apps",
+    ].some((s) => t === s.toLowerCase()) ||
+    (t.includes("eventbridge") && t.includes("scheduler"))
+  )
+    return "SCHEDULING";
   // Search
-  if (["elasticsearch", "opensearch", "typesense", "meilisearch", "algolia", "apache solr", "pinecone"].some((s) => t === s.toLowerCase()))
+  if (
+    [
+      "elasticsearch",
+      "opensearch",
+      "typesense",
+      "meilisearch",
+      "algolia",
+      "apache solr",
+      "pinecone",
+    ].some((s) => t === s.toLowerCase())
+  )
     return "SEARCH ENGINES";
   // Client frameworks
   if (
-    ["react", "next.js", "vue.js", "angular", "react native", "flutter", "swift/swiftui", "kotlin/jetpack compose"].some(
-      (c) => t === c.toLowerCase(),
-    )
-  ) return "CLIENT FRAMEWORKS";
+    [
+      "react",
+      "next.js",
+      "vue.js",
+      "angular",
+      "react native",
+      "flutter",
+      "swift/swiftui",
+      "kotlin/jetpack compose",
+    ].some((c) => t === c.toLowerCase())
+  )
+    return "CLIENT FRAMEWORKS";
   // Service frameworks
   if (
-    t.includes("express") || t.includes("fastify") || t.includes("gin") || t.includes("fiber") ||
-    t.includes("spring boot") || t.includes("fastapi") || t.includes("django") || t.includes("actix") ||
-    t.includes("axum") || t.includes("asp.net") || t.includes("phoenix") || t.includes("grpc service")
-  ) return "SERVICE FRAMEWORKS";
+    t.includes("express") ||
+    t.includes("fastify") ||
+    t.includes("gin") ||
+    t.includes("fiber") ||
+    t.includes("spring boot") ||
+    t.includes("fastapi") ||
+    t.includes("django") ||
+    t.includes("actix") ||
+    t.includes("axum") ||
+    t.includes("asp.net") ||
+    t.includes("phoenix") ||
+    t.includes("grpc service")
+  )
+    return "SERVICE FRAMEWORKS";
 
   return "OTHER";
 }

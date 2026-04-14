@@ -545,8 +545,6 @@ export const fetcher: Fetcher = {
   technologies: Object.keys(STATIC),
   async fetch(): Promise<FetchResult[]> {
     log("Open-source: returning static reference data (all free/OSS)");
-    return Object.entries(STATIC).map(([tech, pricing]) =>
-      toResult(tech, pricing, "open-source"),
-    );
+    return Object.entries(STATIC).map(([tech, pricing]) => toResult(tech, pricing, "open-source"));
   },
 };

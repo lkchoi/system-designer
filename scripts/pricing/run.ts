@@ -43,7 +43,9 @@ async function main(): Promise<void> {
     for (const [name, f] of Object.entries(FETCHERS)) {
       console.log(`  ${name.padEnd(16)} ${f.description} (${f.technologies.length} technologies)`);
     }
-    console.log(`\nTotal: ${Object.values(FETCHERS).reduce((n, f) => n + f.technologies.length, 0)} technologies\n`);
+    console.log(
+      `\nTotal: ${Object.values(FETCHERS).reduce((n, f) => n + f.technologies.length, 0)} technologies\n`,
+    );
     return;
   }
 

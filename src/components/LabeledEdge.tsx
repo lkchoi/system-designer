@@ -116,14 +116,26 @@ export default function LabeledEdge({
             <div className="flex flex-col items-center gap-[3px]">
               {hasTags && (
                 <div className="flex gap-[3px]">
-                  {protocol && <span className="text-[10px] font-semibold px-1.5 py-[1px] rounded-[3px] whitespace-nowrap tracking-[0.02em] bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.25)]">{protocol}</span>}
-                  {format && <span className="text-[10px] font-semibold px-1.5 py-[1px] rounded-[3px] whitespace-nowrap tracking-[0.02em] bg-[rgba(16,185,129,0.15)] text-[#34d399] border border-[rgba(16,185,129,0.25)]">{format}</span>}
+                  {protocol && (
+                    <span className="text-[10px] font-semibold px-1.5 py-[1px] rounded-[3px] whitespace-nowrap tracking-[0.02em] bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.25)]">
+                      {protocol}
+                    </span>
+                  )}
+                  {format && (
+                    <span className="text-[10px] font-semibold px-1.5 py-[1px] rounded-[3px] whitespace-nowrap tracking-[0.02em] bg-[rgba(16,185,129,0.15)] text-[#34d399] border border-[rgba(16,185,129,0.25)]">
+                      {format}
+                    </span>
+                  )}
                 </div>
               )}
               {label ? (
-                <span className="bg-surface-2 border border-border text-text-bright px-2 py-0.5 rounded whitespace-nowrap font-medium">{label}</span>
+                <span className="bg-surface-2 border border-border text-text-bright px-2 py-0.5 rounded whitespace-nowrap font-medium">
+                  {label}
+                </span>
               ) : selected && !hasTags ? (
-                <span className="bg-surface-2 border-dashed border-border text-text-dim px-2 py-0.5 rounded whitespace-nowrap italic font-normal">double-click to label</span>
+                <span className="bg-surface-2 border-dashed border-border text-text-dim px-2 py-0.5 rounded whitespace-nowrap italic font-normal">
+                  double-click to label
+                </span>
               ) : null}
             </div>
           )}

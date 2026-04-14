@@ -5,6 +5,7 @@ An interactive system architecture designer built with React, TypeScript, and [R
 ## Features
 
 ### Canvas
+
 - Drag-and-drop 18 built-in component types (databases, services, API gateways, caches, message queues, and more) onto an infinite canvas
 - Connect components with labeled edges specifying protocol (HTTP, gRPC, WebSocket, etc.) and data format (JSON, Protobuf, etc.)
 - Connection validation enforces architectural constraints (e.g., API gateway cannot connect directly to a database)
@@ -22,9 +23,11 @@ An interactive system architecture designer built with React, TypeScript, and [R
 **Price** — Analyze cost based on selected technologies and capacity.
 
 ### Flow Paths
+
 Build named sequences of nodes to document request flows (e.g., "Post a comment": Client -> API Gateway -> Comment Service -> Database). Save with name and description, load from the sidebar.
 
 ### Extensible Component Registry
+
 All component types are defined in a single registry (`src/registry/`). Each entry includes visual definition, plan fields, technology options, and connection compatibility rules. Adding a new component type requires one entry in `builtin-entries.ts`. The registry supports custom user-defined types via `registry.register()`.
 
 ## Getting Started

@@ -5,8 +5,7 @@ import { fetchJson, log, warn, toResult } from "../utils.ts";
 // https://cloudpricingcalculator.appspot.com/static/data/pricelist.json
 // This returns a large JSON with SKU-based pricing.
 
-const GCP_PRICING_URL =
-  "https://cloudpricingcalculator.appspot.com/static/data/pricelist.json";
+const GCP_PRICING_URL = "https://cloudpricingcalculator.appspot.com/static/data/pricelist.json";
 
 // ─── Types for GCP pricing JSON structure ───────────────────────────────────
 
@@ -715,13 +714,7 @@ export const fetcher: Fetcher = {
         pricing = staticPricing;
       }
 
-      results.push(
-        toResult(
-          technology,
-          pricing,
-          priceList ? GCP_PRICING_URL : "static",
-        ),
-      );
+      results.push(toResult(technology, pricing, priceList ? GCP_PRICING_URL : "static"));
     }
 
     log(`GCP fetcher complete: ${results.length} technologies`);

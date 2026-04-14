@@ -68,11 +68,7 @@ export function toResult(
 }
 
 /** Retry an async function up to `retries` times with linear backoff. */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  retries = 2,
-  delayMs = 2000,
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 2000): Promise<T> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await fn();

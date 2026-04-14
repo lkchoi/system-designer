@@ -89,7 +89,13 @@ export default function PropertiesPanel({
   return (
     <aside
       className={`${panelPosition === "bottom" ? "w-auto min-w-0 h-[260px] min-h-[150px] max-h-[70vh] border-l-0 border-t" : "w-[340px] min-w-[340px] border-l"} bg-surface border-border flex flex-col z-10 overflow-y-auto`}
-      style={size ? (panelPosition === "bottom" ? { height: size } : { width: size, minWidth: size }) : undefined}
+      style={
+        size
+          ? panelPosition === "bottom"
+            ? { height: size }
+            : { width: size, minWidth: size }
+          : undefined
+      }
     >
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border shrink-0">
         <h2 className="text-base font-bold text-text-bright">Properties</h2>
@@ -129,7 +135,10 @@ export default function PropertiesPanel({
               </svg>
             )}
           </button>
-          <button className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright" onClick={onClose}>
+          <button
+            className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+            onClick={onClose}
+          >
             &times;
           </button>
         </div>
@@ -147,7 +156,9 @@ export default function PropertiesPanel({
 
         <div className="flex flex-col gap-2">
           <label className="text-[13px] font-semibold text-text-dim">Type</label>
-          <div className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm">{displayType(data.componentType)}</div>
+          <div className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm">
+            {displayType(data.componentType)}
+          </div>
         </div>
 
         {mode === "monitor" && (
@@ -210,21 +221,27 @@ export default function PropertiesPanel({
             </div>
             <div className="flex flex-col gap-2">
               <label className="text-[13px] font-semibold text-text-dim">Failure State</label>
-              <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[13px] font-bold tracking-wide ${STRESS_STATE_COLORS[data.stressFailure || "none"]}`}>
+              <div
+                className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[13px] font-bold tracking-wide ${STRESS_STATE_COLORS[data.stressFailure || "none"]}`}
+              >
                 {data.stressFailure === "down"
                   ? "DOWN"
                   : data.stressFailure === "overloaded"
                     ? "OVERLOADED"
                     : "HEALTHY"}
               </div>
-              <span className="text-[11px] text-text-dim mt-1">Click node on canvas to cycle state</span>
+              <span className="text-[11px] text-text-dim mt-1">
+                Click node on canvas to cycle state
+              </span>
             </div>
             {stressEffect &&
               stressEffect.reason !== "healthy" &&
               stressEffect.reason !== "direct" && (
                 <div className="flex flex-col gap-2">
                   <label className="text-[13px] font-semibold text-text-dim">Cascade Effect</label>
-                  <div className="text-[13px] text-[#eab308] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.2)] rounded-lg px-3 py-2 leading-snug">{stressEffect.explanation}</div>
+                  <div className="text-[13px] text-[#eab308] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.2)] rounded-lg px-3 py-2 leading-snug">
+                    {stressEffect.explanation}
+                  </div>
                 </div>
               )}
           </>
@@ -234,7 +251,10 @@ export default function PropertiesPanel({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="text-[13px] font-semibold text-text-dim">Endpoints</label>
-              <button className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 hover:bg-accent-bg" onClick={addEndpoint}>
+              <button
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 hover:bg-accent-bg"
+                onClick={addEndpoint}
+              >
                 <svg
                   width="14"
                   height="14"
@@ -251,12 +271,17 @@ export default function PropertiesPanel({
               </button>
             </div>
             {(data.endpoints ?? []).length === 0 ? (
-              <div className="text-xs text-text-dim p-3 text-center bg-surface-2 border border-dashed border-border rounded-lg mt-1">No endpoints defined</div>
+              <div className="text-xs text-text-dim p-3 text-center bg-surface-2 border border-dashed border-border rounded-lg mt-1">
+                No endpoints defined
+              </div>
             ) : (
               <div className="flex flex-col gap-1 mt-1">
                 {(data.endpoints ?? []).map((ep) =>
                   editingEndpointId === ep.id ? (
-                    <div key={ep.id} className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface border-accent rounded-lg transition-[border-color] duration-150 border">
+                    <div
+                      key={ep.id}
+                      className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface border-accent rounded-lg transition-[border-color] duration-150 border"
+                    >
                       <select
                         className="text-[11px] font-bold px-1 py-[3px] rounded bg-surface-2 border border-border text-text-bright outline-none cursor-pointer shrink-0"
                         value={ep.method}
@@ -298,11 +323,18 @@ export default function PropertiesPanel({
                       </button>
                     </div>
                   ) : (
-                    <div key={ep.id} className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface-2 border border-border rounded-lg transition-[border-color] duration-150 hover:border-surface-3">
-                      <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded shrink-0 font-mono uppercase ${METHOD_COLORS[ep.method.toLowerCase()] ?? ""}`}>
+                    <div
+                      key={ep.id}
+                      className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface-2 border border-border rounded-lg transition-[border-color] duration-150 hover:border-surface-3"
+                    >
+                      <span
+                        className={`text-[11px] font-bold px-1.5 py-0.5 rounded shrink-0 font-mono uppercase ${METHOD_COLORS[ep.method.toLowerCase()] ?? ""}`}
+                      >
                         {ep.method}
                       </span>
-                      <span className="flex-1 text-[13px] text-text-bright font-mono whitespace-nowrap overflow-hidden text-ellipsis min-w-0">{ep.path || "/..."}</span>
+                      <span className="flex-1 text-[13px] text-text-bright font-mono whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
+                        {ep.path || "/..."}
+                      </span>
                       <div className="flex gap-0.5 opacity-0 transition-opacity duration-150 shrink-0 group-hover:opacity-100">
                         <button
                           className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
@@ -379,22 +411,35 @@ export default function PropertiesPanel({
                         return (
                           <div className="bg-surface-2 border border-border rounded-lg p-2.5 mt-1.5 flex flex-col gap-2">
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Purpose</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                                Purpose
+                              </span>
                               <span className="text-xs text-text leading-snug">{tech.purpose}</span>
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Throughput</span>
-                              <span className="text-xs text-text leading-snug">{tech.throughput}</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                                Throughput
+                              </span>
+                              <span className="text-xs text-text leading-snug">
+                                {tech.throughput}
+                              </span>
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Limits</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                                Limits
+                              </span>
                               <span className="text-xs text-text leading-snug">{tech.limits}</span>
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">Providers</span>
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                                Providers
+                              </span>
                               <div className="flex flex-wrap gap-1 mt-0.5">
                                 {tech.providers.map((p) => (
-                                  <span key={p} className="text-[11px] px-[7px] py-0.5 bg-accent-bg text-accent rounded font-medium whitespace-nowrap">
+                                  <span
+                                    key={p}
+                                    className="text-[11px] px-[7px] py-0.5 bg-accent-bg text-accent rounded font-medium whitespace-nowrap"
+                                  >
                                     {p}
                                   </span>
                                 ))}
@@ -454,7 +499,10 @@ export default function PropertiesPanel({
 
               <div className="bg-surface-2 border border-border rounded-[10px] p-3">
                 <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#ec489933", color: "#ec4899" }}>
+                  <div
+                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    style={{ background: "#ec489933", color: "#ec4899" }}
+                  >
                     <svg
                       width="14"
                       height="14"
@@ -482,7 +530,10 @@ export default function PropertiesPanel({
 
               <div className="bg-surface-2 border border-border rounded-[10px] p-3">
                 <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#eab30833", color: "#eab308" }}>
+                  <div
+                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    style={{ background: "#eab30833", color: "#eab308" }}
+                  >
                     <svg
                       width="14"
                       height="14"
@@ -497,13 +548,17 @@ export default function PropertiesPanel({
                   <span>Requests/sec</span>
                 </div>
                 <div className="text-[28px] font-bold text-text-bright font-mono leading-tight mb-1">
-                  {data.metrics.requestsPerSec} <span className="text-sm font-normal text-text-dim">req/s</span>
+                  {data.metrics.requestsPerSec}{" "}
+                  <span className="text-sm font-normal text-text-dim">req/s</span>
                 </div>
               </div>
 
               <div className="bg-surface-2 border border-border rounded-[10px] p-3">
                 <div className="flex items-center gap-2 text-xs text-text-dim mb-1.5">
-                  <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#6366f133", color: "#6366f1" }}>
+                  <div
+                    className="w-6 h-6 rounded-md flex items-center justify-center"
+                    style={{ background: "#6366f133", color: "#6366f1" }}
+                  >
                     <svg
                       width="14"
                       height="14"
@@ -519,7 +574,8 @@ export default function PropertiesPanel({
                   <span>Latency</span>
                 </div>
                 <div className="text-[28px] font-bold text-text-bright font-mono leading-tight mb-1">
-                  {data.metrics.latency} <span className="text-sm font-normal text-text-dim">ms</span>
+                  {data.metrics.latency}{" "}
+                  <span className="text-sm font-normal text-text-dim">ms</span>
                 </div>
               </div>
             </div>
@@ -530,7 +586,9 @@ export default function PropertiesPanel({
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-semibold text-text-dim">Sharding</label>
             <div className="flex items-center justify-between">
-              <span className="text-[13px] text-text">{data.sharded ? "Sharded" : "Not Sharded"}</span>
+              <span className="text-[13px] text-text">
+                {data.sharded ? "Sharded" : "Not Sharded"}
+              </span>
               <button
                 className={`w-9 h-5 rounded-[10px] border relative cursor-pointer transition-[background,border-color] duration-150 shrink-0${data.sharded ? " bg-accent border-accent" : " bg-surface-3 border-border"}`}
                 onClick={() =>
@@ -540,7 +598,9 @@ export default function PropertiesPanel({
                   })
                 }
               >
-                <span className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.sharded ? " translate-x-4" : ""}`} />
+                <span
+                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.sharded ? " translate-x-4" : ""}`}
+                />
               </button>
             </div>
             {data.sharded && (
@@ -562,11 +622,15 @@ export default function PropertiesPanel({
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-surface-2 border border-border rounded-lg px-3 py-2.5 flex flex-col gap-0.5">
               <span className="text-xs text-text-dim">X</span>
-              <span className="text-base font-bold text-text-bright font-mono">{Math.round(node.position.x)}</span>
+              <span className="text-base font-bold text-text-bright font-mono">
+                {Math.round(node.position.x)}
+              </span>
             </div>
             <div className="bg-surface-2 border border-border rounded-lg px-3 py-2.5 flex flex-col gap-0.5">
               <span className="text-xs text-text-dim">Y</span>
-              <span className="text-base font-bold text-text-bright font-mono">{Math.round(node.position.y)}</span>
+              <span className="text-base font-bold text-text-bright font-mono">
+                {Math.round(node.position.y)}
+              </span>
             </div>
           </div>
         </div>

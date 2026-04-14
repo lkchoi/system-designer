@@ -322,8 +322,7 @@ const STATIC: Record<string, TechnologyPricing> = {
         description: "dax.r5.large in-memory cache node",
       },
     ],
-    freeTier:
-      "25 provisioned WCUs + 25 RCUs + 25 GB storage — permanently free (not 12-month)",
+    freeTier: "25 provisioned WCUs + 25 RCUs + 25 GB storage — permanently free (not 12-month)",
     modes: [
       {
         name: "Global Tables (Multi-Region)",
@@ -340,8 +339,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Transactional Operations",
         priceImpact: "2x WRU/RRU cost",
-        description:
-          "TransactWriteItems/TransactGetItems consume double the capacity units",
+        description: "TransactWriteItems/TransactGetItems consume double the capacity units",
       },
     ],
   },
@@ -562,8 +560,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "FIFO Queues",
         priceImpact: "+$0.10/million requests",
-        description:
-          "Strict ordering within Message Group ID + dedup within 5-min window",
+        description: "Strict ordering within Message Group ID + dedup within 5-min window",
       },
       {
         name: "FIFO Throughput Limit",
@@ -631,8 +628,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Extended Support (Redis OSS)",
         priceImpact: "+80% surcharge",
-        description:
-          "Redis OSS EOL 2026; additional 80% on base node price for extended support",
+        description: "Redis OSS EOL 2026; additional 80% on base node price for extended support",
       },
     ],
   },
@@ -766,8 +762,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Fargate vs EC2",
         priceImpact: "Fargate ~20–30% premium",
-        description:
-          "Fargate: no management overhead. EC2: cheaper with RIs at high utilization.",
+        description: "Fargate: no management overhead. EC2: cheaper with RIs at high utilization.",
       },
     ],
   },
@@ -977,9 +972,7 @@ const STATIC: Record<string, TechnologyPricing> = {
   "AWS EventBridge Scheduler": {
     model: "Per invocation. Extremely economical with generous free tier.",
     unit: "Invocations (each scheduled rule firing).",
-    tiers: [
-      { name: "Invocations", price: "$1.00/million", description: "After free tier" },
-    ],
+    tiers: [{ name: "Invocations", price: "$1.00/million", description: "After free tier" }],
     freeTier: "14,000,000 invocations/month — permanently free",
   },
 
@@ -1163,9 +1156,7 @@ function updateLambdaTiers(data: AwsPricingData, pricing: TechnologyPricing): vo
     operatingSystem: "Linux",
   });
   // Filter for non-ARM
-  const x86 = durationX86.filter(
-    (d) => d.product.attributes["architectureType"] !== "arm64",
-  );
+  const x86 = durationX86.filter((d) => d.product.attributes["architectureType"] !== "arm64");
   if (x86[0]) {
     const tier = pricing.tiers.find((t) => t.name === "Duration (x86)");
     if (tier) {
@@ -1175,9 +1166,7 @@ function updateLambdaTiers(data: AwsPricingData, pricing: TechnologyPricing): vo
   }
 
   // Duration (ARM)
-  const arm = durationX86.filter(
-    (d) => d.product.attributes["architectureType"] === "arm64",
-  );
+  const arm = durationX86.filter((d) => d.product.attributes["architectureType"] === "arm64");
   if (arm[0]) {
     const tier = pricing.tiers.find((t) => t.name === "Duration (ARM)");
     if (tier) {

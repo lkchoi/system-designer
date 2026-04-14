@@ -14,8 +14,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Amazon Aurora": {
     model:
       "Provisioned instances (like RDS) or Serverless v2 (auto-scaling ACUs). Two storage modes: Standard and I/O-Optimized.",
-    unit:
-      "ACU (Aurora Capacity Unit). 1 ACU ≈ 2 GiB RAM + proportional CPU + networking. Serverless v2 scales in 0.5 ACU increments, billed per ACU-second. Can scale to 0 ACUs when idle.",
+    unit: "ACU (Aurora Capacity Unit). 1 ACU ≈ 2 GiB RAM + proportional CPU + networking. Serverless v2 scales in 0.5 ACU increments, billed per ACU-second. Can scale to 0 ACUs when idle.",
     tiers: [
       {
         name: "Serverless v2 (Standard)",
@@ -53,22 +52,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Multi-AZ Reader Instances",
         priceImpact: "Each reader billed separately",
-        description:
-          "Add read replicas in other AZs for HA and read scaling",
+        description: "Add read replicas in other AZs for HA and read scaling",
       },
       {
         name: "Global Database",
         priceImpact: "Per-region reader instance cost",
-        description:
-          "Reader instances in secondary regions; <1s replication lag",
+        description: "Reader instances in secondary regions; <1s replication lag",
       },
     ],
   },
   "Azure Cosmos DB": {
     model:
       "Three throughput modes: Provisioned (reserved RU/s), Autoscale (dynamic RU/s), Serverless (per-request RU). Storage billed separately.",
-    unit:
-      "Request Unit (RU). 1 RU = cost of a point read (fetch single item by ID) of a 1 KB document. Writes ≈ 5 RUs per 1 KB. Cross-partition queries consume many RUs proportional to data scanned. All operations (reads, writes, queries, stored procedures) are measured in RUs.",
+    unit: "Request Unit (RU). 1 RU = cost of a point read (fetch single item by ID) of a 1 KB document. Writes ≈ 5 RUs per 1 KB. Cross-partition queries consume many RUs proportional to data scanned. All operations (reads, writes, queries, stored procedures) are measured in RUs.",
     tiers: [
       {
         name: "Provisioned (single-region)",
@@ -86,8 +82,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "All throughput modes",
       },
     ],
-    freeTier:
-      "1,000 RU/s provisioned + 25 GB storage — permanently free (one per subscription)",
+    freeTier: "1,000 RU/s provisioned + 25 GB storage — permanently free (one per subscription)",
     modes: [
       {
         name: "Multi-Region Writes (Multi-Master)",
@@ -104,16 +99,14 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Strong Consistency",
         priceImpact: "2x read cost",
-        description:
-          "Strong consistency reads consume 2 RUs per 4 KB vs 1 RU for session/eventual",
+        description: "Strong consistency reads consume 2 RUs per 4 KB vs 1 RU for session/eventual",
       },
     ],
   },
   Cassandra: {
     model:
       "AWS Keyspaces: Serverless per-request or provisioned capacity (RCU/WCU like DynamoDB). DataStax Astra: serverless or dedicated.",
-    unit:
-      "WCU/RCU for Keyspaces. 1 WCU = 1 write/sec for rows ≤1 KB at LOCAL_QUORUM. 1 RCU = 1 read/sec for rows ≤4 KB. LOCAL_ONE reads cost half.",
+    unit: "WCU/RCU for Keyspaces. 1 WCU = 1 write/sec for rows ≤1 KB at LOCAL_QUORUM. 1 RCU = 1 read/sec for rows ≤4 KB. LOCAL_ONE reads cost half.",
     tiers: [
       {
         name: "Keyspaces Storage",
@@ -135,22 +128,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "LOCAL_ONE reads",
         priceImpact: "50% cheaper than LOCAL_QUORUM",
-        description:
-          "Eventual consistency reads at half the RCU cost",
+        description: "Eventual consistency reads at half the RCU cost",
       },
       {
         name: "Multi-Region (Keyspaces)",
         priceImpact: "Writes billed per replica region",
-        description:
-          "Cross-region replication data transfer is free",
+        description: "Cross-region replication data transfer is free",
       },
     ],
   },
   CockroachDB: {
     model:
       "Three tiers: Basic (serverless, RU-based), Standard (provisioned vCPUs), Advanced (dedicated).",
-    unit:
-      "Request Unit (RU) — an abstraction of compute + I/O consumed by a SQL operation. Heavier queries (full table scans, large writes) consume more RUs.",
+    unit: "Request Unit (RU) — an abstraction of compute + I/O consumed by a SQL operation. Heavier queries (full table scans, large writes) consume more RUs.",
     tiers: [
       {
         name: "Basic (Free)",
@@ -180,16 +170,14 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Multi-Region",
         priceImpact: "~3x single-region cost",
-        description:
-          "Each region's compute and storage billed separately",
+        description: "Each region's compute and storage billed separately",
       },
     ],
   },
   Couchbase: {
     model:
       "Credit-based. Credits consumed per hour based on cluster configuration (nodes, specs, region, plan).",
-    unit:
-      "Credits/hour. Credit consumption depends on cloud region, node count, RAM/vCPU, storage IOPS, and service plan tier.",
+    unit: "Credits/hour. Credit consumption depends on cloud region, node count, RAM/vCPU, storage IOPS, and service plan tier.",
     tiers: [
       { name: "Basic Plan", price: "Community support", description: "Entry-level" },
       { name: "Developer Pro", price: "Business-hours support", description: "Mid-tier" },
@@ -204,8 +192,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   DynamoDB: {
     model:
       "Two capacity modes: On-Demand (per-request) or Provisioned (per-second throughput reservation). Storage billed separately.",
-    unit:
-      "RCU (Read Capacity Unit) / WCU (Write Capacity Unit). 1 WCU = 1 write/sec for items ≤1 KB. 1 RCU = 1 strongly consistent read/sec for items ≤4 KB (or 2 eventually consistent reads/sec). On-demand uses WRU/RRU (request units) billed per individual operation. Transactional reads/writes cost 2x.",
+    unit: "RCU (Read Capacity Unit) / WCU (Write Capacity Unit). 1 WCU = 1 write/sec for items ≤1 KB. 1 RCU = 1 strongly consistent read/sec for items ≤4 KB (or 2 eventually consistent reads/sec). On-demand uses WRU/RRU (request units) billed per individual operation. Transactional reads/writes cost 2x.",
     tiers: [
       {
         name: "On-Demand Writes",
@@ -243,8 +230,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "dax.r5.large in-memory cache node",
       },
     ],
-    freeTier:
-      "25 provisioned WCUs + 25 RCUs + 25 GB storage — permanently free (not 12-month)",
+    freeTier: "25 provisioned WCUs + 25 RCUs + 25 GB storage — permanently free (not 12-month)",
     modes: [
       {
         name: "Global Tables (Multi-Region)",
@@ -261,16 +247,14 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Transactional Operations",
         priceImpact: "2x WRU/RRU cost",
-        description:
-          "TransactWriteItems/TransactGetItems consume double the capacity units",
+        description: "TransactWriteItems/TransactGetItems consume double the capacity units",
       },
     ],
   },
   "Google Cloud Firestore": {
     model:
       "Per-operation billing: charged for every document read, write, and delete individually. No provisioned capacity concept.",
-    unit:
-      "Document operations. Queries charge for each document returned (not per query). A query returning 1,000 documents = 1,000 read operations.",
+    unit: "Document operations. Queries charge for each document returned (not per query). A query returning 1,000 documents = 1,000 read operations.",
     tiers: [
       { name: "Reads", price: "$0.06 per 100,000", description: "$0.60/million reads" },
       { name: "Writes", price: "$0.18 per 100,000", description: "$1.80/million writes" },
@@ -290,10 +274,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
       "Daily: 50K reads + 20K writes + 20K deletes + 1 GiB storage. Resets midnight Pacific.",
   },
   InfluxDB: {
-    model:
-      "Usage-based across four dimensions: data in, query executions, storage, data out.",
-    unit:
-      "MB written (data in), queries executed, GB-hours (storage), GB (egress).",
+    model: "Usage-based across four dimensions: data in, query executions, storage, data out.",
+    unit: "MB written (data in), queries executed, GB-hours (storage), GB (egress).",
     tiers: [
       {
         name: "Data In",
@@ -312,8 +294,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       "Free plan: 5 MB writes/5 min, 300 MB query/5 min, 30-day retention, 2 buckets. No credit card.",
   },
   MariaDB: {
-    model:
-      "AWS RDS: identical pricing to RDS MySQL. SkySQL: vCPU-hour + GiB-month storage.",
+    model: "AWS RDS: identical pricing to RDS MySQL. SkySQL: vCPU-hour + GiB-month storage.",
     unit: "DB instance-hour (RDS) or vCPU-hour (SkySQL).",
     tiers: [
       { name: "RDS db.t4g.micro", price: "$0.0160/hr", description: "2 vCPU, 1 GB RAM" },
@@ -329,16 +310,14 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Multi-AZ (RDS)",
         priceImpact: "2x compute cost",
-        description:
-          "Synchronous standby",
+        description: "Synchronous standby",
       },
     ],
   },
   MongoDB: {
     model:
       "Cluster-based, billed hourly. Three tiers: Free (M0), Flex (pay-as-you-go), Dedicated (provisioned clusters).",
-    unit:
-      "Cluster-hour. Dedicated clusters are priced as 3-node replica sets (HA included). Flex tier is billed by ops/sec capacity.",
+    unit: "Cluster-hour. Dedicated clusters are priced as 3-node replica sets (HA included). Flex tier is billed by ops/sec capacity.",
     tiers: [
       {
         name: "M0 (Free)",
@@ -376,16 +355,13 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Multi-Region / Global Clusters",
         priceImpact: "Per-region cluster cost stacks",
-        description:
-          "Data replicated across regions, each billed at full cluster rate",
+        description: "Data replicated across regions, each billed at full cluster rate",
       },
     ],
   },
   MySQL: {
-    model:
-      "Instance-based, billed per second (identical structure to RDS PostgreSQL)",
-    unit:
-      "DB instance-hour. Same instance pricing as PostgreSQL on RDS in most regions.",
+    model: "Instance-based, billed per second (identical structure to RDS PostgreSQL)",
+    unit: "DB instance-hour. Same instance pricing as PostgreSQL on RDS in most regions.",
     tiers: [
       { name: "db.t4g.micro", price: "$0.0160/hr", description: "2 vCPU, 1 GB RAM" },
       { name: "db.t4g.medium", price: "$0.0650/hr", description: "2 vCPU, 4 GB RAM" },
@@ -401,22 +377,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Multi-AZ",
         priceImpact: "~2x compute cost",
-        description:
-          "Synchronous standby replica",
+        description: "Synchronous standby replica",
       },
       {
         name: "Extended Support (MySQL 5.7)",
         priceImpact: "+$0.10/vCPU-hr",
-        description:
-          "EOL version surcharge: ~$292/mo extra for m5.large",
+        description: "EOL version surcharge: ~$292/mo extra for m5.large",
       },
     ],
   },
   Neo4j: {
     model:
       "Capacity-based: per GB of memory provisioned per month. Unusual — price unit reflects in-memory graph working set, not disk storage.",
-    unit:
-      "GB of memory/month. This is the provisioned in-memory capacity for your graph database.",
+    unit: "GB of memory/month. This is the provisioned in-memory capacity for your graph database.",
     tiers: [
       {
         name: "Free",
@@ -439,22 +412,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "Custom isolation, 60-day hourly backups",
       },
     ],
-    freeTier:
-      "Small free cluster for learning, no credit card required. Auto-pauses when idle.",
+    freeTier: "Small free cluster for learning, no credit card required. Auto-pauses when idle.",
     modes: [
       {
         name: "Business Critical (Multi-Zone HA)",
         priceImpact: "~2.2x Professional cost",
-        description:
-          "$146 vs $65 per GB-month; includes RBAC, point-in-time recovery",
+        description: "$146 vs $65 per GB-month; includes RBAC, point-in-time recovery",
       },
     ],
   },
   "Oracle Database": {
     model:
       "AWS RDS: instance-hour with License Included (SE2) or BYOL. Oracle Cloud: ECPU-hour billing.",
-    unit:
-      "ECPU (Elastic Compute Unit) on Oracle Cloud. AWS RDS instance-hour varies by license model. LI adds ~2–3x the compute-only cost.",
+    unit: "ECPU (Elastic Compute Unit) on Oracle Cloud. AWS RDS instance-hour varies by license model. LI adds ~2–3x the compute-only cost.",
     tiers: [
       {
         name: "AWS RDS (BYOL, m5.large)",
@@ -488,21 +458,18 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Multi-AZ (RDS)",
         priceImpact: "2x compute cost",
-        description:
-          "Synchronous standby for automatic failover",
+        description: "Synchronous standby for automatic failover",
       },
       {
         name: "RAC (Oracle Cloud)",
         priceImpact: "Additional ECPU charge",
-        description:
-          "Real Application Clusters for high availability and scalability",
+        description: "Real Application Clusters for high availability and scalability",
       },
     ],
   },
   PostgreSQL: {
     model: "Instance-based, billed per second with 10-minute minimum",
-    unit:
-      "DB instance-hour. You provision a specific instance type (vCPU + RAM) and pay hourly for compute, plus per-GB storage and I/O.",
+    unit: "DB instance-hour. You provision a specific instance type (vCPU + RAM) and pay hourly for compute, plus per-GB storage and I/O.",
     tiers: [
       {
         name: "db.t4g.micro",
@@ -531,40 +498,34 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "High-performance storage",
       },
     ],
-    freeTier:
-      "750 hrs/month db.t3.micro + 20 GB gp2 storage (12 months, new AWS accounts)",
+    freeTier: "750 hrs/month db.t3.micro + 20 GB gp2 storage (12 months, new AWS accounts)",
     modes: [
       {
         name: "Multi-AZ (1 standby)",
         priceImpact: "~2x compute cost",
-        description:
-          "Synchronous standby in a second AZ for automatic failover",
+        description: "Synchronous standby in a second AZ for automatic failover",
       },
       {
         name: "Multi-AZ (2 readable standbys)",
         priceImpact: "~3x compute cost",
-        description:
-          "3-node cluster with read scaling across AZs",
+        description: "3-node cluster with read scaling across AZs",
       },
       {
         name: "Reserved Instances (1yr)",
         priceImpact: "~29% savings",
-        description:
-          "No Upfront 1-year commitment",
+        description: "No Upfront 1-year commitment",
       },
       {
         name: "Reserved Instances (3yr)",
         priceImpact: "~53% savings",
-        description:
-          "All Upfront 3-year commitment",
+        description: "All Upfront 3-year commitment",
       },
     ],
   },
   ScyllaDB: {
     model:
       "Instance-based per node-hour. Minimum 3-node cluster for replication. No per-request billing.",
-    unit:
-      "Node-hour. ScyllaDB does NOT charge per individual read/write operation. You pay for the instance type (vCPU/RAM) + NVMe SSD storage.",
+    unit: "Node-hour. ScyllaDB does NOT charge per individual read/write operation. You pay for the instance type (vCPU/RAM) + NVMe SSD storage.",
     tiers: [
       {
         name: "Standard Plan",
@@ -586,22 +547,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "1-Year Subscription",
         priceImpact: "Up to 70% savings",
-        description:
-          "vs on-demand pricing",
+        description: "vs on-demand pricing",
       },
       {
         name: "3-Year Subscription",
         priceImpact: "Further discounts",
-        description:
-          "Flex Credits for intermediate savings",
+        description: "Flex Credits for intermediate savings",
       },
     ],
   },
   "SQL Server": {
     model:
       "Azure SQL: DTU-based (bundled) or vCore-based (separate compute/storage). AWS RDS: instance-based.",
-    unit:
-      "DTU (Database Transaction Unit) — bundles CPU, memory, and I/O into a single metric. Or vCore-hour for more granular control.",
+    unit: "DTU (Database Transaction Unit) — bundles CPU, memory, and I/O into a single metric. Or vCore-hour for more granular control.",
     tiers: [
       { name: "Basic (5 DTU)", price: "~$4.90/month", description: "Simple workloads" },
       {
@@ -641,28 +599,24 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Business Critical",
         priceImpact: "~3x General Purpose",
-        description:
-          "Includes built-in HA with read replicas, in-memory OLTP",
+        description: "Includes built-in HA with read replicas, in-memory OLTP",
       },
       {
         name: "Hyperscale",
         priceImpact: "Similar to General Purpose compute",
-        description:
-          "Distributed storage architecture for very large databases",
+        description: "Distributed storage architecture for very large databases",
       },
       {
         name: "Azure Hybrid Benefit",
         priceImpact: "~30–55% compute savings",
-        description:
-          "Existing SQL Server licenses with Software Assurance",
+        description: "Existing SQL Server licenses with Software Assurance",
       },
     ],
   },
   SQLite: {
     model:
       "Free (embedded). Turso: per-row-read/write. Cloudflare D1: per-row-read/write within Workers.",
-    unit:
-      "Row reads/writes. A \"row read\" = each row scanned by a query (full table scan of 5,000 rows = 5,000 reads).",
+    unit: 'Row reads/writes. A "row read" = each row scanned by a query (full table scan of 5,000 rows = 5,000 reads).',
     tiers: [
       {
         name: "Turso Starter (Free)",
@@ -701,8 +655,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   TiDB: {
     model:
       "Starter: serverless RU-based. Dedicated: node-based with separate TiDB (compute), TiKV (row storage), TiFlash (columnar) nodes.",
-    unit:
-      "Request Unit (RU) — abstracts compute + I/O per SQL operation. Or node-hour for dedicated clusters.",
+    unit: "Request Unit (RU) — abstracts compute + I/O per SQL operation. Or node-hour for dedicated clusters.",
     tiers: [
       { name: "Starter Compute", price: "$0.10/million RUs", description: "US regions" },
       { name: "Starter Row Storage", price: "$0.20/GiB-month", description: "TiKV" },
@@ -727,14 +680,12 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "Standard NVMe",
       },
     ],
-    freeTier:
-      "50M RUs/month + 5 GiB row + 5 GiB columnar per cluster (up to 5 clusters/org)",
+    freeTier: "50M RUs/month + 5 GiB row + 5 GiB columnar per cluster (up to 5 clusters/org)",
     modes: [
       {
         name: "Dedicated minimum cluster",
         priceImpact: "~$5.68/hr",
-        description:
-          "Typically 2 TiDB + 3 TiKV nodes minimum",
+        description: "Typically 2 TiDB + 3 TiKV nodes minimum",
       },
     ],
   },
@@ -742,10 +693,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
   // ─── API GATEWAYS ────────────────────────────────────────────────────────────────
 
   Apigee: {
-    model:
-      "Pay-as-you-go (per API call + environment hourly) or annual subscription tiers.",
-    unit:
-      "API proxy calls. Standard proxies cost 1/5 of Extensible proxies. Environment type affects hourly base cost.",
+    model: "Pay-as-you-go (per API call + environment hourly) or annual subscription tiers.",
+    unit: "API proxy calls. Standard proxies cost 1/5 of Extensible proxies. Environment type affects hourly base cost.",
     tiers: [
       {
         name: "Standard Proxy (PAYG)",
@@ -810,10 +759,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "1M REST + 1M HTTP + 1M WebSocket messages/month (12 months)",
   },
   "Azure API Management": {
-    model:
-      "Fixed monthly per-unit cost by tier, or Consumption (serverless pay-per-call).",
-    unit:
-      "API operations (calls). Consumption: ~$4.20/million after free 1M. Classic tiers: fixed monthly per unit.",
+    model: "Fixed monthly per-unit cost by tier, or Consumption (serverless pay-per-call).",
+    unit: "API operations (calls). Consumption: ~$4.20/million after free 1M. Classic tiers: fixed monthly per unit.",
     tiers: [
       {
         name: "Consumption",
@@ -840,8 +787,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "Consumption tier: first 1M calls/month free",
   },
   "Cloudflare API Gateway": {
-    model:
-      "Bundled into Cloudflare plan tiers. No separate per-request API Gateway charge.",
+    model: "Bundled into Cloudflare plan tiers. No separate per-request API Gateway charge.",
     unit: "Plan subscription. Advanced API Shield features require Enterprise.",
     tiers: [
       {
@@ -879,8 +825,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   Kong: {
-    model:
-      "Monthly subscription per gateway + per-request overages. Gateway type determines cost.",
+    model: "Monthly subscription per gateway + per-request overages. Gateway type determines cost.",
     unit: "Gateway service/month + per million API requests.",
     tiers: [
       {
@@ -908,7 +853,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "NGINX Plus",
         price: "~$2,500/yr per instance",
-        description: "Session persistence, active health checks, live monitoring, dynamic config API",
+        description:
+          "Session persistence, active health checks, live monitoring, dynamic config API",
       },
       {
         name: "App Protect WAF",
@@ -918,8 +864,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   Traefik: {
-    model:
-      "Open source (free, MIT license) or Traefik Enterprise annual subscription.",
+    model: "Open source (free, MIT license) or Traefik Enterprise annual subscription.",
     unit: "Per instance/year for Enterprise.",
     tiers: [
       {
@@ -938,10 +883,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
   // ─── LOAD BALANCERS ──────────────────────────────────────────────────────────────
 
   "AWS ALB": {
-    model:
-      "Fixed hourly rate + LCU (Load Balancer Capacity Unit) consumption charge.",
-    unit:
-      "LCU — the ALB measures 4 dimensions simultaneously and charges whichever consumes the most: (1) New connections: 25/sec per LCU, (2) Active connections: 3,000/min per LCU, (3) Bandwidth: 1 GB/hr per LCU, (4) Rule evaluations: 1,000/sec per LCU.",
+    model: "Fixed hourly rate + LCU (Load Balancer Capacity Unit) consumption charge.",
+    unit: "LCU — the ALB measures 4 dimensions simultaneously and charges whichever consumes the most: (1) New connections: 25/sec per LCU, (2) Active connections: 3,000/min per LCU, (3) Bandwidth: 1 GB/hr per LCU, (4) Rule evaluations: 1,000/sec per LCU.",
     tiers: [
       { name: "Hourly Rate", price: "$0.0225/hr", description: "~$16.20/month baseline" },
       {
@@ -953,10 +896,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "750 hours/month + 15 LCUs/month for ALB (12 months)",
   },
   "AWS NLB": {
-    model:
-      "Fixed hourly rate + NLCU (Network LB Capacity Unit) consumption charge.",
-    unit:
-      "NLCU — Layer 4 capacity unit. TCP: 800 new flows/sec, 100K active/min, 1 GB/hr per NLCU. TLS: 50 new connections/sec, 3K active/min per NLCU. NLB is 25% cheaper per capacity unit than ALB.",
+    model: "Fixed hourly rate + NLCU (Network LB Capacity Unit) consumption charge.",
+    unit: "NLCU — Layer 4 capacity unit. TCP: 800 new flows/sec, 100K active/min, 1 GB/hr per NLCU. TLS: 50 new connections/sec, 3K active/min per NLCU. NLB is 25% cheaper per capacity unit than ALB.",
     tiers: [
       { name: "Hourly Rate", price: "$0.0252/hr", description: "~$18.14/month baseline" },
       {
@@ -982,8 +923,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Basic SKU",
         priceImpact: "Retired Sept 2025",
-        description:
-          "Was free; no longer available for new deployments",
+        description: "Was free; no longer available for new deployments",
       },
     ],
   },
@@ -1030,8 +970,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   Akamai: {
     model:
       "Contract-based only. No published public pricing. Minimum 12-month contracts, typically $5,000–$15,000+/month.",
-    unit:
-      "Negotiated per-GB rates based on committed monthly bandwidth volume and geographic mix.",
+    unit: "Negotiated per-GB rates based on committed monthly bandwidth volume and geographic mix.",
     tiers: [
       {
         name: "US/EU (0–10 TB)",
@@ -1052,8 +991,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   },
   "AWS CloudFront": {
     model: "Pay-as-you-go per GB egress + per request. Or flat-rate monthly plans.",
-    unit:
-      "Per GB data transfer out to internet + per 10,000 requests. Rates vary by geographic region.",
+    unit: "Per GB data transfer out to internet + per 10,000 requests. Rates vary by geographic region.",
     tiers: [
       {
         name: "US/EU Egress (first 10 TB)",
@@ -1083,8 +1021,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "S3 → CloudFront transfer",
         priceImpact: "Free",
-        description:
-          "No inter-service egress from S3 to CloudFront",
+        description: "No inter-service egress from S3 to CloudFront",
       },
     ],
   },
@@ -1102,8 +1039,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "CDN Edge Cache": {
-    model:
-      "Varies by provider — see Cloudflare CDN, AWS CloudFront, and Fastly entries.",
+    model: "Varies by provider — see Cloudflare CDN, AWS CloudFront, and Fastly entries.",
     unit: "Per GB egress or flat plan depending on provider.",
     tiers: [
       {
@@ -1175,14 +1111,11 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "Better per-GB rates, priority support, SLA",
       },
     ],
-    freeTier:
-      "$50/month recurring credit (perpetual low-volume free tier for small workloads)",
+    freeTier: "$50/month recurring credit (perpetual low-volume free tier for small workloads)",
   },
   "GCP Cloud CDN": {
-    model:
-      "Per GB cache egress + per GB cache fill + per request. Requires a Cloud Load Balancer.",
-    unit:
-      "Per GiB served to users (cache egress) + per GiB fetched from origin (cache fill) + per 10,000 requests.",
+    model: "Per GB cache egress + per GB cache fill + per request. Requires a Cloud Load Balancer.",
+    unit: "Per GiB served to users (cache egress) + per GiB fetched from origin (cache fill) + per 10,000 requests.",
     tiers: [
       {
         name: "Cache Egress (US/EU, <10 TiB)",
@@ -1227,8 +1160,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "Above 10M/month on Pro",
       },
     ],
-    freeTier:
-      "100 GB transfer + 1M edge requests/month (Hobby, personal projects only)",
+    freeTier: "100 GB transfer + 1M edge requests/month (Hobby, personal projects only)",
   },
 
   // ─── CACHES ──────────────────────────────────────────────────────────────────────
@@ -1247,8 +1179,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Annual Commitment",
         priceImpact: "Up to 20% off",
-        description:
-          "vs flex/on-demand pricing",
+        description: "vs flex/on-demand pricing",
       },
     ],
   },
@@ -1283,8 +1214,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   Memcached: {
     model:
       "AWS ElastiCache node-hour based. No Serverless mode. No encryption, persistence, or HA replication.",
-    unit:
-      "Cache node-hour. Same node pricing structure as Redis OSS (not Valkey-discounted).",
+    unit: "Cache node-hour. Same node pricing structure as Redis OSS (not Valkey-discounted).",
     tiers: [
       { name: "cache.t4g.micro", price: "$0.0160/hr", description: "~$11.50/month" },
       {
@@ -1303,16 +1233,14 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Reserved Instances",
         priceImpact: "Up to 55% savings",
-        description:
-          "Same tiers as ElastiCache Redis",
+        description: "Same tiers as ElastiCache Redis",
       },
     ],
   },
   Redis: {
     model:
       "AWS ElastiCache: node-based (per-hour) or Serverless (ECPU + GB-hour). Redis Cloud: memory-based per hour/month.",
-    unit:
-      "ElastiCache node-hour OR ECPU (ElastiCache Processing Unit). 1 ECPU = 1 KB of data transferred per command. Serverless Valkey is 33% cheaper than Serverless Redis OSS.",
+    unit: "ElastiCache node-hour OR ECPU (ElastiCache Processing Unit). 1 ECPU = 1 KB of data transferred per command. Serverless Valkey is 33% cheaper than Serverless Redis OSS.",
     tiers: [
       {
         name: "ElastiCache cache.t4g.micro",
@@ -1355,30 +1283,24 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "HA / Read Replicas",
         priceImpact: "2–3x node cost",
-        description:
-          "Each replica = full node billed independently",
+        description: "Each replica = full node billed independently",
       },
       {
         name: "Reserved Instances (3yr)",
         priceImpact: "Up to 55% savings",
-        description:
-          "All Upfront 3-year commitment on ElastiCache",
+        description: "All Upfront 3-year commitment on ElastiCache",
       },
       {
         name: "Extended Support (Redis OSS)",
         priceImpact: "+80% surcharge",
-        description:
-          "Redis OSS EOL 2026; additional 80% on base node price for extended support",
+        description: "Redis OSS EOL 2026; additional 80% on base node price for extended support",
       },
     ],
   },
   Varnish: {
     model: "Open source (free). Fastly is built on Varnish.",
-    unit:
-      "Free (self-hosted). Fastly pricing applies for managed Varnish-based CDN.",
-    tiers: [
-      { name: "Open Source", price: "Free", description: "HTTP accelerator, self-hosted" },
-    ],
+    unit: "Free (self-hosted). Fastly pricing applies for managed Varnish-based CDN.",
+    tiers: [{ name: "Open Source", price: "Free", description: "HTTP accelerator, self-hosted" }],
   },
 
   // ─── MESSAGE QUEUES & STREAMING ──────────────────────────────────────────────────
@@ -1404,22 +1326,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "FIFO Queues",
         priceImpact: "+$0.10/million requests",
-        description:
-          "Strict ordering within Message Group ID + dedup within 5-min window",
+        description: "Strict ordering within Message Group ID + dedup within 5-min window",
       },
       {
         name: "FIFO Throughput Limit",
         priceImpact: "Capped at 3,000 msg/sec with batching",
-        description:
-          "300 msg/sec without batching vs unlimited for Standard",
+        description: "300 msg/sec without batching vs unlimited for Standard",
       },
     ],
   },
   "Apache Kafka": {
     model:
       "Confluent Cloud: eCKU-based elastic capacity (Basic/Standard/Enterprise) or CKU-based fixed capacity (Dedicated). Plus networking and storage.",
-    unit:
-      "eCKU (elastic Confluent Kafka Unit) — auto-scaling capacity charged per eCKU-hour. CKU (Dedicated) — pre-provisioned block of resources (~250 MB/s ingress, ~750 MB/s egress). Networking + storage billed separately.",
+    unit: "eCKU (elastic Confluent Kafka Unit) — auto-scaling capacity charged per eCKU-hour. CKU (Dedicated) — pre-provisioned block of resources (~250 MB/s ingress, ~750 MB/s egress). Networking + storage billed separately.",
     tiers: [
       {
         name: "Basic",
@@ -1448,22 +1367,18 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Dedicated Clusters",
         priceImpact: "CKU-based (contact sales)",
-        description:
-          "Tenant-exclusive brokers, VPC peering",
+        description: "Tenant-exclusive brokers, VPC peering",
       },
       {
         name: "Exactly-Once Semantics",
         priceImpact: "No pricing premium",
-        description:
-          "Feature flag on Standard+, no extra charge",
+        description: "Feature flag on Standard+, no extra charge",
       },
     ],
   },
   "Apache Pulsar": {
-    model:
-      "StreamNative Cloud: usage-based (throughput + storage). Three deployment options.",
-    unit:
-      "Throughput + storage based. Exact per-unit rates require cost estimator or sales.",
+    model: "StreamNative Cloud: usage-based (throughput + storage). Three deployment options.",
+    unit: "Throughput + storage based. Exact per-unit rates require cost estimator or sales.",
     tiers: [
       {
         name: "Serverless",
@@ -1485,22 +1400,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Geo-Replication",
         priceImpact: "Custom quote",
-        description:
-          "Built into Pulsar; available on Dedicated tier",
+        description: "Built into Pulsar; available on Dedicated tier",
       },
       {
         name: "Tiered Storage",
         priceImpact: "Pass-through cloud storage costs",
-        description:
-          "Offloads older data to S3/GCS/Azure Blob",
+        description: "Offloads older data to S3/GCS/Azure Blob",
       },
     ],
   },
   "Azure Service Bus": {
     model:
       "Basic/Standard: per-operation. Premium: per Messaging Unit hour (capacity-based, not per-operation).",
-    unit:
-      "Operation (API call) on Basic/Standard. MU (Messaging Unit) on Premium — dedicated resources, no noisy-neighbor.",
+    unit: "Operation (API call) on Basic/Standard. MU (Messaging Unit) on Premium — dedicated resources, no noisy-neighbor.",
     tiers: [
       {
         name: "Basic",
@@ -1522,28 +1434,24 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "FIFO (Sessions)",
         priceImpact: "No premium",
-        description:
-          "Available on Standard+, guarantees ordered delivery within a session",
+        description: "Available on Standard+, guarantees ordered delivery within a session",
       },
       {
         name: "Exactly-Once (Dedup)",
         priceImpact: "No extra charge",
-        description:
-          "Duplicate detection on Standard+; configurable 1–7 day window",
+        description: "Duplicate detection on Standard+; configurable 1–7 day window",
       },
       {
         name: "Premium for HA",
         priceImpact: "MU rate only",
-        description:
-          "Geo-disaster recovery + AZ support, no per-feature surcharge",
+        description: "Geo-disaster recovery + AZ support, no per-feature surcharge",
       },
     ],
   },
   "Google Pub/Sub": {
     model:
       "Data-volume based (not message count). Billed on total bytes published and delivered. 1 KB minimum per API call.",
-    unit:
-      "Per TiB of message throughput. Both published and delivered bytes count.",
+    unit: "Per TiB of message throughput. Both published and delivered bytes count.",
     tiers: [
       {
         name: "Message Delivery",
@@ -1561,22 +1469,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Exactly-Once Delivery",
         priceImpact: "No pricing premium",
-        description:
-          "Enable via acknowledgement IDs; minor latency overhead",
+        description: "Enable via acknowledgement IDs; minor latency overhead",
       },
       {
         name: "BigQuery Subscriptions",
         priceImpact: "BQ storage/query rates",
-        description:
-          "Direct write from Pub/Sub to BigQuery",
+        description: "Direct write from Pub/Sub to BigQuery",
       },
     ],
   },
   NATS: {
     model:
       "Synadia Cloud: fixed subscription tiers with resource pools (connections, storage, network data). Not per-message.",
-    unit:
-      "Monthly plan tier with fixed resource pools. No per-message billing; usage beyond limits is rejected, not billed.",
+    unit: "Monthly plan tier with fixed resource pools. No per-message billing; usage beyond limits is rejected, not billed.",
     tiers: [
       {
         name: "Personal (Free)",
@@ -1635,16 +1540,14 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "HA (3-node cluster)",
         priceImpact: "3x instance cost",
-        description:
-          "3 nodes in different AZs; e.g., m5.large cluster ≈ $703/month",
+        description: "3 nodes in different AZs; e.g., m5.large cluster ≈ $703/month",
       },
     ],
   },
   "Redis Streams": {
     model:
       "Upstash: per-command pricing. Every Redis command (XADD, XREAD, XREADGROUP, etc.) = 1 billable command.",
-    unit:
-      "Commands (same as Upstash Redis). XADD, XREAD, XACK, etc. each count as one command.",
+    unit: "Commands (same as Upstash Redis). XADD, XREAD, XACK, etc. each count as one command.",
     tiers: [
       { name: "Free", price: "$0/month", description: "500K commands/month, 256 MB" },
       {
@@ -1666,8 +1569,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Amazon EBS": {
     model:
       "Per GB provisioned/month (charged for full size even if unused) + IOPS/throughput charges for some types.",
-    unit:
-      "GB-month provisioned + IOPS-month + MB/s-month. gp3 is 20% cheaper than gp2 with independent IOPS/throughput provisioning.",
+    unit: "GB-month provisioned + IOPS-month + MB/s-month. gp3 is 20% cheaper than gp2 with independent IOPS/throughput provisioning.",
     tiers: [
       {
         name: "gp3 (GP SSD)",
@@ -1705,8 +1607,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Amazon EFS": {
     model:
       "Per GB stored/month by storage class + per-GB read/write charges + optional provisioned throughput.",
-    unit:
-      "GB-month. Significantly more expensive than S3 because it provides POSIX NFS shared file system access.",
+    unit: "GB-month. Significantly more expensive than S3 because it provides POSIX NFS shared file system access.",
     tiers: [
       { name: "Standard", price: "$0.30/GB-month", description: "Frequently accessed" },
       {
@@ -1728,8 +1629,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Amazon S3": {
     model:
       "Per GB stored/month by storage class + per-request fees (PUT/GET per 1,000) + egress charges.",
-    unit:
-      "GB-month for storage. Requests per 1,000 operations. GB for egress. Storage classes range from $0.023/GB (Standard) to $0.00099/GB (Deep Archive).",
+    unit: "GB-month for storage. Requests per 1,000 operations. GB for egress. Storage classes range from $0.023/GB (Standard) to $0.00099/GB (Deep Archive).",
     tiers: [
       {
         name: "Standard (first 50 TB)",
@@ -1815,10 +1715,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "Cloudflare R2": {
-    model:
-      "Per GB stored/month + per operation. Zero egress fees — always free data transfer out.",
-    unit:
-      "GB-month for storage. Class A (writes) per million. Class B (reads) per million. Egress: $0 always.",
+    model: "Per GB stored/month + per operation. Zero egress fees — always free data transfer out.",
+    unit: "GB-month for storage. Class A (writes) per million. Class B (reads) per million. Egress: $0 always.",
     tiers: [
       { name: "Standard Storage", price: "$0.015/GB-month", description: "S3-compatible" },
       {
@@ -1839,8 +1737,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Google Cloud Storage": {
     model:
       "Per GB stored/month by class + Class A/B operation charges + retrieval fees for cold classes + egress.",
-    unit:
-      "GB-month storage + per 10,000 operations (Class A: writes, Class B: reads) + per GB retrieval for cold classes.",
+    unit: "GB-month storage + per 10,000 operations (Class A: writes, Class B: reads) + per GB retrieval for cold classes.",
     tiers: [
       {
         name: "Standard (single region)",
@@ -1869,8 +1766,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   MinIO: {
     model:
       "Open source (AGPLv3) — free self-hosted. Commercial AIStor subscription per committed TiB.",
-    unit:
-      "Per committed usable TiB for AIStor. Free for community edition (self-hosted infrastructure costs only).",
+    unit: "Per committed usable TiB for AIStor. Free for community edition (self-hosted infrastructure costs only).",
     tiers: [
       {
         name: "Community (Open Source)",
@@ -1889,8 +1785,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
 
   "AWS Security Groups": {
     model: "Free. Core VPC feature with no charge.",
-    unit:
-      "No charge. Up to 2,500 SGs per VPC, 60 inbound + 60 outbound rules per SG.",
+    unit: "No charge. Up to 2,500 SGs per VPC, 60 inbound + 60 outbound rules per SG.",
     tiers: [
       {
         name: "All Usage",
@@ -1946,8 +1841,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "Cloudflare WAF": {
-    model:
-      "Included in Cloudflare plan subscriptions. No per-request charge for WAF.",
+    model: "Included in Cloudflare plan subscriptions. No per-request charge for WAF.",
     unit: "Plan subscription — no per-request metering at any tier.",
     tiers: [
       {
@@ -1971,8 +1865,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "GCP Cloud Armor": {
     model:
       "Standard: pay-per-use (per policy + rule + request). Managed Protection Plus: $3,000/month annual subscription.",
-    unit:
-      "Per policy/month + per rule/month + per million requests (Standard). Or flat monthly subscription (Plus).",
+    unit: "Per policy/month + per rule/month + per million requests (Standard). Or flat monthly subscription (Plus).",
     tiers: [
       {
         name: "Standard Policy",
@@ -1988,7 +1881,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Managed Protection Plus",
         price: "$3,000/month",
-        description: "Annual commit; includes all policies/rules/requests + DDoS response + ML protection",
+        description:
+          "Annual commit; includes all policies/rules/requests + DDoS response + ML protection",
       },
     ],
   },
@@ -2006,8 +1900,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Palo Alto Networks": {
     model:
       "Credit-based (1–5 year pre-purchase) or PAYG from AWS/Azure Marketplace. Hourly rate + per-GB traffic + security service add-ons.",
-    unit:
-      "Hourly NGFW resource rate + tiered per-GB traffic charge. Credits are multi-cloud fungible.",
+    unit: "Hourly NGFW resource rate + tiered per-GB traffic charge. Credits are multi-cloud fungible.",
     tiers: [
       {
         name: "PAYG (AWS)",
@@ -2026,10 +1919,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
   // ─── DNS ─────────────────────────────────────────────────────────────────────────
 
   "AWS Route 53": {
-    model:
-      "Per hosted zone/month + per DNS query (tiered by volume and query type).",
-    unit:
-      "Hosted zones/month + queries/million. Alias records to AWS services are free.",
+    model: "Per hosted zone/month + per DNS query (tiered by volume and query type).",
+    unit: "Hosted zones/month + queries/million. Alias records to AWS services are free.",
     tiers: [
       {
         name: "Hosted Zone (first 25)",
@@ -2110,8 +2001,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "NS1 (IBM)": {
     model:
       "Annual subscription bundles with fixed query quota, records, and monitors. Overage per unit above limits.",
-    unit:
-      "Monthly plan with query/month quota. Overage: ~$50/million excess queries.",
+    unit: "Monthly plan with query/month quota. Overage: ~$50/million excess queries.",
     tiers: [
       {
         name: "Essentials",
@@ -2141,8 +2031,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
 
   "AWS Lambda": {
     model: "Per request + per GB-second of duration. Billed per millisecond.",
-    unit:
-      "GB-second — combines memory and time. 512 MB function running 2 seconds = 1.0 GB-second. You choose memory (128 MB–10 GB); CPU scales proportionally. ARM/Graviton is 20% cheaper.",
+    unit: "GB-second — combines memory and time. 512 MB function running 2 seconds = 1.0 GB-second. You choose memory (128 MB–10 GB); CPU scales proportionally. ARM/Graviton is 20% cheaper.",
     tiers: [
       { name: "Requests", price: "$0.20/million", description: "Per invocation" },
       {
@@ -2166,8 +2055,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "When actually executing",
       },
     ],
-    freeTier:
-      "1M requests + 400,000 GB-seconds/month — permanently free (not 12-month)",
+    freeTier: "1M requests + 400,000 GB-seconds/month — permanently free (not 12-month)",
     modes: [
       {
         name: "Provisioned Concurrency",
@@ -2178,22 +2066,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "ARM/Graviton2",
         priceImpact: "20% lower price + up to 34% better perf",
-        description:
-          "Requires only a runtime config change",
+        description: "Requires only a runtime config change",
       },
       {
         name: "Compute Savings Plans (1yr)",
         priceImpact: "Up to 17% savings",
-        description:
-          "Commit to consistent spend for duration charges",
+        description: "Commit to consistent spend for duration charges",
       },
     ],
   },
   "Azure Functions": {
     model:
       "Three hosting plans: Consumption (serverless), Flex Consumption (configurable), Premium (pre-warmed).",
-    unit:
-      "GB-second of execution time + per execution. Consumption plan memory fixed at 1.5 GB.",
+    unit: "GB-second of execution time + per execution. Consumption plan memory fixed at 1.5 GB.",
     tiers: [
       {
         name: "Consumption Executions",
@@ -2220,10 +2105,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "Consumption: 1M executions + 400K GB-sec/month free",
   },
   "Cloudflare Workers": {
-    model:
-      "Request-based with CPU time limits. No egress charges — data transfer always free.",
-    unit:
-      "Requests/month + CPU milliseconds. Billing is on CPU time, not wall-clock time (I/O wait is free).",
+    model: "Request-based with CPU time limits. No egress charges — data transfer always free.",
+    unit: "Requests/month + CPU milliseconds. Billing is on CPU time, not wall-clock time (I/O wait is free).",
     tiers: [
       {
         name: "Free Plan",
@@ -2245,10 +2128,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "100K requests/day permanently free, no egress charges",
   },
   "Google Cloud Functions": {
-    model:
-      "Three dimensions: invocations + compute time (CPU + memory separately) + egress.",
-    unit:
-      "Invocations + GB-seconds (memory) + GHz-seconds (CPU), billed per 100ms.",
+    model: "Three dimensions: invocations + compute time (CPU + memory separately) + egress.",
+    unit: "Invocations + GB-seconds (memory) + GHz-seconds (CPU), billed per 100ms.",
     tiers: [
       { name: "Invocations", price: "$0.40/million", description: "After first 2M free" },
       {
@@ -2263,13 +2144,11 @@ export const PRICING: Record<string, TechnologyPricing> = {
       },
       { name: "Network Egress", price: "$0.12/GB", description: "First 5 GB/month free" },
     ],
-    freeTier:
-      "2M invocations + 400K GB-sec + 200K GHz-sec + 5 GB egress/month — permanently free",
+    freeTier: "2M invocations + 400K GB-sec + 200K GHz-sec + 5 GB egress/month — permanently free",
   },
   "Vercel Functions": {
     model: "Plan-based with usage limits and overage. Not pure pay-per-invocation.",
-    unit:
-      "CPU-hours + GB-hours + invocations, with plan-based included allocations.",
+    unit: "CPU-hours + GB-hours + invocations, with plan-based included allocations.",
     tiers: [
       {
         name: "Hobby (Free)",
@@ -2305,8 +2184,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Amazon ECS": {
     model:
       "ECS control plane is free. You pay for EC2 instances (EC2 launch type) or Fargate vCPU+memory (Fargate launch type).",
-    unit:
-      "EC2 instance-hours or Fargate vCPU-hr + GB-hr. ECS orchestration layer is $0.",
+    unit: "EC2 instance-hours or Fargate vCPU-hr + GB-hr. ECS orchestration layer is $0.",
     tiers: [
       {
         name: "ECS Control Plane",
@@ -2338,8 +2216,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Fargate vs EC2",
         priceImpact: "Fargate ~20–30% premium",
-        description:
-          "Fargate: no management overhead. EC2: cheaper with RIs at high utilization.",
+        description: "Fargate: no management overhead. EC2: cheaper with RIs at high utilization.",
       },
     ],
   },
@@ -2374,8 +2251,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Fargate Spot",
         priceImpact: "Up to 70% discount",
-        description:
-          "Interruptible with 2-min notice; for batch/stateless tasks",
+        description: "Interruptible with 2-min notice; for batch/stateless tasks",
       },
     ],
   },
@@ -2393,8 +2269,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "GKE Autopilot": {
     model:
       "Per-pod billing: vCPU + GiB per second. No node management. Google manages infrastructure.",
-    unit:
-      "Per-pod vCPU-hour + GiB-hour. Each pod has ~180m vCPU + 512 MiB system overhead.",
+    unit: "Per-pod vCPU-hour + GiB-hour. Each pod has ~180m vCPU + 512 MiB system overhead.",
     tiers: [
       { name: "CPU", price: "$0.0445/vCPU-hr", description: "Per-pod billing" },
       { name: "Memory", price: "$0.0049/GiB-hr", description: "Per-pod billing" },
@@ -2404,8 +2279,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Spot Pods",
         priceImpact: "60–91% discount",
-        description:
-          "Interruptible workloads",
+        description: "Interruptible workloads",
       },
       {
         name: "Autopilot vs Standard tradeoff",
@@ -2416,8 +2290,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "Google Cloud Run": {
-    model:
-      "Per vCPU-second + per GiB-second + per request. Scales to zero (no charge when idle).",
+    model: "Per vCPU-second + per GiB-second + per request. Scales to zero (no charge when idle).",
     unit: "vCPU-second + GiB-second + requests/million.",
     tiers: [
       {
@@ -2437,28 +2310,24 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "CPU always allocated",
         priceImpact: "Billed continuously",
-        description:
-          "Required for background tasks; CPU not freed between requests",
+        description: "Required for background tasks; CPU not freed between requests",
       },
       {
         name: "Minimum instances",
         priceImpact: "10% of normal CPU rate when idle",
-        description:
-          "Warm instances that never scale to zero",
+        description: "Warm instances that never scale to zero",
       },
       {
         name: "CUDs (1yr)",
         priceImpact: "Up to 17% off",
-        description:
-          "Committed Use Discounts on compute",
+        description: "Committed Use Discounts on compute",
       },
     ],
   },
   "Kubernetes (K8s)": {
     model:
       "Control plane fee + worker node compute. EKS: $0.10/cluster/hr + EC2. GKE: $0.10/cluster/hr + GCE (one free cluster per account). AKS: $0 (free tier) or $0.10/cluster/hr.",
-    unit:
-      "Cluster management fee/hour + underlying VM costs. Worker node cost dominates total.",
+    unit: "Cluster management fee/hour + underlying VM costs. Worker node cost dominates total.",
     tiers: [
       {
         name: "EKS Control Plane",
@@ -2510,27 +2379,23 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Spot/Preemptible Instances",
         priceImpact: "Up to 90% off",
-        description:
-          "Interruptible; best for stateless, fault-tolerant workloads",
+        description: "Interruptible; best for stateless, fault-tolerant workloads",
       },
       {
         name: "Reserved Instances (3yr)",
         priceImpact: "~60% savings",
-        description:
-          "All Upfront 3-year commitment on EC2 nodes",
+        description: "All Upfront 3-year commitment on EC2 nodes",
       },
       {
         name: "Savings Plans",
         priceImpact: "~66% savings",
-        description:
-          "3-year All Upfront Compute Savings Plan",
+        description: "3-year All Upfront Compute Savings Plan",
       },
     ],
   },
   "Kubernetes CronJob": {
     model: "No additional cost. Uses existing cluster compute resources.",
-    unit:
-      "No separate charge — uses pod resources billed by your K8s infrastructure.",
+    unit: "No separate charge — uses pod resources billed by your K8s infrastructure.",
     tiers: [
       {
         name: "Built-in",
@@ -2564,8 +2429,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Red Hat OpenShift": {
     model:
       "ROSA (AWS): $0.25/cluster/hr + $0.171/4 vCPUs/hr worker fee + EC2 infrastructure costs.",
-    unit:
-      "Cluster-hour + worker node service fee per 4 vCPUs + underlying EC2 costs.",
+    unit: "Cluster-hour + worker node service fee per 4 vCPUs + underlying EC2 costs.",
     tiers: [
       {
         name: "ROSA HCP Cluster Fee",
@@ -2587,14 +2451,12 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "1-Year Commit",
         priceImpact: "~33% savings on worker fee",
-        description:
-          "$0.115/hr per 4 vCPUs",
+        description: "$0.115/hr per 4 vCPUs",
       },
       {
         name: "3-Year Commit",
         priceImpact: "~55% savings on worker fee",
-        description:
-          "$0.077/hr per 4 vCPUs",
+        description: "$0.077/hr per 4 vCPUs",
       },
     ],
   },
@@ -2604,8 +2466,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Amazon Kinesis Data Firehose": {
     model:
       "Per GB ingested. Serverless, no provisioning. 5 KB per-record minimum rounding for Direct PUT.",
-    unit:
-      "GB ingested. A 1 KB record is billed as 5 KB (5x multiplier for tiny payloads). Batch records to save costs.",
+    unit: "GB ingested. A 1 KB record is billed as 5 KB (5x multiplier for tiny payloads). Batch records to save costs.",
     tiers: [
       {
         name: "Direct PUT / KDS Source",
@@ -2631,10 +2492,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "Apache Flink": {
-    model:
-      "AWS Managed Service: per KPU-hour. Confluent: included in cluster pricing.",
-    unit:
-      "KPU (Kinesis Processing Unit). 1 KPU = 1 vCPU + 4 GB RAM. +1 KPU overhead for orchestration.",
+    model: "AWS Managed Service: per KPU-hour. Confluent: included in cluster pricing.",
+    unit: "KPU (Kinesis Processing Unit). 1 KPU = 1 vCPU + 4 GB RAM. +1 KPU overhead for orchestration.",
     tiers: [
       {
         name: "KPU Compute",
@@ -2656,8 +2515,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Apache Kafka Streams": {
     model:
       "Library (no separate service cost). Runs on your compute. Confluent Cloud ksqlDB pricing applies if using managed stream processing.",
-    unit:
-      "No separate charge — runs on your Kafka consumer infrastructure (EC2/K8s/etc).",
+    unit: "No separate charge — runs on your Kafka consumer infrastructure (EC2/K8s/etc).",
     tiers: [
       {
         name: "Open Source Library",
@@ -2672,10 +2530,8 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "Apache Spark Streaming": {
-    model:
-      "Databricks: DBU-based. AWS EMR: EC2 + EMR surcharge. No separate streaming charge.",
-    unit:
-      "DBU (Databricks Unit) per hour on Databricks. Or instance-hour + EMR surcharge on EMR.",
+    model: "Databricks: DBU-based. AWS EMR: EC2 + EMR surcharge. No separate streaming charge.",
+    unit: "DBU (Databricks Unit) per hour on Databricks. Or instance-hour + EMR surcharge on EMR.",
     tiers: [
       {
         name: "Databricks Jobs Compute",
@@ -2697,8 +2553,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "AWS Kinesis Data Streams": {
     model:
       "Three modes: Provisioned (per-shard-hour), On-Demand Standard (per-GB), On-Demand Advantage (lower per-GB).",
-    unit:
-      "Shard-hour (Provisioned) — each shard = 1 MB/s write + 2 MB/s read. Or per-GB (On-Demand).",
+    unit: "Shard-hour (Provisioned) — each shard = 1 MB/s write + 2 MB/s read. Or per-GB (On-Demand).",
     tiers: [
       {
         name: "Provisioned Shard-Hour",
@@ -2730,14 +2585,12 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Extended Retention (24h–7d)",
         priceImpact: "$0.10/GB-month",
-        description:
-          "Beyond default 24-hour retention",
+        description: "Beyond default 24-hour retention",
       },
       {
         name: "Long-Term Retention (7–365d)",
         priceImpact: "$0.023/GB-month",
-        description:
-          "Up to 1 year of data retention",
+        description: "Up to 1 year of data retention",
       },
     ],
   },
@@ -2775,8 +2628,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   },
   RisingWave: {
     model: "Per RWU-hour (RisingWave Unit) + storage + data transfer.",
-    unit:
-      "RWU = MAX(1 vCPU, 4 GB memory). Billed on whichever resource (compute or memory) is the binding constraint.",
+    unit: "RWU = MAX(1 vCPU, 4 GB memory). Billed on whichever resource (compute or memory) is the binding constraint.",
     tiers: [
       { name: "Basic Compute", price: "$0.227/RWU-hr", description: "Up to 64 cores" },
       {
@@ -2820,8 +2672,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   ClickHouse: {
     model:
       "Usage-based: compute (per 8 GiB RAM increments, per minute) + storage + egress. Scale-to-zero available.",
-    unit:
-      "Compute unit-hour (8 GiB RAM increments) + storage (compressed GB) + egress.",
+    unit: "Compute unit-hour (8 GiB RAM increments) + storage (compressed GB) + egress.",
     tiers: [
       {
         name: "Basic",
@@ -2845,8 +2696,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Databricks (Lakehouse)": {
     model:
       "Per DBU-hour by workload type and tier. Cloud infrastructure (VMs) billed separately by your cloud provider.",
-    unit:
-      "DBU (Databricks Unit) — normalized processing power per hour. Different instance types consume DBUs at different rates. You pay Databricks for DBUs + your cloud provider for VMs (two-bill system).",
+    unit: "DBU (Databricks Unit) — normalized processing power per hour. Different instance types consume DBUs at different rates. You pay Databricks for DBUs + your cloud provider for VMs (two-bill system).",
     tiers: [
       {
         name: "Jobs Light Compute",
@@ -2878,22 +2728,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Jobs vs All-Purpose",
         priceImpact: "All-Purpose is 3–7x more expensive",
-        description:
-          "Automate workloads as Jobs to save 60–80% on DBU costs",
+        description: "Automate workloads as Jobs to save 60–80% on DBU costs",
       },
       {
         name: "Commit Discounts",
         priceImpact: "Significant savings",
-        description:
-          "Pre-purchase DBUs for high-volume usage",
+        description: "Pre-purchase DBUs for high-volume usage",
       },
     ],
   },
   DuckDB: {
     model:
       "Free and open source (MIT license). MotherDuck (cloud): platform fee + compute + storage.",
-    unit:
-      "Free (embedded). MotherDuck: compute units + GB-month storage + AI units.",
+    unit: "Free (embedded). MotherDuck: compute units + GB-month storage + AI units.",
     tiers: [
       {
         name: "DuckDB (Embedded)",
@@ -2921,8 +2768,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Google BigQuery": {
     model:
       "On-Demand: per TiB scanned by queries. Capacity: per slot-hour reserved. Storage billed separately.",
-    unit:
-      "Slot — roughly 1 virtual CPU of query processing power. On-demand borrows slots from shared pool at $6.25/TiB scanned. Capacity reserves dedicated slots at $0.04–$0.10/slot-hour by edition.",
+    unit: "Slot — roughly 1 virtual CPU of query processing power. On-demand borrows slots from shared pool at $6.25/TiB scanned. Capacity reserves dedicated slots at $0.04–$0.10/slot-hour by edition.",
     tiers: [
       {
         name: "On-Demand Queries",
@@ -2960,8 +2806,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   Snowflake: {
     model:
       "Credits for compute + per-TB storage. Credits consumed by virtual warehouse size per second (60s min). Storage billed separately.",
-    unit:
-      "Snowflake Credit — consumed per hour at a rate set by warehouse size. XS=1 credit/hr, S=2, M=4, L=8, XL=16, 2XL=32, up to 6XL=512 credits/hr. Each size doubles. Dollar cost per credit depends on edition.",
+    unit: "Snowflake Credit — consumed per hour at a rate set by warehouse size. XS=1 credit/hr, S=2, M=4, L=8, XL=16, 2XL=32, up to 6XL=512 credits/hr. Each size doubles. Dollar cost per credit depends on edition.",
     tiers: [
       {
         name: "Standard Edition",
@@ -2994,20 +2839,17 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Annual Capacity Commitment",
         priceImpact: "30–40% cheaper credits",
-        description:
-          "Pre-purchase credits at discounted rate",
+        description: "Pre-purchase credits at discounted rate",
       },
       {
         name: "Snowpark-Optimized Warehouses",
         priceImpact: "1.5x standard credit rate",
-        description:
-          "For ML/Python workloads (e.g., Large = 12 credits/hr vs 8)",
+        description: "For ML/Python workloads (e.g., Large = 12 credits/hr vs 8)",
       },
       {
         name: "Serverless Features",
         priceImpact: "1x–2x credit multiplier",
-        description:
-          "Snowpipe: 1x. Search Optimization: 2x. No warehouse required.",
+        description: "Snowpipe: 1x. Search Optimization: 2x. No warehouse required.",
       },
     ],
   },
@@ -3016,8 +2858,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
 
   "Custom (Express/FastAPI)": {
     model: "Self-hosted — cost depends on your compute infrastructure.",
-    unit:
-      "No direct service cost. Pay for your own servers/containers/serverless.",
+    unit: "No direct service cost. Pay for your own servers/containers/serverless.",
     tiers: [
       {
         name: "Self-Hosted",
@@ -3049,8 +2890,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "10,000 events/month, 3-day retention",
   },
   ngrok: {
-    model:
-      "Plan-based with usage limits and overages on data transfer and HTTP requests.",
+    model: "Plan-based with usage limits and overages on data transfer and HTTP requests.",
     unit: "Data transfer (GB) + HTTP requests (per 100K).",
     tiers: [
       {
@@ -3072,8 +2912,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     freeTier: "3 endpoints + 1 GB data + 20K requests/month",
   },
   Svix: {
-    model:
-      "Plan-based with per-message overage. Only attempted messages count — retries are free.",
+    model: "Plan-based with per-message overage. Only attempted messages count — retries are free.",
     unit: "Messages/month. 1 message = 1 webhook delivery attempt.",
     tiers: [
       {
@@ -3097,8 +2936,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Zapier Webhooks": {
     model:
       "Included in Zapier plan (per-task pricing). Webhooks are a trigger/action type within Zaps.",
-    unit:
-      "Zapier tasks/month. Webhook triggers consume tasks like any other Zap step.",
+    unit: "Zapier tasks/month. Webhook triggers consume tasks like any other Zap step.",
     tiers: [
       { name: "Free", price: "$0/month", description: "100 tasks/month" },
       { name: "Professional", price: "$29.99/month", description: "750 tasks/month" },
@@ -3110,16 +2948,13 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "AWS EventBridge Scheduler": {
     model: "Per invocation. Extremely economical with generous free tier.",
     unit: "Invocations (each scheduled rule firing).",
-    tiers: [
-      { name: "Invocations", price: "$1.00/million", description: "After free tier" },
-    ],
+    tiers: [{ name: "Invocations", price: "$1.00/million", description: "After free tier" }],
     freeTier: "14,000,000 invocations/month — permanently free",
   },
   "Azure Logic Apps": {
     model:
       "Consumption: per-action execution. Standard: reserved compute (unlimited built-in ops).",
-    unit:
-      "Per action execution (Consumption). Built-in actions: $0.000025/exec. Standard connectors: $0.000125/call. Enterprise: $0.001/call.",
+    unit: "Per action execution (Consumption). Built-in actions: $0.000025/exec. Standard connectors: $0.000125/call. Enterprise: $0.001/call.",
     tiers: [
       {
         name: "Built-in Actions",
@@ -3152,31 +2987,23 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Celery Beat": {
     model: "Open source, free. Requires a broker (Redis/RabbitMQ).",
     unit: "Free (broker infrastructure costs only).",
-    tiers: [
-      { name: "Open Source", price: "Free", description: "Python, requires broker" },
-    ],
+    tiers: [{ name: "Open Source", price: "Free", description: "Python, requires broker" }],
   },
   "Cron (Linux)": {
     model: "Free. Built into any Linux system.",
     unit: "No cost (standard Unix utility).",
-    tiers: [
-      { name: "Built-in", price: "Free", description: "1-minute minimum granularity" },
-    ],
+    tiers: [{ name: "Built-in", price: "Free", description: "1-minute minimum granularity" }],
   },
   "GCP Cloud Scheduler": {
-    model:
-      "Per job definition (not per execution). A job's existence is billed, not its runs.",
+    model: "Per job definition (not per execution). A job's existence is billed, not its runs.",
     unit: "Jobs/month. Paused jobs still count.",
-    tiers: [
-      { name: "Per Job", price: "$0.10/job/month", description: "Pro-rated daily" },
-    ],
+    tiers: [{ name: "Per Job", price: "$0.10/job/month", description: "Pro-rated daily" }],
     freeTier: "3 free jobs/month per billing account",
   },
   Temporal: {
     model:
       "Per action + storage. Actions are billable operations between your app and Temporal Cloud.",
-    unit:
-      "Action — each meaningful state change counts: Workflow Started, Signal sent, Query executed, Heartbeat, Update (successful or rejected). NOT counted: timer creation, activity scheduling, continue-as-new.",
+    unit: "Action — each meaningful state change counts: Workflow Started, Signal sent, Query executed, Heartbeat, Update (successful or rejected). NOT counted: timer creation, activity scheduling, continue-as-new.",
     tiers: [
       {
         name: "First 5M actions",
@@ -3207,8 +3034,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
 
   Algolia: {
     model: "Per search request + per indexed record. Two independent usage meters.",
-    unit:
-      "Search Request — a group of one or more search operations in a single API exchange. Multi-index federated search counts as 1 request (not per-index). Record — one item/object in an index.",
+    unit: "Search Request — a group of one or more search operations in a single API exchange. Multi-index federated search counts as 1 request (not per-index). Record — one item/object in an index.",
     tiers: [
       {
         name: "Build (Free)",
@@ -3257,8 +3083,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   Elasticsearch: {
     model:
       "Elastic Cloud: ECU-based (annual) or RAM-hour (PAYG). ECUs span Hosted and Serverless deployments.",
-    unit:
-      "ECU (Elastic Consumption Unit) = $1.00 USD. Pre-purchase ECUs annually; usage deducted from balance. Measures RAM-hours (Hosted) or ingestion/search ops (Serverless).",
+    unit: "ECU (Elastic Consumption Unit) = $1.00 USD. Pre-purchase ECUs annually; usage deducted from balance. Measures RAM-hours (Hosted) or ingestion/search ops (Serverless).",
     tiers: [
       {
         name: "Hot Data Nodes",
@@ -3276,22 +3101,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Subscription Tiers",
         priceImpact: "Affects features, not per-unit rate",
-        description:
-          "Standard → Gold → Platinum → Enterprise: support and feature access",
+        description: "Standard → Gold → Platinum → Enterprise: support and feature access",
       },
       {
         name: "Annual ECU Pre-Purchase",
         priceImpact: "Discounted vs PAYG",
-        description:
-          "Multi-year agreements yield further discounts",
+        description: "Multi-year agreements yield further discounts",
       },
     ],
   },
   Meilisearch: {
     model:
       "Usage-based (per search/documents) or Resource-based (per CPU/RAM). Choose at subscription time.",
-    unit:
-      "Search requests + documents (Usage-based) or vCPU + RAM (Resource-based).",
+    unit: "Search requests + documents (Usage-based) or vCPU + RAM (Resource-based).",
     tiers: [
       {
         name: "Build (Usage-based)",
@@ -3319,8 +3141,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   OpenSearch: {
     model:
       "AWS OpenSearch: instance-hour (provisioned) or OCU-hour (serverless). Separate storage charges.",
-    unit:
-      "Instance-hour or OCU (OpenSearch Compute Unit). 1 OCU = 6 GB RAM + proportional vCPU + GP3 storage. Serverless minimum: 2 OCUs = ~$346/month.",
+    unit: "Instance-hour or OCU (OpenSearch Compute Unit). 1 OCU = 6 GB RAM + proportional vCPU + GP3 storage. Serverless minimum: 2 OCUs = ~$346/month.",
     tiers: [
       { name: "t3.small.search", price: "$0.0360/hr", description: "2 GB RAM — dev/test" },
       {
@@ -3344,22 +3165,19 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "Reserved Instances (3yr)",
         priceImpact: "~48% savings",
-        description:
-          "No Upfront 3-year",
+        description: "No Upfront 3-year",
       },
       {
         name: "Database Savings Plans",
         priceImpact: "~35% savings",
-        description:
-          "Launched March 2026, no upfront",
+        description: "Launched March 2026, no upfront",
       },
     ],
   },
   Pinecone: {
     model:
       "Serverless consumption-based. Per Read Unit (RU), Write Unit (WU), and GB-month storage.",
-    unit:
-      "Read Unit (RU) — consumed per 1 GB of namespace scanned per query (0.25 RU minimum/query). Write Unit (WU) — consumed for upsert/update/delete. Reads cost 4–6x more than writes because vector similarity search is compute-intensive.",
+    unit: "Read Unit (RU) — consumed per 1 GB of namespace scanned per query (0.25 RU minimum/query). Write Unit (WU) — consumed for upsert/update/delete. Reads cost 4–6x more than writes because vector similarity search is compute-intensive.",
     tiers: [
       {
         name: "Starter (Free)",
@@ -3387,14 +3205,12 @@ export const PRICING: Record<string, TechnologyPricing> = {
         description: "99.95% SLA, HIPAA, CMK",
       },
     ],
-    freeTier:
-      "2 GB storage + 1M RUs + 2M WUs/month — permanently free, no credit card",
+    freeTier: "2 GB storage + 1M RUs + 2M WUs/month — permanently free, no credit card",
   },
   Typesense: {
     model:
       "Per-cluster-hour (resource-based). RAM is primary cost driver. No per-query or per-record fees.",
-    unit:
-      "Cluster-hour. You provision RAM + CPU; pay hourly. Unlike Algolia, no per-search charges.",
+    unit: "Cluster-hour. You provision RAM + CPU; pay hourly. Unlike Algolia, no per-search charges.",
     tiers: [
       { name: "Smallest Cluster", price: "~$7/month", description: "0.5 GB RAM" },
       {
@@ -3408,8 +3224,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
       {
         name: "High Availability (3-node)",
         priceImpact: "~3x single-node cost",
-        description:
-          "Each node billed independently",
+        description: "Each node billed independently",
       },
     ],
   },
@@ -3419,16 +3234,12 @@ export const PRICING: Record<string, TechnologyPricing> = {
   Angular: {
     model: "Open source (MIT license). Free.",
     unit: "Free.",
-    tiers: [
-      { name: "Framework", price: "Free", description: "MIT license" },
-    ],
+    tiers: [{ name: "Framework", price: "Free", description: "MIT license" }],
   },
   Flutter: {
     model: "Open source (BSD). Free.",
     unit: "Free.",
-    tiers: [
-      { name: "Framework", price: "Free", description: "BSD license" },
-    ],
+    tiers: [{ name: "Framework", price: "Free", description: "BSD license" }],
   },
   "Kotlin/Jetpack Compose": {
     model: "Free. Google Play developer account: $25 one-time.",
@@ -3443,8 +3254,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
     ],
   },
   "Next.js": {
-    model:
-      "Open source (MIT). Vercel hosting: plan-based. Self-host on any Node.js platform.",
+    model: "Open source (MIT). Vercel hosting: plan-based. Self-host on any Node.js platform.",
     unit: "Free framework. Vercel: $0 Hobby, $20/seat Pro.",
     tiers: [
       { name: "Framework", price: "Free", description: "MIT license" },
@@ -3485,8 +3295,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   },
   "Swift/SwiftUI": {
     model: "Free. Apple Developer Program: $99/year for App Store distribution.",
-    unit:
-      "Free language/framework. $99/yr Apple developer account for distribution.",
+    unit: "Free language/framework. $99/yr Apple developer account for distribution.",
     tiers: [
       { name: "Language/Framework", price: "Free", description: "Apache 2.0 license" },
       {
@@ -3499,9 +3308,7 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Vue.js": {
     model: "Open source (MIT license). Free.",
     unit: "Free.",
-    tiers: [
-      { name: "Framework", price: "Free", description: "MIT license" },
-    ],
+    tiers: [{ name: "Framework", price: "Free", description: "MIT license" }],
   },
 
   // ─── SERVICE FRAMEWORKS ──────────────────────────────────────────────────────────
@@ -3509,30 +3316,22 @@ export const PRICING: Record<string, TechnologyPricing> = {
   ".NET (ASP.NET Core)": {
     model: "Open source, free. .NET runtime and SDK are MIT licensed.",
     unit: "Free (infrastructure costs only).",
-    tiers: [
-      { name: "Framework", price: "Free", description: "MIT license" },
-    ],
+    tiers: [{ name: "Framework", price: "Free", description: "MIT license" }],
   },
   "Elixir (Phoenix)": {
     model: "Open source, free.",
     unit: "Free (infrastructure costs only).",
-    tiers: [
-      { name: "Framework", price: "Free", description: "MIT/Apache 2.0 licenses" },
-    ],
+    tiers: [{ name: "Framework", price: "Free", description: "MIT/Apache 2.0 licenses" }],
   },
   "Go (net/http, Gin, Fiber)": {
     model: "Open source, free.",
     unit: "Free (infrastructure costs only).",
-    tiers: [
-      { name: "Language/Frameworks", price: "Free", description: "BSD license" },
-    ],
+    tiers: [{ name: "Language/Frameworks", price: "Free", description: "BSD license" }],
   },
   "gRPC Service": {
     model: "Open source, free.",
     unit: "Free (infrastructure costs only).",
-    tiers: [
-      { name: "Framework", price: "Free", description: "Apache 2.0 license" },
-    ],
+    tiers: [{ name: "Framework", price: "Free", description: "Apache 2.0 license" }],
   },
   "Java (Spring Boot)": {
     model: "Open source, free. Optional VMware Tanzu Spring commercial support.",
@@ -3549,16 +3348,12 @@ export const PRICING: Record<string, TechnologyPricing> = {
   "Node.js (Express/Fastify)": {
     model: "Open source, free. Hosting costs depend on compute infrastructure.",
     unit: "Free (infrastructure costs only).",
-    tiers: [
-      { name: "Runtime/Frameworks", price: "Free", description: "MIT license" },
-    ],
+    tiers: [{ name: "Runtime/Frameworks", price: "Free", description: "MIT license" }],
   },
   "Python (FastAPI/Django)": {
     model: "Open source, free.",
     unit: "Free (infrastructure costs only).",
-    tiers: [
-      { name: "Frameworks", price: "Free", description: "MIT/BSD licenses" },
-    ],
+    tiers: [{ name: "Frameworks", price: "Free", description: "MIT/BSD licenses" }],
   },
   "Rust (Actix/Axum)": {
     model: "Open source, free.",

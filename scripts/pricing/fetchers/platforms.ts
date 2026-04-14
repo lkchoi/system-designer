@@ -19,15 +19,13 @@ const SOURCES: Record<string, string> = {
   Hookdeck: "https://hookdeck.com/pricing",
   "Zapier Webhooks": "https://zapier.com/pricing",
   Temporal: "https://temporal.io/pricing",
-  "Red Hat OpenShift":
-    "https://www.redhat.com/en/technologies/cloud-computing/openshift/pricing",
+  "Red Hat OpenShift": "https://www.redhat.com/en/technologies/cloud-computing/openshift/pricing",
   "Nomad (HashiCorp)": "https://www.hashicorp.com/products/nomad/pricing",
 };
 
 const STATIC: Record<string, TechnologyPricing> = {
   Kong: {
-    model:
-      "Monthly subscription per gateway + per-request overages. Gateway type determines cost.",
+    model: "Monthly subscription per gateway + per-request overages. Gateway type determines cost.",
     unit: "Gateway service/month + per million API requests.",
     tiers: [
       {
@@ -45,8 +43,7 @@ const STATIC: Record<string, TechnologyPricing> = {
   },
 
   Apigee: {
-    model:
-      "Pay-as-you-go (per API call + environment hourly) or annual subscription tiers.",
+    model: "Pay-as-you-go (per API call + environment hourly) or annual subscription tiers.",
     unit: "API proxy calls. Standard proxies cost 1/5 of Extensible proxies. Environment type affects hourly base cost.",
     tiers: [
       {
@@ -121,8 +118,7 @@ const STATIC: Record<string, TechnologyPricing> = {
         description: "Better per-GB rates, priority support, SLA",
       },
     ],
-    freeTier:
-      "$50/month recurring credit (perpetual low-volume free tier for small workloads)",
+    freeTier: "$50/month recurring credit (perpetual low-volume free tier for small workloads)",
   },
 
   Akamai: {
@@ -174,13 +170,11 @@ const STATIC: Record<string, TechnologyPricing> = {
         description: "Above 10M/month on Pro",
       },
     ],
-    freeTier:
-      "100 GB transfer + 1M edge requests/month (Hobby, personal projects only)",
+    freeTier: "100 GB transfer + 1M edge requests/month (Hobby, personal projects only)",
   },
 
   "Vercel Functions": {
-    model:
-      "Plan-based with usage limits and overage. Not pure pay-per-invocation.",
+    model: "Plan-based with usage limits and overage. Not pure pay-per-invocation.",
     unit: "CPU-hours + GB-hours + invocations, with plan-based included allocations.",
     tiers: [
       {
@@ -213,8 +207,7 @@ const STATIC: Record<string, TechnologyPricing> = {
   },
 
   ngrok: {
-    model:
-      "Plan-based with usage limits and overages on data transfer and HTTP requests.",
+    model: "Plan-based with usage limits and overages on data transfer and HTTP requests.",
     unit: "Data transfer (GB) + HTTP requests (per 100K).",
     tiers: [
       {
@@ -225,8 +218,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Pay-as-You-Go",
         price: "$20/month",
-        description:
-          "Unlimited endpoints, 5 GB included, $0.10/GB overage",
+        description: "Unlimited endpoints, 5 GB included, $0.10/GB overage",
       },
       {
         name: "HTTP Request Overage",
@@ -286,8 +278,7 @@ const STATIC: Record<string, TechnologyPricing> = {
   },
 
   Svix: {
-    model:
-      "Plan-based with per-message overage. Only attempted messages count — retries are free.",
+    model: "Plan-based with per-message overage. Only attempted messages count — retries are free.",
     unit: "Messages/month. 1 message = 1 webhook delivery attempt.",
     tiers: [
       {
@@ -310,8 +301,7 @@ const STATIC: Record<string, TechnologyPricing> = {
   },
 
   Hookdeck: {
-    model:
-      "Plan-based with per-event overage. Retries included at no extra cost.",
+    model: "Plan-based with per-event overage. Retries included at no extra cost.",
     unit: "Events/month. 1 event = 1 inbound webhook delivery attempt.",
     tiers: [
       {
@@ -384,8 +374,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Essentials Plan",
         price: "$100/month minimum",
-        description:
-          "1M actions + 1 GB active + 40 GB retained included",
+        description: "1M actions + 1 GB active + 40 GB retained included",
       },
     ],
   },
@@ -408,8 +397,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Minimum Viable Cluster",
         price: "~$1,400+/month",
-        description:
-          "3 workers + 3 infra nodes (m5.xlarge) + cluster fee",
+        description: "3 workers + 3 infra nodes (m5.xlarge) + cluster fee",
       },
     ],
     modes: [
@@ -439,8 +427,7 @@ const STATIC: Record<string, TechnologyPricing> = {
       {
         name: "Enterprise",
         price: "Contact sales",
-        description:
-          "Governance, multi-region federation, audit logging",
+        description: "Governance, multi-region federation, audit logging",
       },
       {
         name: "HCP Nomad",
@@ -453,8 +440,7 @@ const STATIC: Record<string, TechnologyPricing> = {
 
 export const fetcher: Fetcher = {
   name: "platforms",
-  description:
-    "Managed platform services (API gateways, CDNs, webhooks, scheduling, containers)",
+  description: "Managed platform services (API gateways, CDNs, webhooks, scheduling, containers)",
   technologies: Object.keys(STATIC),
   async fetch(): Promise<FetchResult[]> {
     log("Platforms: using static reference data");

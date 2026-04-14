@@ -18,11 +18,20 @@ export default function HotkeyHelpOverlay({ open, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={onClose}>
-      <div className="bg-surface border border-border rounded-xl px-7 py-6 w-[520px] max-w-[90vw] max-h-[80vh] overflow-y-auto shadow-[0_16px_50px_rgba(0,0,0,0.5)]" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]"
+      onClick={onClose}
+    >
+      <div
+        className="bg-surface border border-border rounded-xl px-7 py-6 w-[520px] max-w-[90vw] max-h-[80vh] overflow-y-auto shadow-[0_16px_50px_rgba(0,0,0,0.5)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between text-base font-bold text-text-bright mb-5">
           <span>Keyboard Shortcuts</span>
-          <button className="flex items-center justify-center w-7 h-7 rounded-md text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright" onClick={onClose}>
+          <button
+            className="flex items-center justify-center w-7 h-7 rounded-md text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
+            onClick={onClose}
+          >
             <svg
               width="14"
               height="14"
@@ -40,7 +49,9 @@ export default function HotkeyHelpOverlay({ open, onClose }: Props) {
         <div className="grid grid-cols-2 gap-x-8 gap-y-5">
           {[...groups.entries()].map(([category, defs]) => (
             <div key={category} className="flex flex-col gap-1.5">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-0.5">{category}</div>
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-0.5">
+                {category}
+              </div>
               {defs.map((def) => (
                 <div key={def.id} className="flex items-center justify-between gap-3 py-[3px]">
                   <span className="text-[13px] text-text">{def.label}</span>

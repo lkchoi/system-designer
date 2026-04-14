@@ -31,7 +31,13 @@ export default function EdgePropertiesPanel({
   return (
     <aside
       className={`${panelPosition === "bottom" ? "w-auto min-w-0 h-[260px] min-h-[150px] max-h-[70vh] border-l-0 border-t" : "w-[340px] min-w-[340px] border-l"} bg-surface border-border flex flex-col z-10 overflow-y-auto`}
-      style={size ? (panelPosition === "bottom" ? { height: size } : { width: size, minWidth: size }) : undefined}
+      style={
+        size
+          ? panelPosition === "bottom"
+            ? { height: size }
+            : { width: size, minWidth: size }
+          : undefined
+      }
     >
       <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border shrink-0">
         <h2 className="text-base font-bold text-text-bright">Connection</h2>
@@ -71,7 +77,10 @@ export default function EdgePropertiesPanel({
               </svg>
             )}
           </button>
-          <button className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright" onClick={onClose}>
+          <button
+            className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+            onClick={onClose}
+          >
             &times;
           </button>
         </div>
@@ -114,7 +123,11 @@ export default function EdgePropertiesPanel({
             {EDGE_PROTOCOLS.map((p) => (
               <button
                 key={p}
-                className={data.protocol === p ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright" : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"}
+                className={
+                  data.protocol === p
+                    ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
+                    : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
+                }
                 onClick={() =>
                   onUpdate(edge.id, { protocol: (data.protocol === p ? "" : p) as EdgeProtocol })
                 }
@@ -131,7 +144,11 @@ export default function EdgePropertiesPanel({
             {EDGE_FORMATS.map((f) => (
               <button
                 key={f}
-                className={data.format === f ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright" : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"}
+                className={
+                  data.format === f
+                    ? "px-3 py-[5px] rounded-md text-xs font-semibold bg-accent-bg border border-accent text-accent transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
+                    : "px-3 py-[5px] rounded-md text-xs font-medium bg-surface-2 border border-border text-text transition-all duration-150 cursor-pointer hover:bg-surface-3 hover:text-text-bright"
+                }
                 onClick={() =>
                   onUpdate(edge.id, { format: (data.format === f ? "" : f) as EdgeFormat })
                 }
@@ -156,7 +173,9 @@ export default function EdgePropertiesPanel({
                 }
                 onClick={() => onUpdate(edge.id, { partitioned: !data.partitioned })}
               >
-                <span className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.partitioned ? " translate-x-4" : ""}`} />
+                <span
+                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.partitioned ? " translate-x-4" : ""}`}
+                />
               </button>
             </div>
           </div>
