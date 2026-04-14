@@ -1,73 +1,67 @@
-# React + TypeScript + Vite
+# System Designer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive system architecture designer built with React, TypeScript, and [React Flow](https://reactflow.dev). Design distributed systems on a visual canvas, define component configurations, simulate failure scenarios, and analyze cost.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Canvas
+- Drag-and-drop 18 built-in component types (databases, services, API gateways, caches, message queues, and more) onto an infinite canvas
+- Connect components with labeled edges specifying protocol (HTTP, gRPC, WebSocket, etc.) and data format (JSON, Protobuf, etc.)
+- Connection validation enforces architectural constraints (e.g., API gateway cannot connect directly to a database)
+- Sticky notes and text annotations for documentation
+- Resizable nodes, editable edge labels, collapsible sidebar
 
-## React Compiler
+### Modes
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Plan** — Configure each component's technology, plan fields, sharding, and API gateway endpoints. Technology selection shows throughput, limits, and provider info.
 
-## Expanding the ESLint configuration
+**Stress** — Simulate CAP theorem tradeoffs. Set each node's CAP classification (CP/AP/CA), then click nodes to simulate failures (healthy/overloaded/down) and click edges to simulate network partitions. Cascading effects propagate through the dependency graph automatically.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+**Monitor** — Set node status (healthy/warning/error/idle) and view metrics (CPU, memory, requests/sec, latency).
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+**Price** — Analyze cost based on selected technologies and capacity.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Flow Paths
+Build named sequences of nodes to document request flows (e.g., "Post a comment": Client -> API Gateway -> Comment Service -> Database). Save with name and description, load from the sidebar.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### Extensible Component Registry
+All component types are defined in a single registry (`src/registry/`). Each entry includes visual definition, plan fields, technology options, and connection compatibility rules. Adding a new component type requires one entry in `builtin-entries.ts`. The registry supports custom user-defined types via `registry.register()`.
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Tech Stack
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+- **React 19** + **TypeScript 6**
+- **React Flow** (@xyflow/react) for the graph canvas
+- **Vite 8** for dev server and build
+- **ULID** for unique IDs
 
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+## Project Structure
+
+```
+src/
+  App.tsx              Main canvas, mode system, state management
+  stressEngine.ts      Pure function computing cascading failure effects
+  types.ts             Shared TypeScript interfaces
+  data.ts              Utility functions (randomMetrics, displayType)
+  registry/
+    builtin-entries.ts   18 component type definitions
+    ComponentRegistry.ts Registry class (get, canConnect, register)
+    pricing.ts           Technology pricing data
+    types.ts             Registry interfaces
+  components/
+    SystemNode.tsx       System component node
+    PropertiesPanel.tsx  Node properties (mode-aware)
+    EdgePropertiesPanel.tsx  Edge properties
+    LabeledEdge.tsx      Custom edge with labels and tags
+    Sidebar.tsx          Draggable component palette + saved paths
+    StickyNote.tsx       Sticky note annotations
+    TextNode.tsx         Text labels
+  hooks/
+    useHotkeys.ts        Keyboard shortcut system
 ```
