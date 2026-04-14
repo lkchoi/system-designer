@@ -98,7 +98,7 @@ export default function Sidebar({
           <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim" style={{ paddingTop: "12px" }}>
             Annotations
           </h2>
-          <div className={collapsed ? "px-1 overflow-visible flex flex-col gap-0.5" : "flex-1 overflow-y-auto px-2 flex flex-col gap-0.5"} style={{ flex: "none", paddingBottom: "8px" }}>
+          <div className="px-2 flex flex-col gap-0.5" style={{ flex: "none", paddingBottom: "8px" }}>
             <div
               className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
               draggable
