@@ -1,7 +1,7 @@
 import { Handle, Position, useReactFlow, NodeResizer } from "@xyflow/react";
 import type { NodeProps, Node } from "@xyflow/react";
 import type { SystemNodeData } from "../types";
-import { registry } from "../registry";
+import { registry, PRICING } from "../registry";
 import { useMode, useStress } from "../App";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -126,7 +126,41 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             </span>
           </div>
         )}
-        {mode !== "plan" && (
+        {mode === "price" ? (
+          (() => {
+            const techName = data.plan?.technology;
+            const pricing = techName ? PRICING[techName] : undefined;
+            return (
+              <div className="flex items-center gap-1.5 mb-2.5">
+                {pricing ? (
+                  <>
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#22c55e"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0"
+                    >
+                      <line x1="12" y1="1" x2="12" y2="23" />
+                      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+                    </svg>
+                    <span className="text-xs text-[#22c55e] font-semibold font-mono whitespace-nowrap overflow-hidden text-ellipsis">
+                      {pricing.tiers[0]?.price}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[11px] text-text-dim italic">
+                    {techName ? "No pricing data" : "Set tech in Plan mode"}
+                  </span>
+                )}
+              </div>
+            );
+          })()
+        ) : mode !== "plan" ? (
           <div className="flex gap-4 mb-2.5">
             <div className="flex gap-2 text-xs text-text-dim">
               <span>CPU</span>
@@ -139,7 +173,7 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
               </span>
             </div>
           </div>
-        )}
+        ) : null}
         <div className="flex items-center gap-2 border-t border-border pt-2">
           <button
             className="flex items-center gap-[5px] px-2 py-1 rounded-md text-xs text-accent transition-all duration-150 hover:bg-accent-bg hover:text-text-bright"

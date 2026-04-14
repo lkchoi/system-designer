@@ -9,7 +9,7 @@ import type {
 } from "../types";
 import type { Mode, PanelPosition } from "../App";
 import { displayType } from "../data";
-import { registry } from "../registry";
+import { registry, PRICING } from "../registry";
 import { ulid } from "ulid";
 
 const STATUSES: NodeStatus[] = ["healthy", "warning", "error", "idle"];
@@ -461,6 +461,94 @@ export default function PropertiesPanel({
               </div>
             ))}
           </div>
+        ) : mode === "price" ? (
+          (() => {
+            const techName = data.plan?.technology;
+            const pricing = techName ? PRICING[techName] : undefined;
+            return (
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-semibold text-text-dim">Pricing</label>
+                {!techName ? (
+                  <div className="text-xs text-text-dim p-3 text-center bg-surface-2 border border-dashed border-border rounded-lg">
+                    Select a technology in Plan mode to see pricing
+                  </div>
+                ) : !pricing ? (
+                  <div className="text-xs text-text-dim p-3 text-center bg-surface-2 border border-dashed border-border rounded-lg">
+                    No pricing data for {techName}
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-surface-2 border border-border rounded-lg p-2.5 flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                        Billing Model
+                      </span>
+                      <span className="text-xs text-text leading-snug">{pricing.model}</span>
+                    </div>
+                    <div className="bg-surface-2 border border-border rounded-lg p-2.5 flex flex-col gap-1">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                        Unit
+                      </span>
+                      <span className="text-xs text-text leading-snug">{pricing.unit}</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                        Price Tiers
+                      </span>
+                      {pricing.tiers.map((tier) => (
+                        <div
+                          key={tier.name}
+                          className="bg-surface-2 border border-border rounded-lg px-2.5 py-2 flex flex-col gap-0.5"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-text-bright">{tier.name}</span>
+                            <span className="text-xs font-semibold font-mono text-[#22c55e] whitespace-nowrap">
+                              {tier.price}
+                            </span>
+                          </div>
+                          {tier.description && (
+                            <span className="text-[11px] text-text-dim leading-snug">
+                              {tier.description}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {pricing.freeTier && (
+                      <div className="bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)] rounded-lg p-2.5 flex flex-col gap-0.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[#22c55e]">
+                          Free Tier
+                        </span>
+                        <span className="text-xs text-text leading-snug">{pricing.freeTier}</span>
+                      </div>
+                    )}
+                    {pricing.modes && pricing.modes.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-text-dim">
+                          Pricing Modes
+                        </span>
+                        {pricing.modes.map((m) => (
+                          <div
+                            key={m.name}
+                            className="bg-surface-2 border border-border rounded-lg px-2.5 py-2 flex flex-col gap-0.5"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-medium text-text-bright">{m.name}</span>
+                              <span className="text-[11px] font-mono text-accent whitespace-nowrap">
+                                {m.priceImpact}
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-text-dim leading-snug">
+                              {m.description}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })()
         ) : (
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-semibold text-text-dim">Metrics</label>
