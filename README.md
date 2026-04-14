@@ -71,16 +71,16 @@ npx tsx scripts/pricing/run.ts --dry-run           # fetch without overwriting
 
 ### Fetcher modules
 
-| Module | Technologies | Source |
-|---|---|---|
-| `aws.ts` | 27 | AWS Bulk Pricing API (live) |
-| `azure.ts` | 11 | Azure Retail Prices API (live) |
-| `gcp.ts` | 13 | GCP pricing calculator (live) |
-| `cloudflare.ts` | 6 | Static reference data |
-| `databases.ts` | 8 | Static (MongoDB, CockroachDB, Neo4j, etc.) |
-| `data-services.ts` | 16 | Static (Kafka, Snowflake, Elasticsearch, etc.) |
-| `platforms.ts` | 16 | Static (Kong, Vercel, Temporal, etc.) |
-| `open-source.ts` | 39 | Static (frameworks, self-hosted tools) |
+| Module             | Technologies | Source                                         |
+| ------------------ | ------------ | ---------------------------------------------- |
+| `aws.ts`           | 27           | AWS Bulk Pricing API (live)                    |
+| `azure.ts`         | 11           | Azure Retail Prices API (live)                 |
+| `gcp.ts`           | 13           | GCP pricing calculator (live)                  |
+| `cloudflare.ts`    | 6            | Static reference data                          |
+| `databases.ts`     | 8            | Static (MongoDB, CockroachDB, Neo4j, etc.)     |
+| `data-services.ts` | 16           | Static (Kafka, Snowflake, Elasticsearch, etc.) |
+| `platforms.ts`     | 16           | Static (Kong, Vercel, Temporal, etc.)          |
+| `open-source.ts`   | 39           | Static (frameworks, self-hosted tools)         |
 
 Cloud provider fetchers pull live prices from public APIs and fall back to static data on failure. Static fetchers include vendor pricing page URLs for manual verification.
 

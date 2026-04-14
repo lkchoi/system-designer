@@ -93,7 +93,16 @@ export default function Sidebar({
                   className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: entry.color }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d={entry.icon} />
                   </svg>
                 </div>
@@ -101,17 +110,47 @@ export default function Sidebar({
             ))}
           </div>
           <div className="px-1 overflow-visible flex flex-col gap-0.5 border-t border-border pt-2 pb-2 mt-2">
-            <div className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2" draggable onDragStart={(e) => onDragStart(e, "sticky")} data-tooltip="Sticky Note" title="Sticky Note">
+            <div
+              className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
+              draggable
+              onDragStart={(e) => onDragStart(e, "sticky")}
+              data-tooltip="Sticky Note"
+              title="Sticky Note"
+            >
               <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-[#fde68a]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#92400e"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
                   <polyline points="14 3 14 8 21 8" />
                 </svg>
               </div>
             </div>
-            <div className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2" draggable onDragStart={(e) => onDragStart(e, "text")} data-tooltip="Text" title="Text">
+            <div
+              className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
+              draggable
+              onDragStart={(e) => onDragStart(e, "text")}
+              data-tooltip="Text"
+              title="Text"
+            >
               <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#9ca3af"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M4 7V4h16v3M9 20h6M12 4v16" />
                 </svg>
               </div>
@@ -134,7 +173,16 @@ export default function Sidebar({
                   className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: entry.color }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d={entry.icon} />
                   </svg>
                 </div>
@@ -146,18 +194,48 @@ export default function Sidebar({
             Annotations
           </h2>
           <div className="px-2 flex flex-col gap-0.5 pb-2">
-            <div className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3" draggable onDragStart={(e) => onDragStart(e, "sticky")} data-tooltip="Sticky Note" title="Sticky Note">
+            <div
+              className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
+              draggable
+              onDragStart={(e) => onDragStart(e, "sticky")}
+              data-tooltip="Sticky Note"
+              title="Sticky Note"
+            >
               <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-[#fde68a]">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#92400e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#92400e"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
                   <polyline points="14 3 14 8 21 8" />
                 </svg>
               </div>
               <span>Sticky Note</span>
             </div>
-            <div className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3" draggable onDragStart={(e) => onDragStart(e, "text")} data-tooltip="Text" title="Text">
+            <div
+              className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
+              draggable
+              onDragStart={(e) => onDragStart(e, "text")}
+              data-tooltip="Text"
+              title="Text"
+            >
               <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#9ca3af"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <path d="M4 7V4h16v3M9 20h6M12 4v16" />
                 </svg>
               </div>
@@ -188,7 +266,16 @@ export default function Sidebar({
                         }}
                         title="Delete flow"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
                       </button>
