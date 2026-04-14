@@ -10,7 +10,9 @@
     "lint": "oxlint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "pricing:fetch": "npx tsx scripts/pricing/run.ts",
+    "pricing:list": "npx tsx scripts/pricing/run.ts --list"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
