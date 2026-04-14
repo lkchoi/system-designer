@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "format": "oxfmt .",
     "lint": "oxlint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@xyflow/react": "^12.10.2",
@@ -25,6 +27,7 @@
     "oxfmt": "^0.44.0",
     "oxlint": "^1.59.0",
     "typescript": "~6.0.2",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vitest": "^4.1.4"
   }
 }
