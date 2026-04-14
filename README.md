@@ -11,6 +11,7 @@ An interactive system architecture designer built with React, TypeScript, and [R
 - Connection validation enforces architectural constraints (e.g., API gateway cannot connect directly to a database)
 - Sticky notes and text annotations for documentation
 - Resizable nodes, editable edge labels, collapsible sidebar
+- Undo/redo for canvas and node edits
 
 ### Modes
 
@@ -22,9 +23,17 @@ An interactive system architecture designer built with React, TypeScript, and [R
 
 **Price** — Analyze cost based on selected technologies and capacity.
 
+### Capacity Calculator
+
+A modal tool (hotkey `C`) for back-of-the-envelope scale estimations. Input TPS, payload size, replication factor, read/write ratio, and retention period to compute data volumes, bandwidth, storage projections, and DynamoDB WCU/RCU. Includes a reference tab with searchable constants (seconds per day, SSD IOPS, network RTT, etc.) and technology throughput/limits from the full catalog.
+
 ### Flow Paths
 
 Build named sequences of nodes to document request flows (e.g., "Post a comment": Client -> API Gateway -> Comment Service -> Database). Save with name and description, load from the sidebar.
+
+### Persistence
+
+Designs are automatically saved to SQLite via the browser's Origin Private File System (OPFS). Save, load, and manage multiple designs without a backend.
 
 ### Extensible Component Registry
 
@@ -41,7 +50,10 @@ npm run dev
 
 - **React 19** + **TypeScript 6**
 - **React Flow** (@xyflow/react) for the graph canvas
+- **Tailwind CSS 4** for styling
+- **sql.js** + OPFS for client-side persistence
 - **Vite 8** for dev server and build
+- **Vitest** for testing
 - **ULID** for unique IDs
 
 ## Pricing Data
@@ -85,16 +97,26 @@ src/
     ComponentRegistry.ts Registry class (get, canConnect, register)
     pricing.ts           Technology pricing data (auto-generated)
     types.ts             Registry interfaces
+  utils/
+    capacity.ts          Capacity calculator logic and formatters
+    keyboard.ts          Keyboard utilities
+  db/
+    database.ts          sql.js database initialization (OPFS)
+    designs.ts           Design CRUD operations
+    schema.ts            SQLite table definitions
   components/
     SystemNode.tsx       System component node
     PropertiesPanel.tsx  Node properties (mode-aware)
     EdgePropertiesPanel.tsx  Edge properties
+    CapacityCalculator.tsx  Scale estimation modal
+    HotkeyHelpOverlay.tsx   Keyboard shortcut reference
     LabeledEdge.tsx      Custom edge with labels and tags
     Sidebar.tsx          Draggable component palette + saved paths
     StickyNote.tsx       Sticky note annotations
     TextNode.tsx         Text labels
   hooks/
     useHotkeys.ts        Keyboard shortcut system
+    useUndoRedo.ts       Undo/redo state management
 scripts/
   pricing/
     run.ts               CLI entry point — orchestrates fetchers
