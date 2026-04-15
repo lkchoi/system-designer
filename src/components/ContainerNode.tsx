@@ -11,6 +11,8 @@ export default function ContainerNode({ id, data, selected }: NodeProps<Containe
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const collapsed = data.collapsed ?? false;
+
   useEffect(() => {
     if (editing) {
       inputRef.current?.focus();
@@ -30,9 +32,15 @@ export default function ContainerNode({ id, data, selected }: NodeProps<Containe
     }
   }
 
+  function toggleCollapse() {
+    window.dispatchEvent(
+      new CustomEvent("container-toggle-collapse", { detail: { containerId: id } }),
+    );
+  }
+
   return (
     <>
-      {selected && (
+      {selected && !collapsed && (
         <NodeResizer
           minWidth={240}
           minHeight={120}
@@ -50,14 +58,18 @@ export default function ContainerNode({ id, data, selected }: NodeProps<Containe
       <Handle type="source" position={Position.Top} id="top" className="system-handle" />
       <Handle type="source" position={Position.Left} id="left" className="system-handle" />
       <div
-        className={`rounded-xl border border-dashed w-full h-full min-w-[240px] min-h-[120px] transition-[border-color,box-shadow] duration-150${
+        className={`rounded-xl border border-dashed w-full h-full transition-[border-color,box-shadow] duration-150${
+          collapsed ? " min-w-[180px] min-h-0" : " min-w-[240px] min-h-[120px]"
+        }${
           selected
             ? " border-accent shadow-[0_0_0_1px_var(--color-accent),0_0_20px_rgba(99,102,241,0.15)]"
             : " border-border"
         }`}
         style={{ background: data.color || "rgba(99,102,241,0.04)" }}
       >
-        <div className="flex items-center gap-2 px-3 py-2 border-b border-dashed border-border">
+        <div
+          className={`flex items-center gap-2 px-3 py-2${collapsed ? "" : " border-b border-dashed border-border"}`}
+        >
           <svg
             width="14"
             height="14"
@@ -95,6 +107,29 @@ export default function ContainerNode({ id, data, selected }: NodeProps<Containe
               {data.label || "Container"}
             </span>
           )}
+          <button
+            className="flex items-center justify-center w-5 h-5 rounded text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={toggleCollapse}
+            title={collapsed ? "Expand" : "Minimize"}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {collapsed ? (
+                <polyline points="6 9 12 15 18 9" />
+              ) : (
+                <polyline points="6 15 12 9 18 15" />
+              )}
+            </svg>
+          </button>
           <button
             className="flex items-center justify-center w-5 h-5 rounded text-text-dim transition-all duration-150 hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.12)]"
             onPointerDown={(e) => e.stopPropagation()}

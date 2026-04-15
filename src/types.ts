@@ -169,6 +169,9 @@ export interface StressConfig {
 export interface ContainerNodeData {
   label: string;
   color: string;
+  collapsed: boolean;
+  expandedWidth?: number;
+  expandedHeight?: number;
   [key: string]: unknown;
 }
 

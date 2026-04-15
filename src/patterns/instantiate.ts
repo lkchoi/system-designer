@@ -110,6 +110,7 @@ function instantiateInContainer(
     data: {
       label: pattern.name,
       color: pattern.color + "10", // add low alpha to the pattern color
+      collapsed: false,
     } satisfies ContainerNodeData,
   };
 
@@ -138,7 +139,10 @@ function instantiateInContainer(
   return { nodes: [containerNode, ...childNodes], edges };
 }
 
-function makeNodeData(componentType: ComponentType, generateLabel: (type: ComponentType) => string): SystemNodeData {
+function makeNodeData(
+  componentType: ComponentType,
+  generateLabel: (type: ComponentType) => string,
+): SystemNodeData {
   return {
     label: generateLabel(componentType),
     componentType,
@@ -155,10 +159,7 @@ function makeNodeData(componentType: ComponentType, generateLabel: (type: Compon
   };
 }
 
-function makeEdges(
-  pattern: (typeof BUILTIN_PATTERNS)[number],
-  idMap: Map<string, string>,
-): Edge[] {
+function makeEdges(pattern: (typeof BUILTIN_PATTERNS)[number], idMap: Map<string, string>): Edge[] {
   return pattern.edges.map((pe) => ({
     id: ulid(),
     source: idMap.get(pe.sourceLocalId)!,

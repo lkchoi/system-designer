@@ -322,6 +322,80 @@ function Canvas({
     return () => window.removeEventListener("edge-label-change", handleLabelChange);
   }, [takeSnapshot]);
 
+  useEffect(() => {
+    function handleToggleCollapse(e: Event) {
+      const { containerId } = (e as CustomEvent).detail;
+      takeSnapshot();
+      setNodes((nds) => {
+        const container = nds.find((n) => n.id === containerId && n.type === "container");
+        if (!container) return nds;
+
+        const containerData = container.data as ContainerNodeData;
+        const isCollapsed = containerData.collapsed ?? false;
+
+        // Collect all descendant IDs
+        const descendantIds = new Set<string>();
+        function collectDescendants(parentId: string) {
+          for (const n of nds) {
+            if (n.parentId === parentId) {
+              descendantIds.add(n.id);
+              collectDescendants(n.id);
+            }
+          }
+        }
+        collectDescendants(containerId);
+
+        if (isCollapsed) {
+          // Expand: restore size and show children
+          return nds.map((n) => {
+            if (n.id === containerId) {
+              return {
+                ...n,
+                style: {
+                  ...n.style,
+                  width: containerData.expandedWidth ?? n.style?.width,
+                  height: containerData.expandedHeight ?? n.style?.height,
+                },
+                data: { ...containerData, collapsed: false },
+              } as typeof n;
+            }
+            if (descendantIds.has(n.id)) {
+              return { ...n, hidden: false } as typeof n;
+            }
+            return n;
+          });
+        } else {
+          // Collapse: save size, shrink, and hide children
+          const currentW =
+            container.measured?.width ?? (container.style?.width as number | undefined) ?? 400;
+          const currentH =
+            container.measured?.height ?? (container.style?.height as number | undefined) ?? 300;
+
+          return nds.map((n) => {
+            if (n.id === containerId) {
+              return {
+                ...n,
+                style: { ...n.style, width: 220, height: 42 },
+                data: {
+                  ...containerData,
+                  collapsed: true,
+                  expandedWidth: currentW,
+                  expandedHeight: currentH,
+                },
+              } as typeof n;
+            }
+            if (descendantIds.has(n.id)) {
+              return { ...n, hidden: true } as typeof n;
+            }
+            return n;
+          });
+        }
+      });
+    }
+    window.addEventListener("container-toggle-collapse", handleToggleCollapse);
+    return () => window.removeEventListener("container-toggle-collapse", handleToggleCollapse);
+  }, [takeSnapshot]);
+
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
@@ -404,7 +478,7 @@ function Canvas({
           type: "container",
           position: { x: position.x - w / 2, y: position.y - h / 2 },
           style: { width: w, height: h },
-          data: { label: "Container", color: "rgba(99,102,241,0.04)" },
+          data: { label: "Container", color: "rgba(99,102,241,0.04)", collapsed: false },
         };
         setNodes((nds) => [...nds, newNode]);
       } else {
@@ -1351,9 +1425,7 @@ function Canvas({
                     <button
                       className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
                       onClick={togglePanelPosition}
-                      title={
-                        panelPosition === "right" ? "Dock to bottom" : "Dock to right"
-                      }
+                      title={panelPosition === "right" ? "Dock to bottom" : "Dock to right"}
                     >
                       <svg
                         width="14"
@@ -1391,9 +1463,7 @@ function Canvas({
                     <label className="text-[13px] font-semibold text-text-dim">Label</label>
                     <input
                       className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent"
-                      value={
-                        (selectedNode.data as ContainerNodeData).label
-                      }
+                      value={(selectedNode.data as ContainerNodeData).label}
                       onChange={(e) =>
                         onUpdateNodeData(selectedNode.id, {
                           label: e.target.value,
