@@ -556,6 +556,31 @@ function Canvas({
     [takeSnapshot],
   );
 
+  const resetStress = useCallback(() => {
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.type === "system"
+          ? ({
+              ...n,
+              data: {
+                ...n.data,
+                stressFailure: "none",
+                capacityPercent: 100,
+                consumerRate: 1000,
+              },
+            } as typeof n)
+          : n,
+      ),
+    );
+    setEdges((eds) =>
+      eds.map((e) => ({
+        ...e,
+        data: { ...e.data, partitioned: false, simulatedLatency: 0 },
+      })),
+    );
+    setStressConfig(defaultStressConfig);
+  }, []);
+
   // --- Stress recording ---
 
   const recordMutation = useCallback(
@@ -747,31 +772,6 @@ function Canvas({
     () => ({ effects: stressEffects, partitionedEdges, slowEdges, stressConfig }),
     [stressEffects, partitionedEdges, slowEdges, stressConfig],
   );
-
-  const resetStress = useCallback(() => {
-    setNodes((nds) =>
-      nds.map((n) =>
-        n.type === "system"
-          ? ({
-              ...n,
-              data: {
-                ...n.data,
-                stressFailure: "none",
-                capacityPercent: 100,
-                consumerRate: 1000,
-              },
-            } as typeof n)
-          : n,
-      ),
-    );
-    setEdges((eds) =>
-      eds.map((e) => ({
-        ...e,
-        data: { ...e.data, partitioned: false, simulatedLatency: 0 },
-      })),
-    );
-    setStressConfig(defaultStressConfig);
-  }, []);
 
   const togglePathMode = useCallback(() => {
     setIsPathMode((prev) => {
