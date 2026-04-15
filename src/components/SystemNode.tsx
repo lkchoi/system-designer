@@ -36,13 +36,15 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
       ? " border-[#ef4444] shadow-[0_0_0_1px_#ef4444,0_0_16px_rgba(239,68,68,0.25)] opacity-70 relative"
       : failureState === "overloaded"
         ? " border-[#eab308] shadow-[0_0_0_1px_#eab308,0_0_16px_rgba(234,179,8,0.2)] animate-[stress-pulse_2s_ease-in-out_infinite]"
-        : stressEffect?.reason === "cascade"
-          ? " border-dashed border-[#eab308]"
-          : stressEffect?.reason === "partition-cp"
+        : stressEffect?.status === "error"
+          ? stressEffect.reason === "partition-cp"
             ? " border-dashed border-[#ef4444]"
-            : stressEffect?.reason === "partition-ap"
-              ? " border-dashed border-[#eab308]"
-              : ""
+            : " border-[#ef4444] shadow-[0_0_0_1px_#ef4444,0_0_16px_rgba(239,68,68,0.25)] relative"
+          : stressEffect?.status === "warning"
+            ? stressEffect.reason === "backpressure"
+              ? " border-dashed border-[#f97316]"
+              : " border-dashed border-[#eab308]"
+            : ""
     : "";
 
   return (
@@ -124,6 +126,34 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             <span className="whitespace-nowrap overflow-hidden text-ellipsis">
               {data.shardKey || "Sharded"}
             </span>
+          </div>
+        )}
+        {isStressMode && stressEffect && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {stressEffect.effectiveCapacity != null && stressEffect.effectiveCapacity < 100 && (
+              <span
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                  stressEffect.effectiveCapacity < 20
+                    ? "bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.25)]"
+                    : stressEffect.effectiveCapacity < 50
+                      ? "bg-[rgba(234,179,8,0.15)] text-[#eab308] border border-[rgba(234,179,8,0.25)]"
+                      : "bg-[rgba(34,197,94,0.15)] text-[#22c55e] border border-[rgba(34,197,94,0.25)]"
+                }`}
+              >
+                {stressEffect.effectiveCapacity}%
+              </span>
+            )}
+            {stressEffect.queueDepth != null && stressEffect.queueDepth > 0 && (
+              <span
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums ${
+                  stressEffect.status === "error"
+                    ? "bg-[rgba(239,68,68,0.15)] text-[#ef4444] border border-[rgba(239,68,68,0.25)]"
+                    : "bg-[rgba(249,115,22,0.15)] text-[#f97316] border border-[rgba(249,115,22,0.25)]"
+                }`}
+              >
+                Q: ~{stressEffect.queueDepth.toLocaleString()}
+              </span>
+            )}
           </div>
         )}
         {mode === "price" ? (

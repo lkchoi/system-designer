@@ -234,14 +234,115 @@ export default function PropertiesPanel({
                 Click node on canvas to cycle state
               </span>
             </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-text-dim">Capacity</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={data.capacityPercent ?? 100}
+                  disabled={data.stressFailure === "down"}
+                  onChange={(e) =>
+                    onUpdate(node.id, { capacityPercent: Number(e.target.value) })
+                  }
+                  className="flex-1 accent-accent disabled:opacity-40"
+                />
+                <span className="text-sm font-bold text-text-bright tabular-nums w-10 text-right">
+                  {data.stressFailure === "down" ? 0 : (data.capacityPercent ?? 100)}%
+                </span>
+              </div>
+              <span
+                className={`text-[11px] font-medium ${
+                  data.stressFailure === "down" || (data.capacityPercent ?? 100) < 20
+                    ? "text-[#ef4444]"
+                    : (data.capacityPercent ?? 100) < 50
+                      ? "text-[#eab308]"
+                      : "text-[#22c55e]"
+                }`}
+              >
+                {data.stressFailure === "down"
+                  ? "Offline — node is down"
+                  : (data.capacityPercent ?? 100) < 20
+                    ? "Critical"
+                    : (data.capacityPercent ?? 100) < 50
+                      ? "Degraded"
+                      : "Operational"}
+              </span>
+            </div>
+            {(data.componentType === "message-queue" ||
+              data.componentType === "stream-processor") && (
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-semibold text-text-dim">
+                  Queue Simulation
+                </label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] text-text-dim">Consumer Rate</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        className="w-20 bg-surface-2 border border-border rounded-md px-2 py-1 text-text-bright text-xs outline-none transition-[border-color] duration-150 focus:border-accent text-right"
+                        value={data.consumerRate ?? 1000}
+                        onChange={(e) =>
+                          onUpdate(node.id, {
+                            consumerRate: Math.max(1, Number(e.target.value) || 1),
+                          })
+                        }
+                      />
+                      <span className="text-[11px] text-text-dim">msg/s</span>
+                    </div>
+                  </div>
+                  {stressEffect?.queueDepth != null && stressEffect.queueDepth > 0 && (
+                    <div className="flex items-center justify-between px-3 py-2 bg-surface-2 border border-border rounded-lg">
+                      <span className="text-[12px] text-text-dim">Queue Depth</span>
+                      <span
+                        className={`text-[13px] font-bold tabular-nums ${
+                          stressEffect.status === "error"
+                            ? "text-[#ef4444]"
+                            : "text-[#eab308]"
+                        }`}
+                      >
+                        ~{stressEffect.queueDepth.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {stressEffect &&
               stressEffect.reason !== "healthy" &&
               stressEffect.reason !== "direct" && (
                 <div className="flex flex-col gap-2">
-                  <label className="text-[13px] font-semibold text-text-dim">Cascade Effect</label>
-                  <div className="text-[13px] text-[#eab308] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.2)] rounded-lg px-3 py-2 leading-snug">
+                  <label className="text-[13px] font-semibold text-text-dim">
+                    {stressEffect.reason === "cascade"
+                      ? "Cascade Effect"
+                      : stressEffect.reason === "backpressure"
+                        ? "Backpressure"
+                        : stressEffect.reason === "traffic-spike"
+                          ? "Traffic Spike"
+                          : stressEffect.reason === "slow-edge"
+                            ? "Slow Dependency"
+                            : stressEffect.reason === "capacity"
+                              ? "Capacity"
+                              : "Effect"}
+                  </label>
+                  <div
+                    className={`text-[13px] rounded-lg px-3 py-2 leading-snug ${
+                      stressEffect.status === "error"
+                        ? "text-[#ef4444] bg-[rgba(239,68,68,0.08)] border border-[rgba(239,68,68,0.2)]"
+                        : "text-[#eab308] bg-[rgba(234,179,8,0.08)] border border-[rgba(234,179,8,0.2)]"
+                    }`}
+                  >
                     {stressEffect.explanation}
                   </div>
+                  {stressEffect.effectiveCapacity != null &&
+                    stressEffect.effectiveCapacity < 100 && (
+                      <span className="text-[11px] text-text-dim">
+                        Effective capacity: {stressEffect.effectiveCapacity}%
+                      </span>
+                    )}
                 </div>
               )}
           </>
@@ -500,7 +601,9 @@ export default function PropertiesPanel({
                           className="bg-surface-2 border border-border rounded-lg px-2.5 py-2 flex flex-col gap-0.5"
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-medium text-text-bright">{tier.name}</span>
+                            <span className="text-xs font-medium text-text-bright">
+                              {tier.name}
+                            </span>
                             <span className="text-xs font-semibold font-mono text-[#22c55e] whitespace-nowrap">
                               {tier.price}
                             </span>
