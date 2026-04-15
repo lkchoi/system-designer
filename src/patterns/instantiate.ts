@@ -102,6 +102,7 @@ function instantiateInContainer(
   const containerNode: Node = {
     id: containerId,
     type: "container",
+    zIndex: -1,
     position: {
       x: dropPosition.x - containerW / 2,
       y: dropPosition.y - containerH / 2,

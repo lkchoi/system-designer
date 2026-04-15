@@ -476,6 +476,7 @@ function Canvas({
         const newNode: ContainerFlowNode = {
           id: ulid(),
           type: "container",
+          zIndex: -1,
           position: { x: position.x - w / 2, y: position.y - h / 2 },
           style: { width: w, height: h },
           data: { label: "Container", color: "rgba(99,102,241,0.04)", collapsed: false },
