@@ -556,6 +556,111 @@ function Canvas({
     [takeSnapshot],
   );
 
+  // --- Stress recording ---
+
+  const recordMutation = useCallback(
+    (mutation: Omit<StressMutation, "timestamp">) => {
+      if (!isRecording) return;
+      recordBuffer.current.push({
+        ...mutation,
+        timestamp: Date.now() - recordStart.current,
+      });
+    },
+    [isRecording],
+  );
+
+  const onUpdateNodeDataR = useCallback(
+    (id: string, partial: Partial<SystemNodeData>) => {
+      recordMutation({ type: "node", targetId: id, data: partial as Record<string, unknown> });
+      onUpdateNodeData(id, partial);
+    },
+    [onUpdateNodeData, recordMutation],
+  );
+
+  const onUpdateEdgeDataR = useCallback(
+    (id: string, partial: Partial<EdgeData>) => {
+      recordMutation({ type: "edge", targetId: id, data: partial as Record<string, unknown> });
+      onUpdateEdgeData(id, partial);
+    },
+    [onUpdateEdgeData, recordMutation],
+  );
+
+  const setStressConfigR = useCallback(
+    (updater: (prev: StressConfig) => StressConfig) => {
+      setStressConfig((prev) => {
+        const next = updater(prev);
+        recordMutation({ type: "config", data: next as unknown as Record<string, unknown> });
+        return next;
+      });
+    },
+    [recordMutation],
+  );
+
+  const resetStressR = useCallback(() => {
+    recordMutation({ type: "reset", data: {} });
+    resetStress();
+  }, [resetStress, recordMutation]);
+
+  const startRecording = useCallback(() => {
+    resetStress();
+    recordBuffer.current = [];
+    recordStart.current = Date.now();
+    setIsRecording(true);
+  }, [resetStress]);
+
+  const stopRecording = useCallback((name: string) => {
+    setIsRecording(false);
+    if (recordBuffer.current.length === 0) return;
+    const scenario: StressScenario = {
+      id: ulid(),
+      name,
+      mutations: recordBuffer.current,
+      duration: Date.now() - recordStart.current,
+    };
+    setStressScenarios((prev) => [...prev, scenario]);
+    recordBuffer.current = [];
+  }, []);
+
+  const playScenario = useCallback(
+    (scenario: StressScenario) => {
+      resetStress();
+      setIsPlaying(true);
+      const timers: ReturnType<typeof setTimeout>[] = [];
+      for (const mutation of scenario.mutations) {
+        timers.push(
+          setTimeout(() => {
+            if (mutation.type === "node" && mutation.targetId) {
+              onUpdateNodeData(mutation.targetId, mutation.data as Partial<SystemNodeData>);
+            } else if (mutation.type === "edge" && mutation.targetId) {
+              onUpdateEdgeData(mutation.targetId, mutation.data as Partial<EdgeData>);
+            } else if (mutation.type === "config") {
+              setStressConfig(mutation.data as unknown as StressConfig);
+            } else if (mutation.type === "reset") {
+              resetStress();
+            }
+          }, mutation.timestamp),
+        );
+      }
+      timers.push(
+        setTimeout(() => {
+          setIsPlaying(false);
+        }, scenario.duration + 100),
+      );
+      playbackTimers.current = timers;
+    },
+    [resetStress, onUpdateNodeData, onUpdateEdgeData],
+  );
+
+  const stopPlayback = useCallback(() => {
+    for (const t of playbackTimers.current) clearTimeout(t);
+    playbackTimers.current = [];
+    setIsPlaying(false);
+  }, []);
+
+  const deleteScenario = useCallback((id: string) => {
+    setStressScenarios((prev) => prev.filter((s) => s.id !== id));
+  }, []);
+
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: AppNode) => {
       if (isPathMode && node.type === "system") {
@@ -666,111 +771,6 @@ function Canvas({
       })),
     );
     setStressConfig(defaultStressConfig);
-  }, []);
-
-  // --- Stress recording ---
-
-  const recordMutation = useCallback(
-    (mutation: Omit<StressMutation, "timestamp">) => {
-      if (!isRecording) return;
-      recordBuffer.current.push({
-        ...mutation,
-        timestamp: Date.now() - recordStart.current,
-      });
-    },
-    [isRecording],
-  );
-
-  const onUpdateNodeDataR = useCallback(
-    (id: string, partial: Partial<SystemNodeData>) => {
-      recordMutation({ type: "node", targetId: id, data: partial as Record<string, unknown> });
-      onUpdateNodeData(id, partial);
-    },
-    [onUpdateNodeData, recordMutation],
-  );
-
-  const onUpdateEdgeDataR = useCallback(
-    (id: string, partial: Partial<EdgeData>) => {
-      recordMutation({ type: "edge", targetId: id, data: partial as Record<string, unknown> });
-      onUpdateEdgeData(id, partial);
-    },
-    [onUpdateEdgeData, recordMutation],
-  );
-
-  const setStressConfigR = useCallback(
-    (updater: (prev: StressConfig) => StressConfig) => {
-      setStressConfig((prev) => {
-        const next = updater(prev);
-        recordMutation({ type: "config", data: next as unknown as Record<string, unknown> });
-        return next;
-      });
-    },
-    [recordMutation],
-  );
-
-  const resetStressR = useCallback(() => {
-    recordMutation({ type: "reset", data: {} });
-    resetStress();
-  }, [resetStress, recordMutation]);
-
-  const startRecording = useCallback(() => {
-    resetStress();
-    recordBuffer.current = [];
-    recordStart.current = Date.now();
-    setIsRecording(true);
-  }, [resetStress]);
-
-  const stopRecording = useCallback((name: string) => {
-    setIsRecording(false);
-    if (recordBuffer.current.length === 0) return;
-    const scenario: StressScenario = {
-      id: ulid(),
-      name,
-      mutations: recordBuffer.current,
-      duration: Date.now() - recordStart.current,
-    };
-    setStressScenarios((prev) => [...prev, scenario]);
-    recordBuffer.current = [];
-  }, []);
-
-  const playScenario = useCallback(
-    (scenario: StressScenario) => {
-      resetStress();
-      setIsPlaying(true);
-      const timers: ReturnType<typeof setTimeout>[] = [];
-      for (const mutation of scenario.mutations) {
-        timers.push(
-          setTimeout(() => {
-            if (mutation.type === "node" && mutation.targetId) {
-              onUpdateNodeData(mutation.targetId, mutation.data as Partial<SystemNodeData>);
-            } else if (mutation.type === "edge" && mutation.targetId) {
-              onUpdateEdgeData(mutation.targetId, mutation.data as Partial<EdgeData>);
-            } else if (mutation.type === "config") {
-              setStressConfig(mutation.data as unknown as StressConfig);
-            } else if (mutation.type === "reset") {
-              resetStress();
-            }
-          }, mutation.timestamp),
-        );
-      }
-      timers.push(
-        setTimeout(() => {
-          setIsPlaying(false);
-        }, scenario.duration + 100),
-      );
-      playbackTimers.current = timers;
-    },
-    [resetStress, onUpdateNodeData, onUpdateEdgeData],
-  );
-
-  const stopPlayback = useCallback(() => {
-    for (const t of playbackTimers.current) clearTimeout(t);
-    playbackTimers.current = [];
-    setIsPlaying(false);
-  }, []);
-
-  const deleteScenario = useCallback((id: string) => {
-    setStressScenarios((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const togglePathMode = useCallback(() => {
@@ -1158,9 +1158,7 @@ function Canvas({
                           onClick={() => {
                             saveDesignState(designId, nodes, edges, getViewport());
                             flushPersist();
-                            const name = currentDesign
-                              ? `${currentDesign.name} (fork)`
-                              : "Fork";
+                            const name = currentDesign ? `${currentDesign.name} (fork)` : "Fork";
                             onForkDesign(designId, name);
                             setShowDesignMenu(false);
                           }}
