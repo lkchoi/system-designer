@@ -163,8 +163,15 @@ function Canvas({
   const saveNameRef = useRef<HTMLInputElement>(null);
   const designNameRef = useRef<HTMLInputElement>(null);
   const designMenuRef = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition, zoomIn, zoomOut, fitView, getViewport, setViewport } =
-    useReactFlow();
+  const {
+    screenToFlowPosition,
+    zoomIn,
+    zoomOut,
+    fitView,
+    getViewport,
+    setViewport,
+    getNodes: getFlowNodes,
+  } = useReactFlow();
 
   const { takeSnapshot, undo, redo, canUndo, canRedo } = useUndoRedo(
     nodes,
@@ -322,10 +329,34 @@ function Canvas({
 
       if (type.startsWith("pattern:")) {
         const patternId = type.slice("pattern:".length);
+
+        // Check if drop landed on an existing system node
+        const allNodes = getFlowNodes();
+        const anchorNode = allNodes.find((n) => {
+          if (n.type !== "system") return false;
+          const w = n.measured?.width ?? n.width ?? 180;
+          const h = n.measured?.height ?? n.height ?? 50;
+          return (
+            position.x >= n.position.x &&
+            position.x <= n.position.x + w &&
+            position.y >= n.position.y &&
+            position.y <= n.position.y + h
+          );
+        });
+
+        const anchor = anchorNode
+          ? {
+              id: anchorNode.id,
+              componentType: (anchorNode.data as SystemNodeData).componentType,
+              position: anchorNode.position,
+            }
+          : undefined;
+
         const { nodes: newNodes, edges: newEdges } = instantiatePattern(
           patternId,
           position,
           generateLabel,
+          anchor,
         );
         if (newNodes.length > 0) {
           setNodes((nds) => [...nds, ...(newNodes as AppNode[])]);
