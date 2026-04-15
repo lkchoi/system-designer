@@ -1,4 +1,5 @@
 import { registry } from "../registry";
+import { BUILTIN_PATTERNS } from "../patterns";
 import type { SavedFlow } from "../types";
 
 interface SidebarProps {
@@ -110,6 +111,36 @@ export default function Sidebar({
             ))}
           </div>
           <div className="px-1 overflow-visible flex flex-col gap-0.5 border-t border-border pt-2 pb-2 mt-2">
+            {BUILTIN_PATTERNS.map((pattern) => (
+              <div
+                key={pattern.id}
+                className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
+                draggable
+                onDragStart={(e) => onDragStart(e, `pattern:${pattern.id}`)}
+                data-tooltip={pattern.name}
+                title={pattern.name}
+              >
+                <div
+                  className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: pattern.color }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={pattern.icon} />
+                  </svg>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-1 overflow-visible flex flex-col gap-0.5 border-t border-border pt-2 pb-2 mt-2">
             <div
               className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
               draggable
@@ -187,6 +218,44 @@ export default function Sidebar({
                   </svg>
                 </div>
                 <span>{entry.label}</span>
+              </div>
+            ))}
+          </div>
+          <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim pt-3 px-4 pb-3">
+            Patterns
+          </h2>
+          <div className="px-2 flex flex-col gap-0.5 pb-2">
+            {BUILTIN_PATTERNS.map((pattern) => (
+              <div
+                key={pattern.id}
+                className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
+                draggable
+                onDragStart={(e) => onDragStart(e, `pattern:${pattern.id}`)}
+                title={pattern.description}
+              >
+                <div
+                  className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: pattern.color }}
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={pattern.icon} />
+                  </svg>
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span>{pattern.name}</span>
+                  <span className="text-[11px] text-text-dim truncate">
+                    {pattern.description}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

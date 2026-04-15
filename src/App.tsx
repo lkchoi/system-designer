@@ -56,6 +56,7 @@ import type {
   SavedFlow,
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
+import { instantiatePattern } from "./patterns";
 import { ulid } from "ulid";
 import {
   initDB,
@@ -318,6 +319,20 @@ function Canvas({
 
       takeSnapshot();
       const position = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+
+      if (type.startsWith("pattern:")) {
+        const patternId = type.slice("pattern:".length);
+        const { nodes: newNodes, edges: newEdges } = instantiatePattern(
+          patternId,
+          position,
+          generateLabel,
+        );
+        if (newNodes.length > 0) {
+          setNodes((nds) => [...nds, ...(newNodes as AppNode[])]);
+          setEdges((eds) => [...eds, ...newEdges]);
+        }
+        return;
+      }
 
       if (type === "sticky") {
         const w = 200,
@@ -987,9 +1002,7 @@ function Canvas({
                                 ? " bg-accent text-white"
                                 : " text-text-dim hover:text-text-bright hover:bg-surface-3"
                             }`}
-                            onClick={() =>
-                              setStressConfig((c) => ({ ...c, trafficMultiplier: m }))
-                            }
+                            onClick={() => setStressConfig((c) => ({ ...c, trafficMultiplier: m }))}
                           >
                             {m}x
                           </button>
