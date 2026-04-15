@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import { useReactFlow, NodeResizer } from "@xyflow/react";
 import type { NodeProps, Node } from "@xyflow/react";
 import type { TextNodeData, TextSize } from "../types";
@@ -12,8 +13,22 @@ const SIZE_STYLES: Record<TextSize, { fontSize: string; fontWeight: number; line
 type TextFlowNode = Node<TextNodeData, "text">;
 
 export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>) {
-  const { updateNodeData, deleteElements } = useReactFlow();
+  const { updateNodeData, deleteElements, setNodes } = useReactFlow();
   const style = SIZE_STYLES[data.size];
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const growIfNeeded = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta || ta.scrollHeight <= ta.clientHeight) return;
+    const delta = ta.scrollHeight - ta.clientHeight;
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === id
+          ? { ...n, style: { ...n.style, height: (Number(n.style?.height) || 40) + delta } }
+          : n,
+      ),
+    );
+  }, [id, setNodes]);
 
   return (
     <>
@@ -31,16 +46,20 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
           }}
         />
       )}
-      <div className="p-1.5 w-full h-full box-border flex flex-col min-w-[120px] relative">
+      <div className="p-1.5 w-full h-full box-border flex flex-col min-w-[120px]">
         <textarea
-          className="bg-transparent border-none outline-none resize-none text-text-bright font-sans w-full flex-1 p-0 tracking-tight break-words whitespace-pre-wrap placeholder:text-text-dim"
+          ref={textareaRef}
+          className={`bg-transparent border-none outline-none resize-none text-text-bright font-sans w-full flex-1 p-0 tracking-tight break-words whitespace-pre-wrap placeholder:text-text-dim${selected ? " border-b border-border pb-1 mb-1.5" : ""}`}
           style={{
             fontSize: style.fontSize,
             fontWeight: style.fontWeight,
             lineHeight: style.lineHeight,
           }}
           value={data.text}
-          onChange={(e) => updateNodeData(id, { text: e.target.value })}
+          onChange={(e) => {
+            updateNodeData(id, { text: e.target.value });
+            growIfNeeded();
+          }}
           onPointerDown={(e) => e.stopPropagation()}
           placeholder={
             data.size === "large"
@@ -51,7 +70,7 @@ export default function TextNode({ id, data, selected }: NodeProps<TextFlowNode>
           }
         />
         {selected && (
-          <div className="absolute left-0 right-0 top-full mt-1 flex items-center justify-between gap-1.5 px-1.5">
+          <div className="flex items-center justify-between gap-1.5">
             <div className="flex gap-0.5">
               {(["large", "medium", "small"] as TextSize[]).map((s) => (
                 <button
