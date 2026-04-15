@@ -36,6 +36,7 @@ import PropertiesPanel from "./components/PropertiesPanel";
 import SystemNode from "./components/SystemNode";
 import StickyNote from "./components/StickyNote";
 import TextNode from "./components/TextNode";
+import ContainerNode from "./components/ContainerNode";
 import LabeledEdge from "./components/LabeledEdge";
 import EdgePropertiesPanel from "./components/EdgePropertiesPanel";
 import HotkeyHelpOverlay from "./components/HotkeyHelpOverlay";
@@ -48,6 +49,7 @@ import type {
   SystemNodeData,
   StickyNoteData,
   TextNodeData,
+  ContainerNodeData,
   ComponentType,
   EdgeData,
   EffectiveStress,
@@ -75,9 +77,15 @@ import type { Design } from "./db";
 type SystemFlowNode = Node<SystemNodeData, "system">;
 type StickyFlowNode = Node<StickyNoteData, "sticky">;
 type TextFlowNode = Node<TextNodeData, "text">;
-type AppNode = SystemFlowNode | StickyFlowNode | TextFlowNode;
+type ContainerFlowNode = Node<ContainerNodeData, "container">;
+type AppNode = SystemFlowNode | StickyFlowNode | TextFlowNode | ContainerFlowNode;
 
-const nodeTypes = { system: SystemNode, sticky: StickyNote, text: TextNode };
+const nodeTypes = {
+  system: SystemNode,
+  sticky: StickyNote,
+  text: TextNode,
+  container: ContainerNode,
+};
 const edgeTypes = { labeled: LabeledEdge };
 
 const typeCounters: Record<string, number> = {};
@@ -161,6 +169,7 @@ function Canvas({
   const canvasRef = useRef<HTMLDivElement>(null);
   const pathStepsRef = useRef<HTMLDivElement>(null);
   const saveNameRef = useRef<HTMLInputElement>(null);
+  const filterInputRef = useRef<HTMLInputElement>(null);
   const designNameRef = useRef<HTMLInputElement>(null);
   const designMenuRef = useRef<HTMLDivElement>(null);
   const {
@@ -385,6 +394,17 @@ function Canvas({
           position: { x: position.x - w / 2, y: position.y - h / 2 },
           style: { width: w, height: h },
           data: { text: "", size: "large" },
+        };
+        setNodes((nds) => [...nds, newNode]);
+      } else if (type === "container") {
+        const w = 400,
+          h = 300;
+        const newNode: ContainerFlowNode = {
+          id: ulid(),
+          type: "container",
+          position: { x: position.x - w / 2, y: position.y - h / 2 },
+          style: { width: w, height: h },
+          data: { label: "Container", color: "rgba(99,102,241,0.04)" },
         };
         setNodes((nds) => [...nds, newNode]);
       } else {
@@ -647,6 +667,10 @@ function Canvas({
 
       "show-help": () => setShowHotkeyHelp((prev) => !prev),
       "show-capacity-calc": () => setShowCapacityCalc((prev) => !prev),
+      "focus-filter": () => {
+        if (sidebarCollapsed) setSidebarCollapsed(false);
+        setTimeout(() => filterInputRef.current?.focus(), 0);
+      },
     }),
     [
       takeSnapshot,
@@ -667,6 +691,7 @@ function Canvas({
       showSaveForm,
       selectedNodeId,
       selectedEdgeId,
+      sidebarCollapsed,
     ],
   );
 
@@ -771,7 +796,9 @@ function Canvas({
     [panelHeight, startResize],
   );
 
-  const showPanel = (selectedNode && selectedNode.type === "system") || selectedEdge;
+  const showPanel =
+    (selectedNode && (selectedNode.type === "system" || selectedNode.type === "container")) ||
+    selectedEdge;
 
   return (
     <ModeContext.Provider value={mode}>
@@ -786,6 +813,7 @@ function Canvas({
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
             width={sidebarCollapsed ? undefined : sidebarWidth}
+            filterInputRef={filterInputRef}
           />
           {!sidebarCollapsed && (
             <div
@@ -1307,6 +1335,74 @@ function Canvas({
                 stressEffect={stressEffects.get(selectedNode.id)}
                 size={panelPosition === "bottom" ? panelHeight : panelWidth}
               />
+            )}
+            {selectedNode && selectedNode.type === "container" && (
+              <aside
+                className={`${panelPosition === "bottom" ? "w-auto min-w-0 h-[260px] min-h-[150px] max-h-[70vh] border-l-0 border-t" : "w-[340px] min-w-[340px] border-l"} bg-surface border-border flex flex-col z-10 overflow-y-auto`}
+                style={
+                  panelPosition === "bottom"
+                    ? { height: panelHeight }
+                    : { width: panelWidth, minWidth: panelWidth }
+                }
+              >
+                <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border shrink-0">
+                  <h2 className="text-base font-bold text-text-bright">Container</h2>
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+                      onClick={togglePanelPosition}
+                      title={
+                        panelPosition === "right" ? "Dock to bottom" : "Dock to right"
+                      }
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        {panelPosition === "right" ? (
+                          <>
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <line x1="3" y1="15" x2="21" y2="15" />
+                          </>
+                        ) : (
+                          <>
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <line x1="15" y1="3" x2="15" y2="21" />
+                          </>
+                        )}
+                      </svg>
+                    </button>
+                    <button
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+                      onClick={() => setSelectedNodeId(null)}
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+                <div className="p-4 flex flex-col gap-5">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[13px] font-semibold text-text-dim">Label</label>
+                    <input
+                      className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent"
+                      value={
+                        (selectedNode.data as ContainerNodeData).label
+                      }
+                      onChange={(e) =>
+                        onUpdateNodeData(selectedNode.id, {
+                          label: e.target.value,
+                        } as Partial<SystemNodeData>)
+                      }
+                    />
+                  </div>
+                </div>
+              </aside>
             )}
             {selectedEdge && (
               <EdgePropertiesPanel

@@ -166,6 +166,12 @@ export interface StressConfig {
   latencyThreshold: number;
 }
 
+export interface ContainerNodeData {
+  label: string;
+  color: string;
+  [key: string]: unknown;
+}
+
 export interface ComponentDefinition {
   type: ComponentType;
   label: string;
