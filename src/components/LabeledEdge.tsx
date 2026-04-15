@@ -29,17 +29,22 @@ export default function LabeledEdge({
   });
 
   const mode = useMode();
-  const { partitionedEdges } = useStress();
+  const { partitionedEdges, slowEdges, stressConfig } = useStress();
   const isStressMode = mode === "stress";
   const isPartitioned = partitionedEdges.has(id);
+  const isSlow = slowEdges.has(id);
 
   const edgeData = data as EdgeData | undefined;
   const label = edgeData?.label ?? "";
   const protocol = edgeData?.protocol ?? "";
   const format = edgeData?.format ?? "";
   const hasTags = protocol || format;
+  const latency = edgeData?.simulatedLatency ?? 0;
 
   const isBroken = isStressMode && isPartitioned;
+  const isTimeout =
+    isStressMode && !isPartitioned && latency > stressConfig.latencyThreshold * 3;
+  const isSlowEdge = isStressMode && isSlow && !isTimeout;
 
   useEffect(() => {
     if (editing) {
@@ -65,9 +70,15 @@ export default function LabeledEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: isBroken ? "#ef4444" : selected ? "#6366f1" : "#6366f180",
+          stroke: isBroken || isTimeout
+            ? "#ef4444"
+            : isSlowEdge
+              ? "#f97316"
+              : selected
+                ? "#6366f1"
+                : "#6366f180",
           strokeWidth: selected ? 3 : 2,
-          strokeDasharray: isBroken ? "8 4" : undefined,
+          strokeDasharray: isBroken ? "8 4" : isTimeout || isSlowEdge ? "6 3" : undefined,
         }}
       />
       <EdgeLabelRenderer>
@@ -98,6 +109,20 @@ export default function LabeledEdge({
                 <path d="M18 6L6 18M6 6l12 12" />
               </svg>
               <span className="text-[10px] font-bold text-[#ef4444] tracking-wide">SPLIT</span>
+            </div>
+          )}
+          {isTimeout && (
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-[rgba(239,68,68,0.15)] border border-[rgba(239,68,68,0.3)] rounded-full mb-1">
+              <span className="text-[10px] font-bold text-[#ef4444] tracking-wide">
+                TIMEOUT {latency}ms
+              </span>
+            </div>
+          )}
+          {isSlowEdge && (
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-[rgba(249,115,22,0.15)] border border-[rgba(249,115,22,0.3)] rounded-full mb-1">
+              <span className="text-[10px] font-bold text-[#f97316] tracking-wide">
+                SLOW {latency}ms
+              </span>
             </div>
           )}
           {editing ? (

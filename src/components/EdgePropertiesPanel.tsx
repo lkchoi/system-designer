@@ -160,25 +160,70 @@ export default function EdgePropertiesPanel({
         </div>
 
         {mode === "stress" && (
-          <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-semibold text-text-dim">Network Partition</label>
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] text-text">
-                {data.partitioned ? "Partitioned" : "Connected"}
-              </span>
-              <button
-                className={`w-9 h-5 rounded-[10px] border relative cursor-pointer transition-[background,border-color] duration-150 shrink-0${data.partitioned ? " bg-accent border-accent" : " bg-surface-3 border-border"}`}
-                style={
-                  data.partitioned ? { background: "#ef4444", borderColor: "#ef4444" } : undefined
-                }
-                onClick={() => onUpdate(edge.id, { partitioned: !data.partitioned })}
-              >
-                <span
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.partitioned ? " translate-x-4" : ""}`}
-                />
-              </button>
+          <>
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-text-dim">Network Partition</label>
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-text">
+                  {data.partitioned ? "Partitioned" : "Connected"}
+                </span>
+                <button
+                  className={`w-9 h-5 rounded-[10px] border relative cursor-pointer transition-[background,border-color] duration-150 shrink-0${data.partitioned ? " bg-accent border-accent" : " bg-surface-3 border-border"}`}
+                  style={
+                    data.partitioned
+                      ? { background: "#ef4444", borderColor: "#ef4444" }
+                      : undefined
+                  }
+                  onClick={() => onUpdate(edge.id, { partitioned: !data.partitioned })}
+                >
+                  <span
+                    className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 left-0.5 transition-transform duration-150${data.partitioned ? " translate-x-4" : ""}`}
+                  />
+                </button>
+              </div>
             </div>
-          </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-semibold text-text-dim">Simulated Latency</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  className="flex-1 bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent disabled:opacity-40 disabled:cursor-not-allowed"
+                  value={data.simulatedLatency ?? 0}
+                  disabled={data.partitioned}
+                  onChange={(e) =>
+                    onUpdate(edge.id, {
+                      simulatedLatency: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                />
+                <span className="text-[13px] text-text-dim shrink-0">ms</span>
+              </div>
+              {!data.partitioned && (data.simulatedLatency ?? 0) > 0 && (
+                <span
+                  className={`text-[11px] font-medium ${
+                    (data.simulatedLatency ?? 0) > 1500
+                      ? "text-[#ef4444]"
+                      : (data.simulatedLatency ?? 0) > 500
+                        ? "text-[#f97316]"
+                        : "text-[#22c55e]"
+                  }`}
+                >
+                  {(data.simulatedLatency ?? 0) > 1500
+                    ? `${data.simulatedLatency}ms — effective timeout`
+                    : (data.simulatedLatency ?? 0) > 500
+                      ? `${data.simulatedLatency}ms — exceeds threshold`
+                      : `${data.simulatedLatency}ms — within threshold`}
+                </span>
+              )}
+              {data.partitioned && (
+                <span className="text-[11px] text-text-dim">
+                  Disabled while edge is partitioned
+                </span>
+              )}
+            </div>
+          </>
         )}
       </div>
     </aside>
