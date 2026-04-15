@@ -73,6 +73,7 @@ import {
   loadDesignState,
   saveDesignState,
   saveFlowPath,
+  forkDesign,
   deleteFlowPath,
 } from "./db";
 import type { Design } from "./db";
@@ -133,6 +134,8 @@ interface CanvasProps {
   onCreateDesign: () => void;
   onRenameDesign: (id: string, name: string) => void;
   onDeleteDesign: (id: string) => void;
+  onForkDesign: (sourceId: string, name: string) => void;
+  onStartCompare: (leftId: string, rightId: string) => void;
 }
 
 function Canvas({
@@ -142,6 +145,8 @@ function Canvas({
   onCreateDesign,
   onRenameDesign,
   onDeleteDesign,
+  onForkDesign,
+  onStartCompare,
 }: CanvasProps) {
   const initialState = useMemo(() => loadDesignState(designId), [designId]);
   const currentDesign = useMemo(() => designs.find((d) => d.id === designId), [designs, designId]);
@@ -715,21 +720,18 @@ function Canvas({
     setIsRecording(true);
   }, [resetStress]);
 
-  const stopRecording = useCallback(
-    (name: string) => {
-      setIsRecording(false);
-      if (recordBuffer.current.length === 0) return;
-      const scenario: StressScenario = {
-        id: ulid(),
-        name,
-        mutations: recordBuffer.current,
-        duration: Date.now() - recordStart.current,
-      };
-      setStressScenarios((prev) => [...prev, scenario]);
-      recordBuffer.current = [];
-    },
-    [],
-  );
+  const stopRecording = useCallback((name: string) => {
+    setIsRecording(false);
+    if (recordBuffer.current.length === 0) return;
+    const scenario: StressScenario = {
+      id: ulid(),
+      name,
+      mutations: recordBuffer.current,
+      duration: Date.now() - recordStart.current,
+    };
+    setStressScenarios((prev) => [...prev, scenario]);
+    recordBuffer.current = [];
+  }, []);
 
   const playScenario = useCallback(
     (scenario: StressScenario) => {
@@ -1151,6 +1153,74 @@ function Canvas({
                           </svg>
                           New Design
                         </div>
+                        <div
+                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] cursor-pointer text-[13px] transition-colors duration-100 hover:bg-surface-2 text-text font-medium"
+                          onClick={() => {
+                            saveDesignState(designId, nodes, edges, getViewport());
+                            flushPersist();
+                            const name = currentDesign
+                              ? `${currentDesign.name} (fork)`
+                              : "Fork";
+                            onForkDesign(designId, name);
+                            setShowDesignMenu(false);
+                          }}
+                        >
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <circle cx="12" cy="18" r="3" />
+                            <circle cx="6" cy="6" r="3" />
+                            <circle cx="18" cy="6" r="3" />
+                            <path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9" />
+                            <path d="M12 12v3" />
+                          </svg>
+                          Fork Design
+                        </div>
+                        {designs.length > 1 && (
+                          <>
+                            <div className="h-px bg-border mx-1.5 my-1" />
+                            <div className="px-2 py-1 text-[11px] font-semibold uppercase text-text-dim tracking-wide">
+                              Compare with
+                            </div>
+                            {designs
+                              .filter((d) => d.id !== designId)
+                              .slice(0, 5)
+                              .map((d) => (
+                                <div
+                                  key={d.id}
+                                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-[5px] cursor-pointer text-[13px] transition-colors duration-100 hover:bg-surface-2 text-text"
+                                  onClick={() => {
+                                    saveDesignState(designId, nodes, edges, getViewport());
+                                    flushPersist();
+                                    onStartCompare(designId, d.id);
+                                    setShowDesignMenu(false);
+                                  }}
+                                >
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  >
+                                    <rect x="3" y="3" width="7" height="18" rx="1" />
+                                    <rect x="14" y="3" width="7" height="18" rx="1" />
+                                  </svg>
+                                  {d.name}
+                                </div>
+                              ))}
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1794,6 +1864,7 @@ export default function App() {
   const [dbReady, setDbReady] = useState(false);
   const [designId, setDesignId] = useState<string | null>(null);
   const [designs, setDesigns] = useState<Design[]>([]);
+  const [compareIds, setCompareIds] = useState<[string, string] | null>(null);
 
   useEffect(() => {
     initDB().then(() => {
@@ -1840,6 +1911,19 @@ export default function App() {
     [designId],
   );
 
+  const handleFork = useCallback(
+    (sourceId: string, name: string) => {
+      const forked = forkDesign(sourceId, name);
+      refreshDesigns();
+      setDesignId(forked.id);
+    },
+    [refreshDesigns],
+  );
+
+  const handleStartCompare = useCallback((leftId: string, rightId: string) => {
+    setCompareIds([leftId, rightId]);
+  }, []);
+
   // Flush to OPFS on page unload
   useEffect(() => {
     const onBeforeUnload = () => flushPersist();
@@ -1849,6 +1933,95 @@ export default function App() {
 
   if (!dbReady || !designId) {
     return null;
+  }
+
+  if (compareIds) {
+    const leftDesign = designs.find((d) => d.id === compareIds[0]);
+    const rightDesign = designs.find((d) => d.id === compareIds[1]);
+    const leftState = loadDesignState(compareIds[0]);
+    const rightState = loadDesignState(compareIds[1]);
+
+    return (
+      <div className="flex flex-col h-screen bg-surface text-text">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface shrink-0">
+          <div className="flex items-center gap-3">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-accent"
+            >
+              <rect x="3" y="3" width="7" height="18" rx="1" />
+              <rect x="14" y="3" width="7" height="18" rx="1" />
+            </svg>
+            <span className="text-sm font-semibold text-text-bright">
+              {leftDesign?.name ?? "Left"}
+            </span>
+            <span className="text-text-dim text-xs">vs</span>
+            <span className="text-sm font-semibold text-text-bright">
+              {rightDesign?.name ?? "Right"}
+            </span>
+          </div>
+          <button
+            className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2"
+            onClick={() => setCompareIds(null)}
+          >
+            Exit Compare
+          </button>
+        </div>
+        <div className="flex flex-1 min-h-0">
+          <div className="flex-1 border-r border-border relative">
+            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-surface-2 border border-border rounded-md text-[11px] font-semibold text-text-dim">
+              {leftDesign?.name}
+            </div>
+            <ReactFlowProvider>
+              <ReactFlow
+                nodes={leftState.nodes}
+                edges={leftState.edges}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                defaultViewport={leftState.viewport}
+                nodesDraggable={false}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                panOnDrag
+                zoomOnScroll
+                fitView={false}
+              >
+                <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+              </ReactFlow>
+            </ReactFlowProvider>
+          </div>
+          <div className="flex-1 relative">
+            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-surface-2 border border-border rounded-md text-[11px] font-semibold text-text-dim">
+              {rightDesign?.name}
+            </div>
+            <ReactFlowProvider>
+              <ReactFlow
+                nodes={rightState.nodes}
+                edges={rightState.edges}
+                nodeTypes={nodeTypes}
+                edgeTypes={edgeTypes}
+                defaultViewport={rightState.viewport}
+                nodesDraggable={false}
+                nodesConnectable={false}
+                elementsSelectable={false}
+                panOnDrag
+                zoomOnScroll
+                fitView={false}
+              >
+                <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+              </ReactFlow>
+            </ReactFlowProvider>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1861,6 +2034,8 @@ export default function App() {
         onCreateDesign={handleCreate}
         onRenameDesign={handleRename}
         onDeleteDesign={handleDelete}
+        onForkDesign={handleFork}
+        onStartCompare={handleStartCompare}
       />
     </ReactFlowProvider>
   );
