@@ -1,7 +1,31 @@
-import { useState, type RefObject } from "react";
+import { useState, type RefObject, type MutableRefObject } from "react";
 import { registry } from "../registry";
 import { BUILTIN_PATTERNS } from "../patterns";
 import type { SavedFlow } from "../types";
+
+const ANNOTATION_ITEMS = [
+  {
+    type: "sticky",
+    label: "Sticky Note",
+    bg: "#fde68a",
+    stroke: "#92400e",
+    icon: "M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3zM14 3v5h7",
+  },
+  {
+    type: "text",
+    label: "Text",
+    bg: "var(--surface-3)",
+    stroke: "#9ca3af",
+    icon: "M4 7V4h16v3M9 20h6M12 4v16",
+  },
+  {
+    type: "container",
+    label: "Container",
+    bg: "var(--surface-3)",
+    stroke: "#9ca3af",
+    icon: "M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zM3 9h18M9 21V9",
+  },
+];
 
 interface SidebarProps {
   savedFlows: SavedFlow[];
@@ -13,6 +37,7 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   width?: number;
   filterInputRef?: RefObject<HTMLInputElement | null>;
+  clearFilterRef?: MutableRefObject<(() => void) | null>;
 }
 
 export default function Sidebar({
@@ -25,23 +50,27 @@ export default function Sidebar({
   onToggleCollapse,
   width,
   filterInputRef,
+  clearFilterRef,
 }: SidebarProps) {
   const [filter, setFilter] = useState("");
+  if (clearFilterRef) clearFilterRef.current = () => setFilter("");
   const q = filter.toLowerCase();
 
-  const builtins = registry.getBuiltins().filter(
-    (e) =>
-      e.label.toLowerCase().includes(q) ||
-      e.technologies.some((t) => t.name.toLowerCase().includes(q)),
-  );
+  const builtins = registry
+    .getBuiltins()
+    .filter(
+      (e) =>
+        e.label.toLowerCase().includes(q) ||
+        e.technologies.some((t) => t.name.toLowerCase().includes(q)),
+    );
   const patterns = BUILTIN_PATTERNS.filter(
     (p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q),
   );
+  const annotations = ANNOTATION_ITEMS.filter((a) => a.label.toLowerCase().includes(q));
 
   function onDragStart(e: React.DragEvent, type: string) {
     e.dataTransfer.setData("application/system-designer", type);
     e.dataTransfer.effectAllowed = "move";
-    if (filter) setFilter("");
   }
 
   return (
@@ -213,74 +242,34 @@ export default function Sidebar({
             ))}
           </div>
           <div className="px-1 overflow-visible flex flex-col gap-0.5 border-t border-border pt-2 pb-2 mt-2">
-            <div
-              className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
-              draggable
-              onDragStart={(e) => onDragStart(e, "sticky")}
-              data-tooltip="Sticky Note"
-              title="Sticky Note"
-            >
-              <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-[#fde68a]">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#92400e"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+            {ANNOTATION_ITEMS.map((item) => (
+              <div
+                key={item.type}
+                className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
+                draggable
+                onDragStart={(e) => onDragStart(e, item.type)}
+                data-tooltip={item.label}
+                title={item.label}
+              >
+                <div
+                  className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: item.bg }}
                 >
-                  <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
-                  <polyline points="14 3 14 8 21 8" />
-                </svg>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke={item.stroke}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d={item.icon} />
+                  </svg>
+                </div>
               </div>
-            </div>
-            <div
-              className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
-              draggable
-              onDragStart={(e) => onDragStart(e, "text")}
-              data-tooltip="Text"
-              title="Text"
-            >
-              <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#9ca3af"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-                </svg>
-              </div>
-            </div>
-            <div
-              className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
-              draggable
-              onDragStart={(e) => onDragStart(e, "container")}
-              data-tooltip="Container"
-              title="Container"
-            >
-              <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#9ca3af"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M3 9h18M9 21V9" />
-                </svg>
-              </div>
-            </div>
+            ))}
           </div>
         </>
       ) : (
@@ -360,96 +349,44 @@ export default function Sidebar({
               </div>
             </>
           )}
-          {(!q || "sticky note".includes(q) || "text".includes(q)) && (
+          {annotations.length > 0 && (
             <>
               <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim pt-3 px-4 pb-3">
                 Annotations
               </h2>
               <div className="px-2 flex flex-col gap-0.5 pb-2">
-                {"sticky note".includes(q) && (
+                {annotations.map((item) => (
                   <div
+                    key={item.type}
                     className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
                     draggable
-                    onDragStart={(e) => onDragStart(e, "sticky")}
-                    data-tooltip="Sticky Note"
-                    title="Sticky Note"
+                    onDragStart={(e) => onDragStart(e, item.type)}
+                    data-tooltip={item.label}
+                    title={item.label}
                   >
-                    <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-[#fde68a]">
+                    <div
+                      className={`w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 ${item.bg}`}
+                    >
                       <svg
                         width="18"
                         height="18"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#92400e"
+                        stroke={item.stroke}
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                      >
-                        <path d="M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3z" />
-                        <polyline points="14 3 14 8 21 8" />
-                      </svg>
+                        dangerouslySetInnerHTML={{ __html: `<${item.icon}" />` }}
+                      />
                     </div>
-                    <span>Sticky Note</span>
+                    <span>{item.label}</span>
                   </div>
-                )}
-                {"text".includes(q) && (
-                  <div
-                    className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
-                    draggable
-                    onDragStart={(e) => onDragStart(e, "text")}
-                    data-tooltip="Text"
-                    title="Text"
-                  >
-                    <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#9ca3af"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M4 7V4h16v3M9 20h6M12 4v16" />
-                      </svg>
-                    </div>
-                    <span>Text</span>
-                  </div>
-                )}
-                {"container".includes(q) && (
-                  <div
-                    className="relative flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3"
-                    draggable
-                    onDragStart={(e) => onDragStart(e, "container")}
-                    data-tooltip="Container"
-                    title="Container"
-                  >
-                    <div className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 bg-surface-3">
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#9ca3af"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M3 9h18M9 21V9" />
-                      </svg>
-                    </div>
-                    <span>Container</span>
-                  </div>
-                )}
+                ))}
               </div>
             </>
           )}
-          {q && builtins.length === 0 && patterns.length === 0 && !"sticky note".includes(q) && !"text".includes(q) && !"container".includes(q) && (
-            <div className="px-4 py-6 text-sm text-text-dim text-center">
-              No matches
-            </div>
+          {q && builtins.length === 0 && patterns.length === 0 && annotations.length === 0 && (
+            <div className="px-4 py-6 text-sm text-text-dim text-center">No matches</div>
           )}
           {!q && savedFlows.length > 0 && (
             <>

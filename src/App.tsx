@@ -994,6 +994,14 @@ function Canvas({
     [panelHeight, startResize],
   );
 
+  const miniMapNodeColor = useCallback((n: AppNode) => {
+    if (n.type === "sticky") return "#fde68a";
+    if (n.type === "text") return "var(--text-dim)";
+    if (n.type === "container") return "var(--border)";
+    const entry = registry.get((n.data as SystemNodeData).componentType);
+    return entry?.color ?? "var(--accent)";
+  }, []);
+
   const showPanel =
     (selectedNode && (selectedNode.type === "system" || selectedNode.type === "container")) ||
     selectedEdge;
@@ -1672,14 +1680,10 @@ function Canvas({
                 <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2a2b35" />
                 <MiniMap
                   nodeStrokeWidth={3}
-                  nodeColor={(n) => {
-                    if (n.type === "sticky") return "#fde68a";
-                    if (n.type === "text") return "var(--text-dim)";
-                    if (n.type === "container") return "var(--border)";
-                    const entry = registry.get((n.data as SystemNodeData).componentType);
-                    return entry?.color ?? "var(--accent)";
-                  }}
+                  nodeColor={miniMapNodeColor}
                   maskColor="rgba(0,0,0,0.5)"
+                  pannable
+                  zoomable
                 />
               </ReactFlow>
             </div>
