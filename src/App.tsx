@@ -17,6 +17,7 @@ import {
   ReactFlowProvider,
   useReactFlow,
   ConnectionMode,
+  MiniMap,
 } from "@xyflow/react";
 import type {
   Node,
@@ -56,6 +57,8 @@ import type {
   StressFailure,
   StressConfig,
   SavedFlow,
+  StressMutation,
+  StressScenario,
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
 import { instantiatePattern } from "./patterns";
@@ -163,6 +166,12 @@ function Canvas({
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
   const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
+  const [stressScenarios, setStressScenarios] = useState<StressScenario[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const recordBuffer = useRef<StressMutation[]>([]);
+  const recordStart = useRef(0);
+  const playbackTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [showDesignMenu, setShowDesignMenu] = useState(false);
   const [editingDesignName, setEditingDesignName] = useState(false);
   const [designNameDraft, setDesignNameDraft] = useState("");
@@ -170,6 +179,7 @@ function Canvas({
   const pathStepsRef = useRef<HTMLDivElement>(null);
   const saveNameRef = useRef<HTMLInputElement>(null);
   const filterInputRef = useRef<HTMLInputElement>(null);
+  const clearFilterRef = useRef<(() => void) | null>(null);
   const designNameRef = useRef<HTMLInputElement>(null);
   const designMenuRef = useRef<HTMLDivElement>(null);
   const {
@@ -445,6 +455,7 @@ function Canvas({
           setNodes((nds) => [...nds, ...(newNodes as AppNode[])]);
           setEdges((eds) => [...eds, ...newEdges]);
         }
+        clearFilterRef.current?.();
         return;
       }
 
@@ -506,6 +517,8 @@ function Canvas({
         };
         setNodes((nds) => [...nds, newNode]);
       }
+
+      clearFilterRef.current?.();
     },
     [screenToFlowPosition, takeSnapshot],
   );
@@ -553,24 +566,24 @@ function Canvas({
         const data = node.data as SystemNodeData;
         const cycle: StressFailure[] = ["none", "overloaded", "down"];
         const nextIdx = (cycle.indexOf(data.stressFailure || "none") + 1) % cycle.length;
-        onUpdateNodeData(node.id, { stressFailure: cycle[nextIdx] });
+        onUpdateNodeDataR(node.id, { stressFailure: cycle[nextIdx] });
       }
       setSelectedNodeId(node.id);
       setSelectedEdgeId(null);
     },
-    [isPathMode, mode, onUpdateNodeData],
+    [isPathMode, mode, onUpdateNodeDataR],
   );
 
   const onEdgeClick = useCallback(
     (_: React.MouseEvent, edge: Edge) => {
       if (mode === "stress") {
         const edgeData = edge.data as EdgeData | undefined;
-        onUpdateEdgeData(edge.id, { partitioned: !edgeData?.partitioned });
+        onUpdateEdgeDataR(edge.id, { partitioned: !edgeData?.partitioned });
       }
       setSelectedEdgeId(edge.id);
       setSelectedNodeId(null);
     },
-    [mode, onUpdateEdgeData],
+    [mode, onUpdateEdgeDataR],
   );
 
   const onPaneClick = useCallback(() => {
@@ -648,6 +661,114 @@ function Canvas({
       })),
     );
     setStressConfig(defaultStressConfig);
+  }, []);
+
+  // --- Stress recording ---
+
+  const recordMutation = useCallback(
+    (mutation: Omit<StressMutation, "timestamp">) => {
+      if (!isRecording) return;
+      recordBuffer.current.push({
+        ...mutation,
+        timestamp: Date.now() - recordStart.current,
+      });
+    },
+    [isRecording],
+  );
+
+  const onUpdateNodeDataR = useCallback(
+    (id: string, partial: Partial<SystemNodeData>) => {
+      recordMutation({ type: "node", targetId: id, data: partial as Record<string, unknown> });
+      onUpdateNodeData(id, partial);
+    },
+    [onUpdateNodeData, recordMutation],
+  );
+
+  const onUpdateEdgeDataR = useCallback(
+    (id: string, partial: Partial<EdgeData>) => {
+      recordMutation({ type: "edge", targetId: id, data: partial as Record<string, unknown> });
+      onUpdateEdgeData(id, partial);
+    },
+    [onUpdateEdgeData, recordMutation],
+  );
+
+  const setStressConfigR = useCallback(
+    (updater: (prev: StressConfig) => StressConfig) => {
+      setStressConfig((prev) => {
+        const next = updater(prev);
+        recordMutation({ type: "config", data: next as unknown as Record<string, unknown> });
+        return next;
+      });
+    },
+    [recordMutation],
+  );
+
+  const resetStressR = useCallback(() => {
+    recordMutation({ type: "reset", data: {} });
+    resetStress();
+  }, [resetStress, recordMutation]);
+
+  const startRecording = useCallback(() => {
+    resetStress();
+    recordBuffer.current = [];
+    recordStart.current = Date.now();
+    setIsRecording(true);
+  }, [resetStress]);
+
+  const stopRecording = useCallback(
+    (name: string) => {
+      setIsRecording(false);
+      if (recordBuffer.current.length === 0) return;
+      const scenario: StressScenario = {
+        id: ulid(),
+        name,
+        mutations: recordBuffer.current,
+        duration: Date.now() - recordStart.current,
+      };
+      setStressScenarios((prev) => [...prev, scenario]);
+      recordBuffer.current = [];
+    },
+    [],
+  );
+
+  const playScenario = useCallback(
+    (scenario: StressScenario) => {
+      resetStress();
+      setIsPlaying(true);
+      const timers: ReturnType<typeof setTimeout>[] = [];
+      for (const mutation of scenario.mutations) {
+        timers.push(
+          setTimeout(() => {
+            if (mutation.type === "node" && mutation.targetId) {
+              onUpdateNodeData(mutation.targetId, mutation.data as Partial<SystemNodeData>);
+            } else if (mutation.type === "edge" && mutation.targetId) {
+              onUpdateEdgeData(mutation.targetId, mutation.data as Partial<EdgeData>);
+            } else if (mutation.type === "config") {
+              setStressConfig(mutation.data as unknown as StressConfig);
+            } else if (mutation.type === "reset") {
+              resetStress();
+            }
+          }, mutation.timestamp),
+        );
+      }
+      timers.push(
+        setTimeout(() => {
+          setIsPlaying(false);
+        }, scenario.duration + 100),
+      );
+      playbackTimers.current = timers;
+    },
+    [resetStress, onUpdateNodeData, onUpdateEdgeData],
+  );
+
+  const stopPlayback = useCallback(() => {
+    for (const t of playbackTimers.current) clearTimeout(t);
+    playbackTimers.current = [];
+    setIsPlaying(false);
+  }, []);
+
+  const deleteScenario = useCallback((id: string) => {
+    setStressScenarios((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const togglePathMode = useCallback(() => {
@@ -889,6 +1010,7 @@ function Canvas({
             onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
             width={sidebarCollapsed ? undefined : sidebarWidth}
             filterInputRef={filterInputRef}
+            clearFilterRef={clearFilterRef}
           />
           {!sidebarCollapsed && (
             <div
@@ -1136,7 +1258,9 @@ function Canvas({
                                 ? " bg-accent text-white"
                                 : " text-text-dim hover:text-text-bright hover:bg-surface-3"
                             }`}
-                            onClick={() => setStressConfig((c) => ({ ...c, trafficMultiplier: m }))}
+                            onClick={() =>
+                              setStressConfigR((c) => ({ ...c, trafficMultiplier: m }))
+                            }
                           >
                             {m}x
                           </button>
@@ -1144,7 +1268,7 @@ function Canvas({
                       </div>
                       <button
                         className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2"
-                        onClick={resetStress}
+                        onClick={resetStressR}
                       >
                         <svg
                           width="14"
@@ -1160,6 +1284,99 @@ function Canvas({
                         </svg>
                         Reset
                       </button>
+                      {isRecording ? (
+                        <button
+                          className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-white bg-[#ef4444] transition-all duration-150 hover:bg-[#dc2626] animate-pulse"
+                          onClick={() => {
+                            const name = prompt("Scenario name:");
+                            if (name) stopRecording(name);
+                            else setIsRecording(false);
+                          }}
+                        >
+                          <span className="w-2 h-2 rounded-full bg-white" />
+                          Stop
+                        </button>
+                      ) : isPlaying ? (
+                        <button
+                          className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-accent bg-accent-bg transition-all duration-150 hover:bg-surface-3"
+                          onClick={stopPlayback}
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                            stroke="none"
+                          >
+                            <rect x="6" y="4" width="4" height="16" />
+                            <rect x="14" y="4" width="4" height="16" />
+                          </svg>
+                          Stop
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2"
+                            onClick={startRecording}
+                            title="Record stress scenario"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-[#ef4444]" />
+                            Record
+                          </button>
+                          {stressScenarios.length > 0 && (
+                            <div className="relative group">
+                              <button className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2">
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="currentColor"
+                                  stroke="none"
+                                >
+                                  <polygon points="5,3 19,12 5,21" />
+                                </svg>
+                                Scenarios
+                              </button>
+                              <div className="absolute top-full left-0 mt-1 bg-surface border border-border rounded-lg shadow-xl py-1 min-w-[180px] hidden group-hover:block z-50">
+                                {stressScenarios.map((s) => (
+                                  <div
+                                    key={s.id}
+                                    className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-surface-2 cursor-pointer"
+                                  >
+                                    <button
+                                      className="flex-1 text-left text-[13px] text-text-bright"
+                                      onClick={() => playScenario(s)}
+                                    >
+                                      {s.name}
+                                      <span className="text-text-dim ml-1.5 text-[11px]">
+                                        {(s.duration / 1000).toFixed(1)}s
+                                      </span>
+                                    </button>
+                                    <button
+                                      className="w-5 h-5 flex items-center justify-center rounded text-text-dim hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.12)]"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        deleteScenario(s.id);
+                                      }}
+                                    >
+                                      <svg
+                                        width="10"
+                                        height="10"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                      >
+                                        <path d="M18 6L6 18M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -1385,6 +1602,17 @@ function Canvas({
                 className="flex-1"
               >
                 <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#2a2b35" />
+                <MiniMap
+                  nodeStrokeWidth={3}
+                  nodeColor={(n) => {
+                    if (n.type === "sticky") return "#fde68a";
+                    if (n.type === "text") return "var(--text-dim)";
+                    if (n.type === "container") return "var(--border)";
+                    const entry = registry.get((n.data as SystemNodeData).componentType);
+                    return entry?.color ?? "var(--accent)";
+                  }}
+                  maskColor="rgba(0,0,0,0.5)"
+                />
               </ReactFlow>
             </div>
             {showPanel && (
@@ -1403,7 +1631,7 @@ function Canvas({
               <PropertiesPanel
                 node={selectedNode as SystemFlowNode}
                 mode={mode}
-                onUpdate={onUpdateNodeData}
+                onUpdate={onUpdateNodeDataR}
                 onClose={() => setSelectedNodeId(null)}
                 panelPosition={panelPosition}
                 onTogglePanelPosition={togglePanelPosition}
@@ -1480,7 +1708,7 @@ function Canvas({
                 edge={selectedEdge}
                 sourceLabel={getNodeLabel(selectedEdge.source)}
                 targetLabel={getNodeLabel(selectedEdge.target)}
-                onUpdate={onUpdateEdgeData}
+                onUpdate={onUpdateEdgeDataR}
                 onClose={() => setSelectedEdgeId(null)}
                 panelPosition={panelPosition}
                 onTogglePanelPosition={togglePanelPosition}

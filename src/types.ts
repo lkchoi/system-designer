@@ -206,3 +206,17 @@ export interface SavedFlow {
   description: string;
   steps: string[];
 }
+
+export interface StressMutation {
+  timestamp: number;
+  type: "node" | "edge" | "config" | "reset";
+  targetId?: string;
+  data: Record<string, unknown>;
+}
+
+export interface StressScenario {
+  id: string;
+  name: string;
+  mutations: StressMutation[];
+  duration: number;
+}
