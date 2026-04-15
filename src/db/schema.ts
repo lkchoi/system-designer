@@ -2,6 +2,7 @@ export const SCHEMA = `
   CREATE TABLE IF NOT EXISTS designs (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
+    parent_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );

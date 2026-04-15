@@ -6,6 +6,7 @@ import { ulid } from "ulid";
 export interface Design {
   id: string;
   name: string;
+  parentId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,12 +21,13 @@ export interface DesignState {
 export function listDesigns(): Design[] {
   const db = getDB();
   const results = db.exec(
-    "SELECT id, name, created_at, updated_at FROM designs ORDER BY updated_at DESC",
+    "SELECT id, name, parent_id, created_at, updated_at FROM designs ORDER BY updated_at DESC",
   );
   if (results.length === 0) return [];
-  return results[0].values.map(([id, name, createdAt, updatedAt]) => ({
+  return results[0].values.map(([id, name, parentId, createdAt, updatedAt]) => ({
     id: id as string,
     name: name as string,
+    parentId: (parentId as string) || null,
     createdAt: createdAt as string,
     updatedAt: updatedAt as string,
   }));
@@ -33,14 +35,16 @@ export function listDesigns(): Design[] {
 
 export function getDesign(id: string): Design | undefined {
   const db = getDB();
-  const results = db.exec("SELECT id, name, created_at, updated_at FROM designs WHERE id = ?", [
-    id,
-  ]);
+  const results = db.exec(
+    "SELECT id, name, parent_id, created_at, updated_at FROM designs WHERE id = ?",
+    [id],
+  );
   if (results.length === 0 || results[0].values.length === 0) return undefined;
-  const [did, name, createdAt, updatedAt] = results[0].values[0];
+  const [did, name, parentId, createdAt, updatedAt] = results[0].values[0];
   return {
     id: did as string,
     name: name as string,
+    parentId: (parentId as string) || null,
     createdAt: createdAt as string,
     updatedAt: updatedAt as string,
   };
@@ -58,7 +62,7 @@ export function createDesign(name: string): Design {
   ]);
   db.run("INSERT INTO design_state (design_id) VALUES (?)", [id]);
   schedulePersist();
-  return { id, name, createdAt: now, updatedAt: now };
+  return { id, name, parentId: null, createdAt: now, updatedAt: now };
 }
 
 export function renameDesign(id: string, name: string): void {
@@ -145,6 +149,36 @@ export function saveFlowPath(designId: string, flow: SavedFlow): void {
     ],
   );
   schedulePersist();
+}
+
+export function forkDesign(sourceId: string, name: string): Design {
+  const db = getDB();
+  const id = ulid();
+  const now = new Date().toISOString();
+
+  // Create design row with parent reference
+  db.run(
+    "INSERT INTO designs (id, name, parent_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+    [id, name, sourceId, now, now],
+  );
+
+  // Copy design state
+  const state = loadDesignState(sourceId);
+  db.run(
+    "INSERT INTO design_state (design_id, nodes, edges, viewport) VALUES (?, ?, ?, ?)",
+    [id, JSON.stringify(state.nodes), JSON.stringify(state.edges), JSON.stringify(state.viewport)],
+  );
+
+  // Copy flow paths with new IDs
+  for (const flow of state.flowPaths) {
+    db.run(
+      "INSERT INTO flow_paths (id, design_id, name, description, steps, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+      [ulid(), id, flow.name, flow.description, JSON.stringify(flow.steps), now],
+    );
+  }
+
+  schedulePersist();
+  return { id, name, parentId: sourceId, createdAt: now, updatedAt: now };
 }
 
 export function deleteFlowPath(id: string): void {

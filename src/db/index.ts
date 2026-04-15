@@ -8,6 +8,7 @@ export {
   loadDesignState,
   saveDesignState,
   saveFlowPath,
+  forkDesign,
   deleteFlowPath,
 } from "./designs";
 export type { Design, DesignState } from "./designs";

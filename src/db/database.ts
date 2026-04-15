@@ -38,6 +38,12 @@ export async function initDB(): Promise<SqlJsDatabase> {
   db.run("PRAGMA foreign_keys = ON");
   db.run(SCHEMA);
 
+  // Migration: add parent_id column if missing (existing DBs)
+  const cols = db.exec("PRAGMA table_info(designs)");
+  if (cols.length > 0 && !cols[0].values.some((row) => row[1] === "parent_id")) {
+    db.run("ALTER TABLE designs ADD COLUMN parent_id TEXT");
+  }
+
   await persist();
   return db;
 }
