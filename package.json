@@ -19,6 +19,7 @@
     "@xyflow/react": "^12.10.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "rrweb": "2.0.0-alpha.20",
     "sql.js": "^1.14.1",
     "tailwindcss": "^4.2.2",
     "ulid": "^3.0.2"
