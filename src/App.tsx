@@ -52,6 +52,7 @@ import type {
   EdgeData,
   EffectiveStress,
   StressFailure,
+  StressConfig,
   SavedFlow,
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
@@ -97,10 +98,15 @@ export function useMode() {
 export interface StressContextValue {
   effects: Map<string, EffectiveStress>;
   partitionedEdges: Set<string>;
+  slowEdges: Set<string>;
+  stressConfig: StressConfig;
 }
+const defaultStressConfig: StressConfig = { trafficMultiplier: 1, latencyThreshold: 500 };
 export const StressContext = createContext<StressContextValue>({
   effects: new Map(),
   partitionedEdges: new Set(),
+  slowEdges: new Set(),
+  stressConfig: defaultStressConfig,
 });
 export function useStress() {
   return useContext(StressContext);
@@ -147,6 +153,7 @@ function Canvas({
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
+  const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
   const [showDesignMenu, setShowDesignMenu] = useState(false);
   const [editingDesignName, setEditingDesignName] = useState(false);
   const [designNameDraft, setDesignNameDraft] = useState("");
@@ -277,7 +284,7 @@ function Canvas({
             ...params,
             id: ulid(),
             type: "labeled",
-            data: { label: "", protocol: "", format: "", partitioned: false },
+            data: { label: "", protocol: "", format: "", partitioned: false, simulatedLatency: 0 },
           },
           eds,
         ),
@@ -352,6 +359,8 @@ function Canvas({
             endpoints: [],
             capClassification: "",
             stressFailure: "none",
+            capacityPercent: 100,
+            consumerRate: 1000,
           },
         };
         setNodes((nds) => [...nds, newNode]);
@@ -448,8 +457,8 @@ function Canvas({
     const systemNodes = nodes.filter(
       (n): n is Node<SystemNodeData, "system"> => n.type === "system",
     );
-    return computeStressEffects(systemNodes, edges);
-  }, [mode, nodes, edges]);
+    return computeStressEffects(systemNodes, edges, stressConfig);
+  }, [mode, nodes, edges, stressConfig]);
 
   const partitionedEdges = useMemo(() => {
     const set = new Set<string>();
@@ -460,25 +469,44 @@ function Canvas({
     return set;
   }, [mode, edges]);
 
+  const slowEdges = useMemo(() => {
+    const set = new Set<string>();
+    if (mode !== "stress") return set;
+    for (const edge of edges) {
+      const d = edge.data as EdgeData | undefined;
+      if (d && d.simulatedLatency > stressConfig.latencyThreshold) set.add(edge.id);
+    }
+    return set;
+  }, [mode, edges, stressConfig.latencyThreshold]);
+
   const stressCtx = useMemo<StressContextValue>(
-    () => ({ effects: stressEffects, partitionedEdges }),
-    [stressEffects, partitionedEdges],
+    () => ({ effects: stressEffects, partitionedEdges, slowEdges, stressConfig }),
+    [stressEffects, partitionedEdges, slowEdges, stressConfig],
   );
 
   const resetStress = useCallback(() => {
     setNodes((nds) =>
       nds.map((n) =>
         n.type === "system"
-          ? ({ ...n, data: { ...n.data, stressFailure: "none" } } as typeof n)
+          ? ({
+              ...n,
+              data: {
+                ...n.data,
+                stressFailure: "none",
+                capacityPercent: 100,
+                consumerRate: 1000,
+              },
+            } as typeof n)
           : n,
       ),
     );
     setEdges((eds) =>
       eds.map((e) => ({
         ...e,
-        data: { ...e.data, partitioned: false },
+        data: { ...e.data, partitioned: false, simulatedLatency: 0 },
       })),
     );
+    setStressConfig(defaultStressConfig);
   }, []);
 
   const togglePathMode = useCallback(() => {
@@ -949,24 +977,43 @@ function Canvas({
                     Flow Path
                   </button>
                   {mode === "stress" && (
-                    <button
-                      className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2"
-                      onClick={resetStress}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                    <>
+                      <div className="flex items-center gap-1 px-1 py-0.5 rounded-lg bg-surface-2">
+                        {([1, 2, 5, 10] as const).map((m) => (
+                          <button
+                            key={m}
+                            className={`px-2.5 py-[3px] rounded-md text-[12px] font-semibold transition-all duration-150 cursor-pointer${
+                              stressConfig.trafficMultiplier === m
+                                ? " bg-accent text-white"
+                                : " text-text-dim hover:text-text-bright hover:bg-surface-3"
+                            }`}
+                            onClick={() =>
+                              setStressConfig((c) => ({ ...c, trafficMultiplier: m }))
+                            }
+                          >
+                            {m}x
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2"
+                        onClick={resetStress}
                       >
-                        <path d="M3 12a9 9 0 109-9M3 3v9h9" />
-                      </svg>
-                      Reset Stress
-                    </button>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 12a9 9 0 109-9M3 3v9h9" />
+                        </svg>
+                        Reset
+                      </button>
+                    </>
                   )}
                 </div>
                 <div className="flex items-center gap-4">

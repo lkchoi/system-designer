@@ -122,6 +122,7 @@ export interface EdgeData {
   protocol: EdgeProtocol;
   format: EdgeFormat;
   partitioned: boolean;
+  simulatedLatency: number;
 }
 
 export type CAPClassification = "CP" | "AP" | "CA" | "";
@@ -129,8 +130,19 @@ export type StressFailure = "none" | "overloaded" | "down";
 
 export interface EffectiveStress {
   status: NodeStatus;
-  reason: "direct" | "cascade" | "partition-cp" | "partition-ap" | "healthy";
+  reason:
+    | "direct"
+    | "cascade"
+    | "partition-cp"
+    | "partition-ap"
+    | "healthy"
+    | "slow-edge"
+    | "capacity"
+    | "traffic-spike"
+    | "backpressure";
   explanation: string;
+  effectiveCapacity?: number;
+  queueDepth?: number;
 }
 
 export interface SystemNodeData {
@@ -144,7 +156,14 @@ export interface SystemNodeData {
   endpoints: Endpoint[];
   capClassification: CAPClassification;
   stressFailure: StressFailure;
+  capacityPercent: number;
+  consumerRate: number;
   [key: string]: unknown;
+}
+
+export interface StressConfig {
+  trafficMultiplier: number;
+  latencyThreshold: number;
 }
 
 export interface ComponentDefinition {
