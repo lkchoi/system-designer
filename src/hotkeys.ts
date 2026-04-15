@@ -68,12 +68,22 @@ export const HOTKEYS: HotkeyDef[] = [
 
   // Tools
   {
+    id: "focus-filter",
+    key: "/",
+    guard: true,
+    label: "Filter sidebar",
+    category: "Tools",
+  },
+  {
     id: "show-capacity-calc",
     key: "c",
     guard: true,
     label: "Capacity calculator",
     category: "Tools",
   },
+
+  { id: "export-design", key: "e", mod: true, label: "Export design", category: "Tools" },
+  { id: "import-design", key: "i", mod: true, label: "Import design", category: "Tools" },
 
   // Help
   { id: "show-help", key: "?", guard: true, label: "Show shortcuts", category: "Help" },

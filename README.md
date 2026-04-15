@@ -39,12 +39,33 @@ Designs are automatically saved to SQLite via the browser's Origin Private File 
 
 All component types are defined in a single registry (`src/registry/`). Each entry includes visual definition, plan fields, technology options, and connection compatibility rules. Adding a new component type requires one entry in `builtin-entries.ts`. The registry supports custom user-defined types via `registry.register()`.
 
-## Getting Started
+## Develop
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) or [Bun](https://bun.sh/)
+- [mkcert](https://github.com/FiloSottile/mkcert) for local HTTPS
+
+### Setup
 
 ```bash
 npm install
+
+# Install mkcert's local CA into your system trust store (one-time)
+mkcert -install
+
+# Generate certificates for localhost
+mkdir -p .certs
+mkcert -key-file .certs/key.pem -cert-file .certs/cert.pem localhost 127.0.0.1 ::1
+```
+
+### Run
+
+```bash
 npm run dev
 ```
+
+The dev server starts at `https://localhost:5173` with a trusted certificate (no browser warnings).
 
 ## Tech Stack
 

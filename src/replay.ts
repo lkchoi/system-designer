@@ -1,4 +1,5 @@
 import { record } from "rrweb";
+import { ulid } from "ulid";
 
 const ENDPOINT = import.meta.env.VITE_REPLAY_ENDPOINT ?? "http://localhost:3000";
 const BATCH_INTERVAL_MS = 5_000;
@@ -29,7 +30,7 @@ function getOrCreateSession(): string {
       }
     }
   } catch {}
-  const id = crypto.randomUUID();
+  const id = ulid();
   sessionStorage.setItem(key, JSON.stringify({ id, lastActivity: Date.now() }));
   return id;
 }

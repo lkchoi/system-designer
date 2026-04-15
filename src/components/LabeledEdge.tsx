@@ -42,8 +42,7 @@ export default function LabeledEdge({
   const latency = edgeData?.simulatedLatency ?? 0;
 
   const isBroken = isStressMode && isPartitioned;
-  const isTimeout =
-    isStressMode && !isPartitioned && latency > stressConfig.latencyThreshold * 3;
+  const isTimeout = isStressMode && !isPartitioned && latency > stressConfig.latencyThreshold * 3;
   const isSlowEdge = isStressMode && isSlow && !isTimeout;
 
   useEffect(() => {
@@ -70,13 +69,14 @@ export default function LabeledEdge({
         id={id}
         path={edgePath}
         style={{
-          stroke: isBroken || isTimeout
-            ? "#ef4444"
-            : isSlowEdge
-              ? "#f97316"
-              : selected
-                ? "#6366f1"
-                : "#6366f180",
+          stroke:
+            isBroken || isTimeout
+              ? "#ef4444"
+              : isSlowEdge
+                ? "#f97316"
+                : selected
+                  ? "#6366f1"
+                  : "#6366f180",
           strokeWidth: selected ? 3 : 2,
           strokeDasharray: isBroken ? "8 4" : isTimeout || isSlowEdge ? "6 3" : undefined,
         }}

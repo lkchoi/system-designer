@@ -1,11 +1,5 @@
 import type { Node, Edge } from "@xyflow/react";
-import type {
-  SystemNodeData,
-  EdgeData,
-  EffectiveStress,
-  NodeStatus,
-  StressConfig,
-} from "./types";
+import type { SystemNodeData, EdgeData, EffectiveStress, NodeStatus, StressConfig } from "./types";
 
 /**
  * Computes effective stress state for every system node based on

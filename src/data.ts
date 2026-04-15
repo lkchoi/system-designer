@@ -9,9 +9,11 @@ export function randomMetrics(): NodeMetrics {
   };
 }
 
+const ACRONYMS = new Set(["api", "cdn", "dns", "etl", "cqrs", "cdc"]);
+
 export function displayType(type: string): string {
   return type
     .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => (ACRONYMS.has(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
     .join(" ");
 }

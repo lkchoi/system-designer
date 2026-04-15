@@ -243,9 +243,7 @@ export default function PropertiesPanel({
                   max={100}
                   value={data.capacityPercent ?? 100}
                   disabled={data.stressFailure === "down"}
-                  onChange={(e) =>
-                    onUpdate(node.id, { capacityPercent: Number(e.target.value) })
-                  }
+                  onChange={(e) => onUpdate(node.id, { capacityPercent: Number(e.target.value) })}
                   className="flex-1 accent-accent disabled:opacity-40"
                 />
                 <span className="text-sm font-bold text-text-bright tabular-nums w-10 text-right">
@@ -273,9 +271,7 @@ export default function PropertiesPanel({
             {(data.componentType === "message-queue" ||
               data.componentType === "stream-processor") && (
               <div className="flex flex-col gap-2">
-                <label className="text-[13px] font-semibold text-text-dim">
-                  Queue Simulation
-                </label>
+                <label className="text-[13px] font-semibold text-text-dim">Queue Simulation</label>
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[12px] text-text-dim">Consumer Rate</span>
@@ -299,9 +295,7 @@ export default function PropertiesPanel({
                       <span className="text-[12px] text-text-dim">Queue Depth</span>
                       <span
                         className={`text-[13px] font-bold tabular-nums ${
-                          stressEffect.status === "error"
-                            ? "text-[#ef4444]"
-                            : "text-[#eab308]"
+                          stressEffect.status === "error" ? "text-[#ef4444]" : "text-[#eab308]"
                         }`}
                       >
                         ~{stressEffect.queueDepth.toLocaleString()}

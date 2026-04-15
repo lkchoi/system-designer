@@ -76,6 +76,7 @@ import {
   forkDesign,
   deleteFlowPath,
 } from "./db";
+import { exportDesign, importDesign, downloadJSON, pickAndReadFile } from "./db/io";
 import type { Design } from "./db";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
@@ -135,6 +136,7 @@ interface CanvasProps {
   onRenameDesign: (id: string, name: string) => void;
   onDeleteDesign: (id: string) => void;
   onForkDesign: (sourceId: string, name: string) => void;
+  onImportDesign: () => Promise<void>;
   onStartCompare: (leftId: string, rightId: string) => void;
 }
 
@@ -146,6 +148,7 @@ function Canvas({
   onRenameDesign,
   onDeleteDesign,
   onForkDesign,
+  onImportDesign,
   onStartCompare,
 }: CanvasProps) {
   const initialState = useMemo(() => loadDesignState(designId), [designId]);
@@ -869,6 +872,14 @@ function Canvas({
         if (sidebarCollapsed) setSidebarCollapsed(false);
         setTimeout(() => filterInputRef.current?.focus(), 0);
       },
+      "export-design": () => {
+        const json = exportDesign(designId);
+        const name = currentDesign?.name ?? "design";
+        downloadJSON(json, `${name}.json`);
+      },
+      "import-design": () => {
+        onImportDesign();
+      },
     }),
     [
       takeSnapshot,
@@ -890,6 +901,9 @@ function Canvas({
       selectedNodeId,
       selectedEdgeId,
       sidebarCollapsed,
+      designId,
+      currentDesign,
+      onImportDesign,
     ],
   );
 
@@ -1922,6 +1936,17 @@ export default function App() {
     [refreshDesigns],
   );
 
+  const handleImport = useCallback(async () => {
+    try {
+      const text = await pickAndReadFile();
+      const result = importDesign(text);
+      refreshDesigns();
+      setDesignId(result.id);
+    } catch {
+      // user cancelled file picker or invalid JSON
+    }
+  }, [refreshDesigns]);
+
   const handleStartCompare = useCallback((leftId: string, rightId: string) => {
     setCompareIds([leftId, rightId]);
   }, []);
@@ -2037,6 +2062,7 @@ export default function App() {
         onRenameDesign={handleRename}
         onDeleteDesign={handleDelete}
         onForkDesign={handleFork}
+        onImportDesign={handleImport}
         onStartCompare={handleStartCompare}
       />
     </ReactFlowProvider>

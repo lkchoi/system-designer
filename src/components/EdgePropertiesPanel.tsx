@@ -170,9 +170,7 @@ export default function EdgePropertiesPanel({
                 <button
                   className={`w-9 h-5 rounded-[10px] border relative cursor-pointer transition-[background,border-color] duration-150 shrink-0${data.partitioned ? " bg-accent border-accent" : " bg-surface-3 border-border"}`}
                   style={
-                    data.partitioned
-                      ? { background: "#ef4444", borderColor: "#ef4444" }
-                      : undefined
+                    data.partitioned ? { background: "#ef4444", borderColor: "#ef4444" } : undefined
                   }
                   onClick={() => onUpdate(edge.id, { partitioned: !data.partitioned })}
                 >

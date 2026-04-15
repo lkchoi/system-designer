@@ -222,4 +222,50 @@ export const BUILTIN_PATTERNS: PatternDefinition[] = [
       { sourceLocalId: "fn", targetLocalId: "warehouse", label: "load" },
     ],
   },
+  {
+    id: "cdc",
+    name: "Change Data Capture",
+    description: "Stream processor captures database changes to sync downstream",
+    icon: "M4 4h16v4H4zM4 12h8v8H4zM14 12h6v8h-6z",
+    color: "#0ea5e9",
+    source: "builtin",
+    nodes: [
+      { localId: "source-db", componentType: "database", relativePosition: { x: 0, y: 0 } },
+      {
+        localId: "stream",
+        componentType: "stream-processor",
+        relativePosition: { x: 280, y: 0 },
+      },
+      { localId: "target-db", componentType: "database", relativePosition: { x: 560, y: -80 } },
+      {
+        localId: "search",
+        componentType: "search-engine",
+        relativePosition: { x: 560, y: 80 },
+      },
+    ],
+    edges: [
+      { sourceLocalId: "source-db", targetLocalId: "stream", label: "change log" },
+      { sourceLocalId: "stream", targetLocalId: "target-db", label: "replicate" },
+      { sourceLocalId: "stream", targetLocalId: "search", label: "index" },
+    ],
+  },
+  {
+    id: "rate-limiter",
+    name: "Rate Limiter",
+    description: "API gateway enforces rate limits via cache before forwarding",
+    icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01",
+    color: "#f43f5e",
+    source: "builtin",
+    nodes: [
+      { localId: "client", componentType: "client", relativePosition: { x: 0, y: 0 } },
+      { localId: "gw", componentType: "api-gateway", relativePosition: { x: 280, y: 0 } },
+      { localId: "cache", componentType: "cache", relativePosition: { x: 280, y: -160 } },
+      { localId: "svc", componentType: "service", relativePosition: { x: 560, y: 0 } },
+    ],
+    edges: [
+      { sourceLocalId: "client", targetLocalId: "gw", label: "request" },
+      { sourceLocalId: "gw", targetLocalId: "cache", label: "check limit" },
+      { sourceLocalId: "gw", targetLocalId: "svc", label: "forward" },
+    ],
+  },
 ];

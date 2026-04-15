@@ -34,11 +34,16 @@ class ComponentRegistry {
     return this.getAll().filter((e) => e.source === "custom");
   }
 
+  /** Allow if either side declares the other in connectsTo (or has an empty list, meaning unrestricted). */
   canConnect(sourceTypeId: ComponentTypeId, targetTypeId: ComponentTypeId): boolean {
     const sourceEntry = this.entries.get(sourceTypeId);
-    if (!sourceEntry) return false;
-    if (sourceEntry.connectsTo.length === 0) return true;
-    return sourceEntry.connectsTo.includes(targetTypeId);
+    const targetEntry = this.entries.get(targetTypeId);
+    if (!sourceEntry || !targetEntry) return false;
+    const sourceAllows =
+      sourceEntry.connectsTo.length === 0 || sourceEntry.connectsTo.includes(targetTypeId);
+    const targetAllows =
+      targetEntry.connectsTo.length === 0 || targetEntry.connectsTo.includes(sourceTypeId);
+    return sourceAllows || targetAllows;
   }
 
   register(entry: ComponentRegistryEntry): void {

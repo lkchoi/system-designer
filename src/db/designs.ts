@@ -164,10 +164,12 @@ export function forkDesign(sourceId: string, name: string): Design {
 
   // Copy design state
   const state = loadDesignState(sourceId);
-  db.run(
-    "INSERT INTO design_state (design_id, nodes, edges, viewport) VALUES (?, ?, ?, ?)",
-    [id, JSON.stringify(state.nodes), JSON.stringify(state.edges), JSON.stringify(state.viewport)],
-  );
+  db.run("INSERT INTO design_state (design_id, nodes, edges, viewport) VALUES (?, ?, ?, ?)", [
+    id,
+    JSON.stringify(state.nodes),
+    JSON.stringify(state.edges),
+    JSON.stringify(state.viewport),
+  ]);
 
   // Copy flow paths with new IDs
   for (const flow of state.flowPaths) {
