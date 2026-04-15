@@ -75,9 +75,9 @@ describe("parseDesignJSON validation", () => {
   });
 
   it("rejects nodes that is not an array", () => {
-    expect(() =>
-      parseDesignJSON(JSON.stringify({ version: 1, nodes: "bad", edges: [] })),
-    ).toThrow("Missing or invalid nodes");
+    expect(() => parseDesignJSON(JSON.stringify({ version: 1, nodes: "bad", edges: [] }))).toThrow(
+      "Missing or invalid nodes",
+    );
   });
 });
 
