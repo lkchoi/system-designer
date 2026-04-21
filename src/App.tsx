@@ -1544,6 +1544,46 @@ function Canvas({
                       <line x1="8" y1="18" x2="14" y2="18" />
                     </svg>
                   </button>
+                  <button
+                    className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+                    onClick={() => setShowExportDialog(true)}
+                    title="Export (⌘E)"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                  </button>
+                  <button
+                    className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+                    onClick={handleImport}
+                    title="Import (⌘I)"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </button>
                   <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
                     <svg
                       width="14"
