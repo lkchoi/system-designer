@@ -42,6 +42,7 @@ import LabeledEdge from "./components/LabeledEdge";
 import EdgePropertiesPanel from "./components/EdgePropertiesPanel";
 import HotkeyHelpOverlay from "./components/HotkeyHelpOverlay";
 import CapacityCalculator from "./components/CapacityCalculator";
+import ExportDialog from "./components/ExportDialog";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
 import { randomMetrics } from "./data";
@@ -76,7 +77,7 @@ import {
   forkDesign,
   deleteFlowPath,
 } from "./db";
-import { exportDesign, importDesign, downloadJSON, pickAndReadFile } from "./db/io";
+import { importDesign, pickAndReadFile } from "./db/io";
 import type { Design } from "./db";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
@@ -173,6 +174,7 @@ function Canvas({
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
   const [stressScenarios, setStressScenarios] = useState<StressScenario[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -815,6 +817,10 @@ function Canvas({
       },
 
       "close-or-deselect": () => {
+        if (showExportDialog) {
+          setShowExportDialog(false);
+          return;
+        }
         if (showCapacityCalc) {
           setShowCapacityCalc(false);
           return;
@@ -873,9 +879,7 @@ function Canvas({
         setTimeout(() => filterInputRef.current?.focus(), 0);
       },
       "export-design": () => {
-        const json = exportDesign(designId);
-        const name = currentDesign?.name ?? "design";
-        downloadJSON(json, `${name}.json`);
+        setShowExportDialog(true);
       },
       "import-design": () => {
         onImportDesign();
@@ -897,6 +901,7 @@ function Canvas({
       flowPath.length,
       showHotkeyHelp,
       showCapacityCalc,
+      showExportDialog,
       showSaveForm,
       selectedNodeId,
       selectedEdgeId,
@@ -1871,6 +1876,12 @@ function Canvas({
         )}
         <HotkeyHelpOverlay open={showHotkeyHelp} onClose={() => setShowHotkeyHelp(false)} />
         <CapacityCalculator open={showCapacityCalc} onClose={() => setShowCapacityCalc(false)} />
+        <ExportDialog
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+          designId={designId}
+          designName={currentDesign?.name ?? "design"}
+        />
       </StressContext.Provider>
     </ModeContext.Provider>
   );
@@ -1938,8 +1949,8 @@ export default function App() {
 
   const handleImport = useCallback(async () => {
     try {
-      const text = await pickAndReadFile();
-      const result = importDesign(text);
+      const { content } = await pickAndReadFile();
+      const result = importDesign(content);
       refreshDesigns();
       setDesignId(result.id);
     } catch {

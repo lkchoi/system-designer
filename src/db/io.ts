@@ -53,7 +53,11 @@ export function importDesign(json: string): { id: string; name: string } {
 }
 
 export function downloadJSON(content: string, filename: string): void {
-  const blob = new Blob([content], { type: "application/json" });
+  downloadFile(content, filename, "application/json");
+}
+
+export function downloadFile(content: string, filename: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -62,16 +66,19 @@ export function downloadJSON(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function pickAndReadFile(): Promise<string> {
+export function pickAndReadFile(
+  accept = ".json",
+): Promise<{ content: string; filename: string }> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ".json";
+    input.accept = accept;
     input.onchange = () => {
       const file = input.files?.[0];
       if (!file) return reject(new Error("No file selected"));
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () =>
+        resolve({ content: reader.result as string, filename: file.name });
       reader.onerror = () => reject(reader.error);
       reader.readAsText(file);
     };
