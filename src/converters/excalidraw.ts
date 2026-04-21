@@ -448,10 +448,7 @@ function importShapeAsNode(
   };
 }
 
-function guessComponentType(
-  label: string,
-  strokeColor: string,
-): SystemNodeData["componentType"] {
+function guessComponentType(label: string, strokeColor: string): SystemNodeData["componentType"] {
   const lower = label.toLowerCase();
 
   // Try label matching first

@@ -1,8 +1,27 @@
 import type { ConverterModule, FormatId } from "./types";
 import { nativeJsonConverter } from "./native-json";
 import { excalidrawConverter } from "./excalidraw";
+import { cloudformationConverter } from "./cloudformation";
+import { terraformConverter } from "./terraform";
+import { kubernetesConverter } from "./kubernetes";
+import { awsCdkConverter } from "./aws-cdk";
+import { pulumiConverter } from "./pulumi";
+import { dockerComposeConverter } from "./docker-compose";
+import { nomadConverter } from "./nomad";
+import { localstackConverter } from "./localstack";
 
-export const CONVERTERS: ConverterModule[] = [nativeJsonConverter, excalidrawConverter];
+export const CONVERTERS: ConverterModule[] = [
+  nativeJsonConverter,
+  excalidrawConverter,
+  cloudformationConverter,
+  terraformConverter,
+  kubernetesConverter,
+  awsCdkConverter,
+  pulumiConverter,
+  dockerComposeConverter,
+  nomadConverter,
+  localstackConverter,
+];
 
 export function getConverter(id: FormatId): ConverterModule {
   const c = CONVERTERS.find((c) => c.id === id);
