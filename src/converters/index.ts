@@ -1,7 +1,8 @@
 import type { ConverterModule, FormatId } from "./types";
 import { nativeJsonConverter } from "./native-json";
+import { excalidrawConverter } from "./excalidraw";
 
-export const CONVERTERS: ConverterModule[] = [nativeJsonConverter];
+export const CONVERTERS: ConverterModule[] = [nativeJsonConverter, excalidrawConverter];
 
 export function getConverter(id: FormatId): ConverterModule {
   const c = CONVERTERS.find((c) => c.id === id);
