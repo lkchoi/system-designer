@@ -1566,7 +1566,7 @@ function Canvas({
                   </button>
                   <button
                     className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
-                    onClick={handleImport}
+                    onClick={onImportDesign}
                     title="Import (⌘I)"
                   >
                     <svg
