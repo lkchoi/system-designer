@@ -16,9 +16,9 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
     (converter: ConverterModule) => {
       const json = exportDesign(designId);
       const design = JSON.parse(json);
+      design.name = designName;
       const result = converter.exportDesign(design);
-      const ext = result.filename.match(/\.[^.]+$/)?.[0] ?? "";
-      downloadFile(result.content, `${designName}${ext}`, result.mimeType);
+      downloadFile(result.content, result.filename, result.mimeType);
       onClose();
     },
     [designId, designName, onClose],
