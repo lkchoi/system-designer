@@ -78,6 +78,8 @@ import {
   deleteFlowPath,
 } from "./db";
 import { importDesign, pickAndReadFile } from "./db/io";
+import { getImportFormats } from "./converters";
+import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
@@ -1948,13 +1950,26 @@ export default function App() {
   );
 
   const handleImport = useCallback(async () => {
+    const importFormats = getImportFormats();
+    const extensions = [...new Set(importFormats.flatMap((f) => f.fileExtensions))].join(",");
     try {
-      const { content } = await pickAndReadFile();
+      const { content, filename } = await pickAndReadFile(extensions);
+      const formatId = detectFormat(filename, content);
+      if (formatId && formatId !== "native-json") {
+        const converter = importFormats.find((c) => c.id === formatId);
+        if (converter?.importDesign) {
+          const design = converter.importDesign(content);
+          const result = importDesign(JSON.stringify(design));
+          refreshDesigns();
+          setDesignId(result.id);
+          return;
+        }
+      }
       const result = importDesign(content);
       refreshDesigns();
       setDesignId(result.id);
     } catch {
-      // user cancelled file picker or invalid JSON
+      // user cancelled file picker or invalid format
     }
   }, [refreshDesigns]);
 

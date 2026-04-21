@@ -37,4 +37,5 @@ export function getImportFormats(): ConverterModule[] {
   return CONVERTERS.filter((c) => c.canImport);
 }
 
+export { detectFormat } from "./detect";
 export type { ConverterModule, FormatId, FormatCategory, ExportResult } from "./types";
