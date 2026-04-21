@@ -5,7 +5,12 @@ import type { SystemNodeData } from "../types";
 import { getResourceMapping, getDefaultMapping } from "./iac-mapping";
 
 function sanitizeName(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^[^a-z]/, "s$&") || "service";
+  return (
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/^[^a-z]/, "s$&") || "service"
+  );
 }
 
 function exportToCompose(design: DesignJSON): string {
@@ -27,7 +32,8 @@ function exportToCompose(design: DesignJSON): string {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
     const tech = data.plan?.technology ?? "";
-    const mapping = getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+    const mapping =
+      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
     if (!mapping?.docker) continue;
 
     let name = sanitizeName(data.label);
@@ -44,15 +50,15 @@ function exportToCompose(design: DesignJSON): string {
     if (data.componentType === "database") {
       const port = tech === "mongodb" ? 27017 : tech === "cassandra" ? 9042 : 5432;
       service.ports = [`${port}:${port}`];
-      service.volumes = [`${name}-data:/var/lib/${tech === "mongodb" ? "mongo" : tech === "mysql" ? "mysql" : "postgresql/data"}`];
+      service.volumes = [
+        `${name}-data:/var/lib/${tech === "mongodb" ? "mongo" : tech === "mysql" ? "mysql" : "postgresql/data"}`,
+      ];
       volumes[`${name}-data`] = {};
 
-      if (tech === "postgresql" || tech === "mysql") {
-        service.environment = {
-          ...(tech === "postgresql"
-            ? { POSTGRES_DB: "app", POSTGRES_USER: "admin", POSTGRES_PASSWORD: "changeme" }
-            : { MYSQL_DATABASE: "app", MYSQL_ROOT_PASSWORD: "changeme" }),
-        };
+      if (tech === "postgresql") {
+        service.environment = { POSTGRES_DB: "app", POSTGRES_USER: "admin", POSTGRES_PASSWORD: "changeme" };
+      } else if (tech === "mysql") {
+        service.environment = { MYSQL_DATABASE: "app", MYSQL_ROOT_PASSWORD: "changeme" };
       }
     } else if (data.componentType === "cache") {
       service.ports = ["6379:6379"];
