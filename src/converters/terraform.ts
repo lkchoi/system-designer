@@ -5,7 +5,12 @@ import type { SystemNodeData, ComponentType } from "../types";
 import { getResourceMapping, getDefaultMapping, terraformToComponentType } from "./iac-mapping";
 
 function sanitizeName(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/^[0-9]/, "r$&") || "resource";
+  return (
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "_")
+      .replace(/^[0-9]/, "r$&") || "resource"
+  );
 }
 
 function exportToTerraform(design: DesignJSON): string {
@@ -16,7 +21,8 @@ function exportToTerraform(design: DesignJSON): string {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
     const tech = data.plan?.technology ?? "";
-    const mapping = getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+    const mapping =
+      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
     if (!mapping?.terraform) continue;
 
     let name = sanitizeName(data.label);
@@ -125,7 +131,10 @@ function importFromTerraform(content: string): DesignJSON {
   let x = 100;
   let y = 100;
 
-  for (const [tfType, instances] of Object.entries(resources) as [string, Record<string, Record<string, unknown>>][]) {
+  for (const [tfType, instances] of Object.entries(resources) as [
+    string,
+    Record<string, Record<string, unknown>>,
+  ][]) {
     const match = terraformToComponentType(tfType);
     if (!match) continue;
 

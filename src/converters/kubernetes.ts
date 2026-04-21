@@ -6,7 +6,12 @@ import type { SystemNodeData, ComponentType } from "../types";
 import { getResourceMapping, getDefaultMapping, k8sToComponentType } from "./iac-mapping";
 
 function sanitizeName(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^[^a-z]/, "r$&") || "resource";
+  return (
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/^[^a-z]/, "r$&") || "resource"
+  );
 }
 
 function exportToK8s(design: DesignJSON): string {
@@ -25,7 +30,8 @@ function exportToK8s(design: DesignJSON): string {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
     const tech = data.plan?.technology ?? "";
-    const mapping = getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+    const mapping =
+      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
     if (!mapping?.k8s) continue;
 
     let name = sanitizeName(data.label);
@@ -131,7 +137,12 @@ function buildIngress(name: string, namespace: string, data: SystemNodeData): un
   };
 }
 
-function buildCronJob(name: string, namespace: string, image: string, data: SystemNodeData): unknown {
+function buildCronJob(
+  name: string,
+  namespace: string,
+  image: string,
+  data: SystemNodeData,
+): unknown {
   return {
     apiVersion: "batch/v1",
     kind: "CronJob",
@@ -192,7 +203,9 @@ function importFromK8s(content: string): DesignJSON {
     const name = metadata?.name ?? "resource";
 
     // Try to recover componentType from label
-    const labelType = metadata?.labels?.["system-designer/component-type"] as ComponentType | undefined;
+    const labelType = metadata?.labels?.["system-designer/component-type"] as
+      | ComponentType
+      | undefined;
 
     const componentType = labelType ?? match?.componentType ?? "service";
     const technologyId = match?.technologyId ?? "";

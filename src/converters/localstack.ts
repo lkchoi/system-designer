@@ -14,7 +14,8 @@ function exportToLocalStack(design: DesignJSON): string {
         image: "localstack/localstack:latest",
         ports: ["4566:4566", "4510-4559:4510-4559"],
         environment: {
-          SERVICES: "s3,sqs,dynamodb,lambda,apigateway,sns,kinesis,rds,elasticache,route53,cloudformation,events",
+          SERVICES:
+            "s3,sqs,dynamodb,lambda,apigateway,sns,kinesis,rds,elasticache,route53,cloudformation,events",
           DEBUG: "0",
           DOCKER_HOST: "unix:///var/run/docker.sock",
         },

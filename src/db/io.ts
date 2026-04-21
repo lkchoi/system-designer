@@ -66,9 +66,7 @@ export function downloadFile(content: string, filename: string, mimeType: string
   URL.revokeObjectURL(url);
 }
 
-export function pickAndReadFile(
-  accept = ".json",
-): Promise<{ content: string; filename: string }> {
+export function pickAndReadFile(accept = ".json"): Promise<{ content: string; filename: string }> {
   return new Promise((resolve, reject) => {
     const input = document.createElement("input");
     input.type = "file";
@@ -77,8 +75,7 @@ export function pickAndReadFile(
       const file = input.files?.[0];
       if (!file) return reject(new Error("No file selected"));
       const reader = new FileReader();
-      reader.onload = () =>
-        resolve({ content: reader.result as string, filename: file.name });
+      reader.onload = () => resolve({ content: reader.result as string, filename: file.name });
       reader.onerror = () => reject(reader.error);
       reader.readAsText(file);
     };

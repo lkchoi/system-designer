@@ -56,7 +56,11 @@ function exportToCompose(design: DesignJSON): string {
       volumes[`${name}-data`] = {};
 
       if (tech === "postgresql") {
-        service.environment = { POSTGRES_DB: "app", POSTGRES_USER: "admin", POSTGRES_PASSWORD: "changeme" };
+        service.environment = {
+          POSTGRES_DB: "app",
+          POSTGRES_USER: "admin",
+          POSTGRES_PASSWORD: "changeme",
+        };
       } else if (tech === "mysql") {
         service.environment = { MYSQL_DATABASE: "app", MYSQL_ROOT_PASSWORD: "changeme" };
       }

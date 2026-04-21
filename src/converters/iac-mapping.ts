@@ -298,7 +298,10 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
       cfn: "AWS::ElasticLoadBalancingV2::LoadBalancer",
       terraform: "aws_lb",
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
-      cdk: { module: "aws-cdk-lib/aws-elasticloadbalancingv2", construct: "ApplicationLoadBalancer" },
+      cdk: {
+        module: "aws-cdk-lib/aws-elasticloadbalancingv2",
+        construct: "ApplicationLoadBalancer",
+      },
       pulumi: { module: "@pulumi/aws", resource: "lb.LoadBalancer" },
     },
   },

@@ -4,7 +4,12 @@ import type { SystemNodeData } from "../types";
 import { getResourceMapping, getDefaultMapping } from "./iac-mapping";
 
 function sanitizeName(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/^[^a-z]/, "j$&") || "job";
+  return (
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/^[^a-z]/, "j$&") || "job"
+  );
 }
 
 function exportToNomad(design: DesignJSON): string {
@@ -15,7 +20,8 @@ function exportToNomad(design: DesignJSON): string {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
     const tech = data.plan?.technology ?? "";
-    const mapping = getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+    const mapping =
+      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
     if (!mapping?.docker) continue;
 
     let name = sanitizeName(data.label);
@@ -32,10 +38,7 @@ function exportToNomad(design: DesignJSON): string {
         {
           datacenters: ["dc1"],
           type: "service",
-          group: groups.reduce(
-            (acc, g) => ({ ...acc, ...(g as object) }),
-            {},
-          ),
+          group: groups.reduce((acc, g) => ({ ...acc, ...(g as object) }), {}),
         },
       ],
     },
@@ -45,7 +48,8 @@ function exportToNomad(design: DesignJSON): string {
 }
 
 function buildGroup(name: string, image: string, data: SystemNodeData): unknown {
-  const port = data.componentType === "database" ? 5432 : data.componentType === "cache" ? 6379 : 8080;
+  const port =
+    data.componentType === "database" ? 5432 : data.componentType === "cache" ? 6379 : 8080;
   const replicas = parseInt(data.plan?.replicas ?? "1", 10) || 1;
 
   return {

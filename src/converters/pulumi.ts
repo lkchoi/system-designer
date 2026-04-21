@@ -14,7 +14,8 @@ function exportToPulumi(design: DesignJSON): string {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
     const tech = data.plan?.technology ?? "";
-    const mapping = getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+    const mapping =
+      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
     if (!mapping?.pulumi) continue;
 
     const varName = data.label.replace(/[^a-zA-Z0-9]/g, "_").replace(/^[0-9]/, "_$&") || "resource";

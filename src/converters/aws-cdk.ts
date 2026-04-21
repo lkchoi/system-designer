@@ -7,7 +7,7 @@ function exportToCdk(design: DesignJSON): string {
   const imports = new Set<string>();
   const constructs: string[] = [];
   const sanitized = design.name.replace(/[^a-zA-Z0-9]/g, "");
-  const stackName = (sanitized.charAt(0).toUpperCase() + sanitized.slice(1)) || "App";
+  const stackName = sanitized.charAt(0).toUpperCase() + sanitized.slice(1) || "App";
 
   imports.add("import * as cdk from 'aws-cdk-lib';");
   imports.add("import { Construct } from 'constructs';");
@@ -16,7 +16,8 @@ function exportToCdk(design: DesignJSON): string {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
     const tech = data.plan?.technology ?? "";
-    const mapping = getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+    const mapping =
+      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
     if (!mapping?.cdk) continue;
 
     const { module: mod, construct: cls } = mapping.cdk;
@@ -36,22 +37,41 @@ export class ${stackName}Stack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-${constructs.map((c) => c.split("\n").map((l) => `    ${l}`).join("\n")).join("\n\n")}
+${constructs
+  .map((c) =>
+    c
+      .split("\n")
+      .map((l) => `    ${l}`)
+      .join("\n"),
+  )
+  .join("\n\n")}
   }
 }
 `;
 }
 
-function buildCdkConstruct(varName: string, alias: string, cls: string, data: SystemNodeData): string {
+function buildCdkConstruct(
+  varName: string,
+  alias: string,
+  cls: string,
+  data: SystemNodeData,
+): string {
   const lines: string[] = [];
   lines.push(`const ${varName} = new ${alias}.${cls}(this, '${data.label}', {`);
 
   if (cls === "DatabaseInstance") {
-    const engine = data.plan?.technology === "mysql" ? "rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0 })" : "rds.DatabaseInstanceEngine.postgres({ version: rds.PostgresEngineVersion.VER_16 })";
+    const engine =
+      data.plan?.technology === "mysql"
+        ? "rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0 })"
+        : "rds.DatabaseInstanceEngine.postgres({ version: rds.PostgresEngineVersion.VER_16 })";
     lines.push(`  engine: ${engine.replace(/rds\./g, `${alias}.`)},`);
-    lines.push(`  instanceType: cdk.aws_ec2.InstanceType.of(cdk.aws_ec2.InstanceClass.T3, cdk.aws_ec2.InstanceSize.MEDIUM),`);
+    lines.push(
+      `  instanceType: cdk.aws_ec2.InstanceType.of(cdk.aws_ec2.InstanceClass.T3, cdk.aws_ec2.InstanceSize.MEDIUM),`,
+    );
   } else if (cls === "Table") {
-    lines.push(`  partitionKey: { name: '${data.shardKey || "id"}', type: ${alias}.AttributeType.STRING },`);
+    lines.push(
+      `  partitionKey: { name: '${data.shardKey || "id"}', type: ${alias}.AttributeType.STRING },`,
+    );
     lines.push(`  billingMode: ${alias}.BillingMode.PAY_PER_REQUEST,`);
     lines.push(`  removalPolicy: cdk.RemovalPolicy.DESTROY,`);
   } else if (cls === "Bucket") {
