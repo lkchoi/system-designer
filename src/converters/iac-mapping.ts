@@ -36,7 +36,7 @@ const DB_ENTRIES: MappingEntry[] = [
       cfn: "AWS::RDS::DBInstance",
       terraform: "aws_db_instance",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "postgres:16-alpine",
+      docker: "postgres:17-alpine",
       cdk: { module: "aws-cdk-lib/aws-rds", construct: "DatabaseInstance" },
       pulumi: { module: "@pulumi/aws", resource: "rds.Instance" },
     },
@@ -48,7 +48,7 @@ const DB_ENTRIES: MappingEntry[] = [
       cfn: "AWS::RDS::DBInstance",
       terraform: "aws_db_instance",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "mysql:8",
+      docker: "mysql:9",
       cdk: { module: "aws-cdk-lib/aws-rds", construct: "DatabaseInstance" },
       pulumi: { module: "@pulumi/aws", resource: "rds.Instance" },
     },
@@ -59,7 +59,7 @@ const DB_ENTRIES: MappingEntry[] = [
     mapping: {
       terraform: "mongodbatlas_cluster",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "mongo:7",
+      docker: "mongo:8",
     },
   },
   {
@@ -80,7 +80,7 @@ const DB_ENTRIES: MappingEntry[] = [
       cfn: "AWS::Cassandra::Table",
       terraform: "aws_keyspaces_table",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "cassandra:4",
+      docker: "cassandra:5",
     },
   },
   {
@@ -98,7 +98,7 @@ const DB_ENTRIES: MappingEntry[] = [
     technologyId: "cockroachdb",
     mapping: {
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "cockroachdb/cockroach:latest",
+      docker: "cockroachdb/cockroach:v24.3",
     },
   },
   {
@@ -121,7 +121,7 @@ const CACHE_ENTRIES: MappingEntry[] = [
       cfn: "AWS::ElastiCache::CacheCluster",
       terraform: "aws_elasticache_cluster",
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "redis:7-alpine",
+      docker: "redis:8-alpine",
       cdk: { module: "aws-cdk-lib/aws-elasticache", construct: "CfnCacheCluster" },
       pulumi: { module: "@pulumi/aws", resource: "elasticache.Cluster" },
     },
@@ -133,7 +133,7 @@ const CACHE_ENTRIES: MappingEntry[] = [
       cfn: "AWS::ElastiCache::CacheCluster",
       terraform: "aws_elasticache_cluster",
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "memcached:1-alpine",
+      docker: "memcached:1.6-alpine",
     },
   },
 ];
@@ -147,7 +147,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
       cfn: "AWS::MSK::Cluster",
       terraform: "aws_msk_cluster",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "confluentinc/cp-kafka:7.6.0",
+      docker: "confluentinc/cp-kafka:7.9.0",
       cdk: { module: "aws-cdk-lib/aws-msk", construct: "CfnCluster" },
       pulumi: { module: "@pulumi/aws", resource: "msk.Cluster" },
     },
@@ -170,7 +170,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
       cfn: "AWS::AmazonMQ::Broker",
       terraform: "aws_mq_broker",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "rabbitmq:3-management-alpine",
+      docker: "rabbitmq:4-management-alpine",
     },
   },
   {
@@ -178,7 +178,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
     technologyId: "redis",
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "redis:7-alpine",
+      docker: "redis:8-alpine",
     },
   },
   {
@@ -186,7 +186,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
     technologyId: "nats",
     mapping: {
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "nats:2-alpine",
+      docker: "nats:2.11-alpine",
     },
   },
   {
@@ -206,7 +206,7 @@ const STORAGE_ENTRIES: MappingEntry[] = [
     mapping: {
       cfn: "AWS::S3::Bucket",
       terraform: "aws_s3_bucket",
-      docker: "minio/minio:latest",
+      docker: "minio/minio:RELEASE.2025-04-22T22-12-26Z",
       cdk: { module: "aws-cdk-lib/aws-s3", construct: "Bucket" },
       pulumi: { module: "@pulumi/aws", resource: "s3.Bucket" },
     },
@@ -273,7 +273,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     technologyId: "nginx",
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
-      docker: "nginx:alpine",
+      docker: "nginx:1.27-alpine",
     },
   },
   {
@@ -281,7 +281,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     technologyId: "kong",
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
-      docker: "kong:3-alpine",
+      docker: "kong:3.9",
     },
   },
   {
@@ -289,7 +289,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     technologyId: "envoy",
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
-      docker: "envoyproxy/envoy:v1.29-latest",
+      docker: "envoyproxy/envoy:v1.33-latest",
     },
   },
   {
@@ -311,7 +311,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     technologyId: "nginx",
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
-      docker: "nginx:alpine",
+      docker: "nginx:1.27-alpine",
     },
   },
   {
@@ -354,7 +354,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     technologyId: "nodejs",
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "node:20-alpine",
+      docker: "node:22-alpine",
     },
   },
   {
@@ -362,7 +362,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     technologyId: "go",
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "golang:1.22-alpine",
+      docker: "golang:1.24-alpine",
     },
   },
   {
@@ -378,7 +378,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     technologyId: "python-fastapi",
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "python:3.12-slim",
+      docker: "python:3.13-slim",
     },
   },
   {
@@ -412,7 +412,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
       cfn: "AWS::Elasticsearch::Domain",
       terraform: "aws_elasticsearch_domain",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "elasticsearch:8.12.0",
+      docker: "elasticsearch:8.17.4",
       cdk: { module: "aws-cdk-lib/aws-elasticsearch", construct: "Domain" },
     },
   },
@@ -423,7 +423,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
       cfn: "AWS::OpenSearchService::Domain",
       terraform: "aws_opensearch_domain",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
-      docker: "opensearchproject/opensearch:2",
+      docker: "opensearchproject/opensearch:2.19",
     },
   },
   {
@@ -458,7 +458,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
     technologyId: "flink",
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
-      docker: "flink:1.18",
+      docker: "flink:1.20",
     },
   },
   {
