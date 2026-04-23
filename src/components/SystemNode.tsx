@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { Handle, Position, useReactFlow, NodeResizer } from "@xyflow/react";
 import type { NodeProps, Node } from "@xyflow/react";
 import type { SystemNodeData } from "../types";
@@ -14,7 +15,25 @@ const STATUS_COLORS: Record<string, string> = {
 type SystemNode = Node<SystemNodeData, "system">;
 
 export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>) {
-  const { deleteElements } = useReactFlow();
+  const { deleteElements, updateNodeData } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(data.label);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.select();
+  }, [editing]);
+
+  function startEdit() {
+    setDraft(data.label);
+    setEditing(true);
+  }
+
+  function commit() {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== data.label) updateNodeData(id, { label: trimmed });
+    setEditing(false);
+  }
   const mode = useMode();
   const { effects } = useStress();
   const def = registry.getOrDefault(data.componentType);
@@ -66,8 +85,8 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
       )}
       <Handle type="source" position={Position.Top} id="top" className="system-handle" />
       <Handle type="source" position={Position.Left} id="left" className="system-handle" />
-      <div className={`${baseClasses}${selectedClasses}${stressClasses}`}>
-        <div className="flex items-center gap-2 mb-2.5">
+      <div className={`flex flex-col ${baseClasses}${selectedClasses}${stressClasses}`}>
+        <div className="flex items-center gap-2 mb-2.5 shrink-0">
           <div
             className="w-7 h-7 rounded-[7px] flex items-center justify-center shrink-0"
             style={{ background: def.color }}
@@ -85,14 +104,42 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
               <path d={def.icon} />
             </svg>
           </div>
-          <span className="flex-1 text-sm font-semibold text-text-bright whitespace-nowrap overflow-hidden text-ellipsis">
-            {data.label}
-          </span>
+          {editing ? (
+            <input
+              ref={inputRef}
+              className="flex-1 text-sm font-semibold text-text-bright bg-transparent border-none outline-none p-0 min-w-0"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commit();
+                if (e.key === "Escape") setEditing(false);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span
+              className="flex-1 text-sm font-semibold text-text-bright whitespace-nowrap overflow-hidden text-ellipsis"
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                startEdit();
+              }}
+            >
+              {data.label}
+            </span>
+          )}
           <span
             className="w-2 h-2 rounded-full shrink-0"
             style={{ background: STATUS_COLORS[displayStatus] }}
           />
         </div>
+        {data.description && (
+          <div className="flex-1 min-h-0 overflow-hidden mb-2">
+            <p className="text-[11px] text-text-dim leading-[1.4] whitespace-pre-line">
+              {data.description}
+            </p>
+          </div>
+        )}
         {isStressMode && data.capClassification && (
           <div
             className={`inline-flex items-center px-2 py-0.5 mb-2 rounded-full text-[11px] font-bold tracking-wide${
@@ -204,7 +251,7 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             </div>
           </div>
         ) : null}
-        <div className="flex items-center gap-2 border-t border-border pt-2">
+        <div className="flex items-center gap-2 border-t border-border pt-2 mt-auto shrink-0">
           <button
             className="flex items-center gap-[5px] px-2 py-1 rounded-md text-xs text-accent transition-all duration-150 hover:bg-accent-bg hover:text-text-bright"
             onPointerDown={(e) => e.stopPropagation()}

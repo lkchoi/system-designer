@@ -282,7 +282,11 @@ function Canvas({
       if (hasDragStart) isDraggingRef.current = true;
       if (hasDragEnd) isDraggingRef.current = false;
 
-      setNodes((nds) => applyNodeChanges(changes, nds));
+      setNodes((nds) => {
+        const updated = applyNodeChanges(changes, nds);
+        // Containers must always render below other nodes
+        return updated.map((n) => (n.type === "container" ? { ...n, zIndex: -1 } : n));
+      });
       for (const change of changes) {
         if (change.type === "remove" && change.id === selectedNodeId) {
           setSelectedNodeId(null);
@@ -514,6 +518,7 @@ function Canvas({
           position: { x: position.x - w / 2, y: position.y - h / 2 },
           data: {
             label: generateLabel(type as ComponentType),
+            description: "",
             componentType: type as ComponentType,
             status: "healthy",
             metrics: randomMetrics(),
