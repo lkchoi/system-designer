@@ -89,7 +89,7 @@ export async function parallelLimit<T>(
   tasks: Array<() => Promise<T>>,
   limit: number,
 ): Promise<T[]> {
-  const results: T[] = new Array(tasks.length);
+  const results: T[] = Array.from({ length: tasks.length });
   let next = 0;
 
   async function worker() {
