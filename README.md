@@ -31,6 +31,34 @@ A modal tool (hotkey `C`) for back-of-the-envelope scale estimations. Input TPS,
 
 Build named sequences of nodes to document request flows (e.g., "Post a comment": Client -> API Gateway -> Comment Service -> Database). Save with name and description, load from the sidebar.
 
+### Import / Export
+
+Export designs to multiple formats via Cmd+E:
+
+- **Diagram** — Native JSON, Excalidraw
+- **Infrastructure as Code** — AWS CloudFormation, AWS CDK, Terraform (`.tf.json`), Kubernetes manifests, Docker Compose, Nomad, Pulumi, LocalStack
+
+Import from Native JSON, Excalidraw, CloudFormation, Terraform, and Kubernetes via Cmd+I.
+
+Docker Compose export maps component technologies to pinned container images:
+
+| Category | Image |
+|---|---|
+| PostgreSQL | `postgres:17-alpine` |
+| MySQL | `mysql:9` |
+| MongoDB | `mongo:8` |
+| Redis | `redis:8-alpine` |
+| Kafka | `confluentinc/cp-kafka:7.9.0` |
+| RabbitMQ | `rabbitmq:4-management-alpine` |
+| Node.js | `node:22-alpine` (LTS) |
+| Go | `golang:1.24-alpine` |
+| Python | `python:3.13-slim` |
+| Java | `eclipse-temurin:21-jre-alpine` |
+| Nginx | `nginx:1.27-alpine` |
+| Elasticsearch | `elasticsearch:8.17.4` |
+
+Node descriptions are exported as comments (YAML `#`, TypeScript `//`, K8s annotations).
+
 ### Persistence
 
 Designs are automatically saved to SQLite via the browser's Origin Private File System (OPFS). Save, load, and manage multiple designs without a backend.
@@ -122,6 +150,20 @@ src/
   utils/
     capacity.ts          Capacity calculator logic and formatters
     keyboard.ts          Keyboard utilities
+  converters/
+    types.ts             Converter interface (FormatId, ExportResult)
+    index.ts             Converter registry and helpers
+    iac-mapping.ts       (componentType, tech) → resource/image mapping
+    detect.ts            Import format auto-detection
+    excalidraw.ts        Excalidraw JSON converter
+    cloudformation.ts    AWS CloudFormation (YAML/JSON)
+    terraform.ts         Terraform .tf.json
+    kubernetes.ts        K8s manifests (YAML)
+    docker-compose.ts    Docker Compose (YAML)
+    aws-cdk.ts           AWS CDK TypeScript
+    pulumi.ts            Pulumi TypeScript
+    nomad.ts             Nomad JSON job spec
+    localstack.ts        LocalStack (CFn + compose)
   db/
     database.ts          sql.js database initialization (OPFS)
     designs.ts           Design CRUD operations
