@@ -8,6 +8,9 @@ const certsExist = fs.existsSync(".certs/key.pem") && fs.existsSync(".certs/cert
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [tailwindcss(), react()],
+  build: {
+    sourcemap: false,
+  },
   server: certsExist
     ? {
         https: {

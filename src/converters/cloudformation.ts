@@ -76,12 +76,14 @@ function buildCfnProperties(data: SystemNodeData, cfnType: string): Record<strin
   } else if (cfnType === "AWS::DynamoDB::Table") {
     props.TableName = data.label.replace(/[^a-zA-Z0-9_.-]/g, "_");
     props.BillingMode = "PAY_PER_REQUEST";
-    props.AttributeDefinitions = [{ AttributeName: "id", AttributeType: "S" }];
-    props.KeySchema = [{ AttributeName: "id", KeyType: "HASH" }];
+    const attrDefs = [{ AttributeName: "id", AttributeType: "S" }];
+    const keySchema = [{ AttributeName: "id", KeyType: "HASH" }];
     if (data.sharded && data.shardKey) {
-      props.AttributeDefinitions.push({ AttributeName: data.shardKey, AttributeType: "S" });
-      props.KeySchema.push({ AttributeName: data.shardKey, KeyType: "RANGE" });
+      attrDefs.push({ AttributeName: data.shardKey, AttributeType: "S" });
+      keySchema.push({ AttributeName: data.shardKey, KeyType: "RANGE" });
     }
+    props.AttributeDefinitions = attrDefs;
+    props.KeySchema = keySchema;
   } else if (cfnType === "AWS::S3::Bucket") {
     props.BucketName = `\${AWS::StackName}-${data.label.toLowerCase().replace(/[^a-z0-9-]/g, "-")}`;
   } else if (cfnType === "AWS::Lambda::Function") {

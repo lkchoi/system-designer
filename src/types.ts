@@ -129,6 +129,7 @@ export interface EdgeData {
   format: EdgeFormat;
   partitioned: boolean;
   simulatedLatency: number;
+  [key: string]: unknown;
 }
 
 export type CAPClassification = "CP" | "AP" | "CA" | "";

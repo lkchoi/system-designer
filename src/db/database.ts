@@ -24,7 +24,7 @@ async function writeToOpfs(data: Uint8Array): Promise<void> {
   const root = await navigator.storage.getDirectory();
   const handle = await root.getFileHandle(DB_FILE, { create: true });
   const writable = await handle.createWritable();
-  await writable.write(data);
+  await writable.write(data.buffer as ArrayBuffer);
   await writable.close();
 }
 
@@ -40,7 +40,7 @@ export async function initDB(): Promise<SqlJsDatabase> {
 
   // Migration: add parent_id column if missing (existing DBs)
   const cols = db.exec("PRAGMA table_info(designs)");
-  if (cols.length > 0 && !cols[0].values.some((row) => row[1] === "parent_id")) {
+  if (cols.length > 0 && !cols[0].values.some((row: unknown[]) => row[1] === "parent_id")) {
     db.run("ALTER TABLE designs ADD COLUMN parent_id TEXT");
   }
 
