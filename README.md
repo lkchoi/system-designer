@@ -10,12 +10,13 @@ An interactive system architecture designer built with React, TypeScript, and [R
 - Connect components with labeled edges specifying protocol (HTTP, gRPC, WebSocket, etc.) and data format (JSON, Protobuf, etc.)
 - Connection validation enforces architectural constraints (e.g., API gateway cannot connect directly to a database)
 - Sticky notes and text annotations for documentation
-- Resizable nodes, editable edge labels, collapsible sidebar
+- Resizable nodes, double-click node labels to rename inline, editable edge labels, collapsible sidebar
+- Drag-and-drop 12 built-in architectural patterns (Cache-Aside, CQRS, Pub/Sub Fanout, Saga, etc.) as pre-wired subgraphs
 - Undo/redo for all canvas and node edits (Cmd+Z / Cmd+Shift+Z)
 
 ### Modes
 
-**Plan** — Configure each component's technology, plan fields, sharding, and API gateway endpoints. Technology selection shows throughput, limits, and provider info.
+**Plan** — Configure each component's technology, plan fields, sharding, API gateway endpoints, and resource links (label + URL pairs for dashboards, runbooks, repos). Technology selection shows throughput, limits, and provider info.
 
 **Stress** — Simulate CAP theorem tradeoffs. Set each node's CAP classification (CP/AP/CA), then click nodes to simulate failures (healthy/overloaded/down) and click edges to simulate network partitions. Cascading effects propagate through the dependency graph automatically.
 
@@ -141,12 +142,19 @@ src/
   stressEngine.ts      Pure function computing cascading failure effects
   types.ts             Shared TypeScript interfaces
   data.ts              Utility functions (randomMetrics, displayType)
+  technologies.ts      Shared technology base data (name, providers)
   hotkeys.ts           Hotkey definitions (key, modifiers, category)
+  replay.ts            rrweb session recording (optional, VITE_REPLAY_ENDPOINT)
   registry/
     builtin-entries.ts   18 component type definitions
     ComponentRegistry.ts Registry class (get, canConnect, register)
     pricing.ts           Technology pricing data (auto-generated)
+    index.ts             Public registry exports
     types.ts             Registry interfaces
+  patterns/
+    builtin-patterns.ts  12 pre-wired architectural patterns
+    instantiate.ts       Expand a pattern into nodes/edges at a position
+    index.ts, types.ts   Public exports and interfaces
   utils/
     capacity.ts          Capacity calculator logic and formatters
     keyboard.ts          Keyboard utilities
@@ -155,6 +163,7 @@ src/
     index.ts             Converter registry and helpers
     iac-mapping.ts       (componentType, tech) → resource/image mapping
     detect.ts            Import format auto-detection
+    native-json.ts       Native design JSON converter
     excalidraw.ts        Excalidraw JSON converter
     cloudformation.ts    AWS CloudFormation (YAML/JSON)
     terraform.ts         Terraform .tf.json
@@ -168,14 +177,18 @@ src/
     database.ts          sql.js database initialization (OPFS)
     designs.ts           Design CRUD operations
     schema.ts            SQLite table definitions
+    io.ts                Export/import serialization helpers
+    index.ts             Public db exports
   components/
     SystemNode.tsx       System component node
-    PropertiesPanel.tsx  Node properties (mode-aware)
+    ContainerNode.tsx    Group container (always renders below system nodes)
+    PropertiesPanel.tsx  Node properties (mode-aware, incl. resource links)
     EdgePropertiesPanel.tsx  Edge properties
     CapacityCalculator.tsx  Scale estimation modal
+    ExportDialog.tsx     Multi-format export dialog
     HotkeyHelpOverlay.tsx   Keyboard shortcut reference
     LabeledEdge.tsx      Custom edge with labels and tags
-    Sidebar.tsx          Draggable component palette + saved paths
+    Sidebar.tsx          Draggable components, patterns, and saved paths
     StickyNote.tsx       Sticky note annotations
     TextNode.tsx         Text labels
   hooks/
