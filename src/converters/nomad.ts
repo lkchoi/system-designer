@@ -39,7 +39,10 @@ function exportToNomad(design: DesignJSON): string {
         {
           datacenters: ["dc1"],
           type: "service",
-          group: groups.reduce<Record<string, unknown>>((acc, g) => ({ ...acc, ...(g as object) }), {}),
+          group: groups.reduce<Record<string, unknown>>(
+            (acc, g) => ({ ...acc, ...(g as object) }),
+            {},
+          ),
         },
       ],
     },
