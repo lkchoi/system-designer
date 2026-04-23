@@ -1,7 +1,7 @@
 import type { ConverterModule } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { SystemNodeData } from "../types";
-import { getResourceMapping, getDefaultMapping } from "./iac-mapping";
+import { getResourceMapping, getDefaultMapping, resolveTechId } from "./iac-mapping";
 
 function exportToCdk(design: DesignJSON): string {
   const imports = new Set<string>();
@@ -26,7 +26,8 @@ function exportToCdk(design: DesignJSON): string {
 
     const varName = data.label.replace(/[^a-zA-Z0-9]/g, "_").replace(/^[0-9]/, "_$&") || "resource";
 
-    constructs.push(buildCdkConstruct(varName, alias, cls, data));
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+    constructs.push(buildCdkConstruct(varName, alias, cls, data, desc));
   }
 
   const sortedImports = [...imports].sort();
@@ -55,13 +56,16 @@ function buildCdkConstruct(
   alias: string,
   cls: string,
   data: SystemNodeData,
+  description?: string,
 ): string {
   const lines: string[] = [];
+  if (description) lines.push(`// ${description}`);
   lines.push(`const ${varName} = new ${alias}.${cls}(this, '${data.label}', {`);
 
   if (cls === "DatabaseInstance") {
+    const dbTech = resolveTechId(data.componentType, data.plan?.technology ?? "");
     const engine =
-      data.plan?.technology === "mysql"
+      dbTech === "mysql" || dbTech === "mariadb"
         ? "rds.DatabaseInstanceEngine.mysql({ version: rds.MysqlEngineVersion.VER_8_0 })"
         : "rds.DatabaseInstanceEngine.postgres({ version: rds.PostgresEngineVersion.VER_16 })";
     lines.push(`  engine: ${engine.replace(/rds\./g, `${alias}.`)},`);

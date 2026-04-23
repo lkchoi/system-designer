@@ -2,7 +2,15 @@ import yaml from "js-yaml";
 import type { ConverterModule } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { SystemNodeData } from "../types";
-import { getResourceMapping, getDefaultMapping } from "./iac-mapping";
+import { getResourceMapping, getDefaultMapping, resolveTechId } from "./iac-mapping";
+
+/** Allocate a host port, incrementing if already taken. */
+function allocatePort(preferred: number, used: Set<number>): number {
+  let port = preferred;
+  while (used.has(port)) port++;
+  used.add(port);
+  return port;
+}
 
 function sanitizeName(label: string): string {
   return (
@@ -27,13 +35,16 @@ function exportToCompose(design: DesignJSON): string {
   }
 
   const nodeNameMap = new Map<string, string>();
+  const usedPorts = new Set<number>();
+  const serviceDescriptions = new Map<string, string>();
 
   for (const node of design.nodes) {
     if (node.type !== "system") continue;
     const data = node.data as SystemNodeData;
-    const tech = data.plan?.technology ?? "";
+    const techName = data.plan?.technology ?? "";
+    const techId = resolveTechId(data.componentType, techName);
     const mapping =
-      getResourceMapping(data.componentType, tech) ?? getDefaultMapping(data.componentType);
+      getResourceMapping(data.componentType, techId) ?? getDefaultMapping(data.componentType);
     if (!mapping?.docker) continue;
 
     let name = sanitizeName(data.label);
@@ -48,49 +59,82 @@ function exportToCompose(design: DesignJSON): string {
 
     // Add ports and volumes based on component type
     if (data.componentType === "database") {
-      const port = tech === "mongodb" ? 27017 : tech === "cassandra" ? 9042 : 5432;
-      service.ports = [`${port}:${port}`];
-      service.volumes = [
-        `${name}-data:/var/lib/${tech === "mongodb" ? "mongo" : tech === "mysql" ? "mysql" : "postgresql/data"}`,
-      ];
+      const port =
+        techId === "mongodb"
+          ? 27017
+          : techId === "cassandra"
+            ? 9042
+            : techId === "mysql" || techId === "mariadb"
+              ? 3306
+              : 5432;
+      const hostPort = allocatePort(port, usedPorts);
+      service.ports = [`${hostPort}:${port}`];
+      const dataDir =
+        techId === "mongodb"
+          ? "mongo"
+          : techId === "mysql" || techId === "mariadb"
+            ? "mysql"
+            : "postgresql/data";
+      service.volumes = [`${name}-data:/var/lib/${dataDir}`];
       volumes[`${name}-data`] = {};
 
-      if (tech === "postgresql") {
+      if (techId === "postgresql" || techId === "cockroachdb") {
         service.environment = {
           POSTGRES_DB: "app",
           POSTGRES_USER: "admin",
           POSTGRES_PASSWORD: "changeme",
         };
-      } else if (tech === "mysql") {
+      } else if (techId === "mysql" || techId === "mariadb") {
         service.environment = { MYSQL_DATABASE: "app", MYSQL_ROOT_PASSWORD: "changeme" };
+      } else if (techId === "mongodb") {
+        service.environment = {
+          MONGO_INITDB_DATABASE: "app",
+        };
       }
     } else if (data.componentType === "cache") {
-      service.ports = ["6379:6379"];
+      const hostPort = allocatePort(6379, usedPorts);
+      service.ports = [`${hostPort}:6379`];
     } else if (data.componentType === "message-queue") {
-      if (tech === "kafka") {
-        service.ports = ["9092:9092"];
+      if (techId === "kafka") {
+        const hostPort = allocatePort(9092, usedPorts);
+        service.ports = [`${hostPort}:9092`];
         service.environment = {
           KAFKA_BROKER_ID: 1,
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1,
         };
-      } else if (tech === "rabbitmq") {
-        service.ports = ["5672:5672", "15672:15672"];
-      } else if (tech === "nats") {
-        service.ports = ["4222:4222"];
+      } else if (techId === "rabbitmq") {
+        const p1 = allocatePort(5672, usedPorts);
+        const p2 = allocatePort(15672, usedPorts);
+        service.ports = [`${p1}:5672`, `${p2}:15672`];
+      } else if (techId === "nats") {
+        const hostPort = allocatePort(4222, usedPorts);
+        service.ports = [`${hostPort}:4222`];
+      } else if (techId === "redis") {
+        const hostPort = allocatePort(6380, usedPorts);
+        service.ports = [`${hostPort}:6379`];
       }
     } else if (data.componentType === "search-engine") {
-      service.ports = ["9200:9200"];
+      const hostPort = allocatePort(9200, usedPorts);
+      service.ports = [`${hostPort}:9200`];
       service.environment = { "discovery.type": "single-node" };
     } else if (data.componentType === "storage") {
-      service.ports = ["9000:9000", "9001:9001"];
+      const p1 = allocatePort(9000, usedPorts);
+      const p2 = allocatePort(9001, usedPorts);
+      service.ports = [`${p1}:9000`, `${p2}:9001`];
       service.command = "server /data --console-address ':9001'";
       service.volumes = [`${name}-data:/data`];
       volumes[`${name}-data`] = {};
     } else if (data.componentType === "api-gateway" || data.componentType === "load-balancer") {
-      service.ports = ["80:80", "443:443"];
+      const p1 = allocatePort(80, usedPorts);
+      const p2 = allocatePort(443, usedPorts);
+      service.ports = [`${p1}:80`, `${p2}:443`];
     } else {
-      service.ports = ["8080:8080"];
+      const hostPort = allocatePort(8080, usedPorts);
+      service.ports = [`${hostPort}:8080`];
     }
+
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+    if (desc) serviceDescriptions.set(name, desc);
 
     services[name] = service;
   }
@@ -110,7 +154,18 @@ function exportToCompose(design: DesignJSON): string {
   const compose: Record<string, unknown> = { services };
   if (Object.keys(volumes).length > 0) compose.volumes = volumes;
 
-  return yaml.dump(compose, { lineWidth: 120, noRefs: true });
+  let out = yaml.dump(compose, { lineWidth: 120, noRefs: true });
+
+  // Inject description comments above each service
+  for (const [name, desc] of serviceDescriptions) {
+    const marker = `  ${name}:\n`;
+    const idx = out.indexOf(marker);
+    if (idx === -1) continue;
+    const comment = `  # ${desc}\n`;
+    out = out.slice(0, idx) + comment + out.slice(idx);
+  }
+
+  return out;
 }
 
 export const dockerComposeConverter: ConverterModule = {

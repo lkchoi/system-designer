@@ -3,7 +3,12 @@ import type { Node } from "@xyflow/react";
 import type { ConverterModule } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { SystemNodeData, ComponentType } from "../types";
-import { getResourceMapping, getDefaultMapping, cfnToComponentType } from "./iac-mapping";
+import {
+  getResourceMapping,
+  getDefaultMapping,
+  cfnToComponentType,
+  resolveTechId,
+} from "./iac-mapping";
 
 function sanitizeLogicalId(label: string): string {
   return label.replace(/[^a-zA-Z0-9]/g, "").replace(/^[0-9]/, "R$&") || "Resource";
@@ -12,6 +17,7 @@ function sanitizeLogicalId(label: string): string {
 function exportToCfn(design: DesignJSON): string {
   const resources: Record<string, unknown> = {};
   const usedIds = new Set<string>();
+  const resourceDescriptions = new Map<string, string>();
 
   for (const node of design.nodes) {
     if (node.type !== "system") continue;
@@ -24,6 +30,9 @@ function exportToCfn(design: DesignJSON): string {
     let logicalId = sanitizeLogicalId(data.label);
     while (usedIds.has(logicalId)) logicalId += "2";
     usedIds.add(logicalId);
+
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+    if (desc) resourceDescriptions.set(logicalId, desc);
 
     resources[logicalId] = {
       Type: mapping.cfn,
@@ -41,14 +50,25 @@ function exportToCfn(design: DesignJSON): string {
     Resources: resources,
   };
 
-  return yaml.dump(template, { lineWidth: 120, noRefs: true });
+  let out = yaml.dump(template, { lineWidth: 120, noRefs: true });
+
+  // Inject description comments above each resource
+  for (const [logicalId, desc] of resourceDescriptions) {
+    const marker = `  ${logicalId}:\n`;
+    const idx = out.indexOf(marker);
+    if (idx === -1) continue;
+    out = out.slice(0, idx) + `  # ${desc}\n` + out.slice(idx);
+  }
+
+  return out;
 }
 
 function buildCfnProperties(data: SystemNodeData, cfnType: string): Record<string, unknown> {
   const props: Record<string, unknown> = {};
 
   if (cfnType === "AWS::RDS::DBInstance") {
-    props.Engine = data.plan?.technology === "mysql" ? "mysql" : "postgres";
+    const dbTech = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    props.Engine = dbTech === "mysql" || dbTech === "mariadb" ? "mysql" : "postgres";
     props.DBInstanceClass = "db.t3.medium"; // TODO: configure instance size
     props.AllocatedStorage = 20;
     props.MasterUsername = "admin"; // TODO: use Secrets Manager

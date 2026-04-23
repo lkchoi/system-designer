@@ -161,6 +161,17 @@ export default function PropertiesPanel({
           </div>
         </div>
 
+        <div className="flex flex-col gap-2">
+          <label className="text-[13px] font-semibold text-text-dim">Description</label>
+          <textarea
+            className="bg-surface-2 border border-border rounded-lg px-3 py-2 text-text-bright text-sm outline-none transition-[border-color] duration-150 focus:border-accent resize-y min-h-[80px]"
+            rows={4}
+            placeholder="Describe this component..."
+            value={data.description ?? ""}
+            onChange={(e) => onUpdate(node.id, { description: e.target.value })}
+          />
+        </div>
+
         {mode === "monitor" && (
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-semibold text-text-dim">Status</label>

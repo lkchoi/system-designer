@@ -41,13 +41,15 @@ function exportToK8s(design: DesignJSON): string {
     const image = mapping.docker ?? "busybox:latest"; // TODO: use actual image
     const k8s = mapping.k8s;
 
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+
     if (k8s.kind === "Deployment" || k8s.kind === "StatefulSet") {
-      docs.push(buildWorkload(k8s.kind, k8s.apiVersion, name, namespace, image, data));
+      docs.push(buildWorkload(k8s.kind, k8s.apiVersion, name, namespace, image, data, desc));
       docs.push(buildService(name, namespace));
     } else if (k8s.kind === "Ingress") {
-      docs.push(buildIngress(name, namespace, data));
+      docs.push(buildIngress(name, namespace, data, desc));
     } else if (k8s.kind === "CronJob") {
-      docs.push(buildCronJob(name, namespace, image, data));
+      docs.push(buildCronJob(name, namespace, image, data, desc));
     } else if (k8s.kind === "NetworkPolicy") {
       docs.push(buildNetworkPolicy(name, namespace));
     }
@@ -63,16 +65,19 @@ function buildWorkload(
   namespace: string,
   image: string,
   data: SystemNodeData,
+  description?: string,
 ): unknown {
   const replicas = parseInt(data.plan?.replicas ?? "1", 10) || 1;
+  const metadata: Record<string, unknown> = {
+    name,
+    namespace,
+    labels: { app: name, "system-designer/component-type": data.componentType },
+  };
+  if (description) metadata.annotations = { description };
   return {
     apiVersion,
     kind,
-    metadata: {
-      name,
-      namespace,
-      labels: { app: name, "system-designer/component-type": data.componentType },
-    },
+    metadata,
     spec: {
       replicas,
       selector: { matchLabels: { app: name } },
@@ -109,15 +114,22 @@ function buildService(name: string, namespace: string): unknown {
   };
 }
 
-function buildIngress(name: string, namespace: string, data: SystemNodeData): unknown {
+function buildIngress(
+  name: string,
+  namespace: string,
+  data: SystemNodeData,
+  description?: string,
+): unknown {
+  const metadata: Record<string, unknown> = {
+    name,
+    namespace,
+    labels: { "system-designer/component-type": data.componentType },
+  };
+  if (description) metadata.annotations = { description };
   return {
     apiVersion: "networking.k8s.io/v1",
     kind: "Ingress",
-    metadata: {
-      name,
-      namespace,
-      labels: { "system-designer/component-type": data.componentType },
-    },
+    metadata,
     spec: {
       rules: [
         {
@@ -142,15 +154,18 @@ function buildCronJob(
   namespace: string,
   image: string,
   data: SystemNodeData,
+  description?: string,
 ): unknown {
+  const metadata: Record<string, unknown> = {
+    name,
+    namespace,
+    labels: { "system-designer/component-type": data.componentType },
+  };
+  if (description) metadata.annotations = { description };
   return {
     apiVersion: "batch/v1",
     kind: "CronJob",
-    metadata: {
-      name,
-      namespace,
-      labels: { "system-designer/component-type": data.componentType },
-    },
+    metadata,
     spec: {
       schedule: data.plan?.schedule ?? "0 * * * *", // TODO: configure
       jobTemplate: {

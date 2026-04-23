@@ -1,4 +1,5 @@
 import type { ComponentType } from "../types";
+import { getTechnology } from "../technologies";
 
 /**
  * Maps (componentType, technologyId) to format-specific resource types.
@@ -502,14 +503,27 @@ for (const entry of ALL_ENTRIES) {
 }
 
 /**
+ * Resolve a technology display name (e.g. "PostgreSQL") to its ID (e.g. "postgresql").
+ * Returns the input unchanged if already an ID or not found in the catalog.
+ */
+export function resolveTechId(componentType: ComponentType, techNameOrId: string): string {
+  // Try direct ID match first
+  if (MAPPING_INDEX.has(`${componentType}:${techNameOrId}`)) return techNameOrId;
+  // Resolve display name via technology catalog
+  const info = getTechnology(componentType, techNameOrId);
+  return info?.id ?? techNameOrId.toLowerCase().replace(/\s+/g, "-");
+}
+
+/**
  * Look up the resource mapping for a given component type and technology.
- * Falls back to a generic mapping by component type if no specific tech mapping exists.
+ * Accepts both technology IDs ("postgresql") and display names ("PostgreSQL").
  */
 export function getResourceMapping(
   componentType: ComponentType,
-  technologyId: string,
+  techNameOrId: string,
 ): ResourceMapping | undefined {
-  return MAPPING_INDEX.get(`${componentType}:${technologyId}`);
+  const id = resolveTechId(componentType, techNameOrId);
+  return MAPPING_INDEX.get(`${componentType}:${id}`);
 }
 
 /**

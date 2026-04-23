@@ -2,7 +2,12 @@ import type { Node } from "@xyflow/react";
 import type { ConverterModule } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { SystemNodeData, ComponentType } from "../types";
-import { getResourceMapping, getDefaultMapping, terraformToComponentType } from "./iac-mapping";
+import {
+  getResourceMapping,
+  getDefaultMapping,
+  terraformToComponentType,
+  resolveTechId,
+} from "./iac-mapping";
 
 function sanitizeName(label: string): string {
   return (
@@ -33,12 +38,16 @@ function exportToTerraform(design: DesignJSON): string {
       resources[mapping.terraform] = {};
     }
 
+    const meta: Record<string, unknown> = {
+      "system-designer:nodeId": node.id,
+      "system-designer:componentType": data.componentType,
+    };
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+    if (desc) meta.description = desc;
+
     resources[mapping.terraform][name] = {
       ...buildTfProperties(data, mapping.terraform),
-      "//": {
-        "system-designer:nodeId": node.id,
-        "system-designer:componentType": data.componentType,
-      },
+      "//": meta,
     };
   }
 
@@ -66,8 +75,9 @@ function buildTfProperties(data: SystemNodeData, tfType: string): Record<string,
   const props: Record<string, unknown> = {};
 
   if (tfType === "aws_db_instance") {
-    props.engine = data.plan?.technology === "mysql" ? "mysql" : "postgres";
-    props.engine_version = data.plan?.technology === "mysql" ? "8.0" : "16";
+    const dbTech = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    props.engine = dbTech === "mysql" || dbTech === "mariadb" ? "mysql" : "postgres";
+    props.engine_version = dbTech === "mysql" || dbTech === "mariadb" ? "8.0" : "16";
     props.instance_class = "db.t3.medium"; // TODO
     props.allocated_storage = 20;
     props.username = "admin";

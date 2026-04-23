@@ -171,7 +171,10 @@ function exportSystemNode(
   rect.strokeColor = entry.color;
   rect.boundElements = [{ id: textId, type: "text" }];
 
-  const label = `${node.data.label}\n(${entry.label})`;
+  const desc = (node.data as Record<string, unknown>).description as string | undefined;
+  const label = desc
+    ? `${node.data.label}\n(${entry.label})\n${desc}`
+    : `${node.data.label}\n(${entry.label})`;
   const text = baseElement(textId, "text", pos.x + w / 2, pos.y + h / 2, 0, 0);
   Object.assign(text, {
     text: label,

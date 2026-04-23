@@ -147,6 +147,7 @@ export interface EffectiveStress {
 
 export interface SystemNodeData {
   label: string;
+  description: string;
   componentType: ComponentType;
   status: NodeStatus;
   metrics: NodeMetrics;

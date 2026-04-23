@@ -28,7 +28,8 @@ function exportToNomad(design: DesignJSON): string {
     while (usedNames.has(name)) name += "-2";
     usedNames.add(name);
 
-    groups.push(buildGroup(name, mapping.docker, data));
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+    groups.push(buildGroup(name, mapping.docker, data, desc));
   }
 
   const jobName = sanitizeName(design.name);
@@ -47,10 +48,22 @@ function exportToNomad(design: DesignJSON): string {
   return JSON.stringify(job, null, 2);
 }
 
-function buildGroup(name: string, image: string, data: SystemNodeData): unknown {
+function buildGroup(
+  name: string,
+  image: string,
+  data: SystemNodeData,
+  description?: string,
+): unknown {
   const port =
     data.componentType === "database" ? 5432 : data.componentType === "cache" ? 6379 : 8080;
   const replicas = parseInt(data.plan?.replicas ?? "1", 10) || 1;
+
+  const taskConfig: Record<string, unknown> = {
+    driver: "docker",
+    config: [{ image, ports: ["http"] }],
+    resources: [{ cpu: 256, memory: 512 }],
+  };
+  if (description) taskConfig.meta = [{ description }];
 
   return {
     [name]: [
@@ -65,13 +78,7 @@ function buildGroup(name: string, image: string, data: SystemNodeData): unknown 
           },
         ],
         task: {
-          [name]: [
-            {
-              driver: "docker",
-              config: [{ image, ports: ["http"] }],
-              resources: [{ cpu: 256, memory: 512 }],
-            },
-          ],
+          [name]: [taskConfig],
         },
       },
     ],

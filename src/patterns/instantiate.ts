@@ -146,6 +146,7 @@ function makeNodeData(
 ): SystemNodeData {
   return {
     label: generateLabel(componentType),
+    description: "",
     componentType,
     status: "healthy",
     metrics: randomMetrics(),

@@ -1,7 +1,7 @@
 import type { ConverterModule } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { SystemNodeData } from "../types";
-import { getResourceMapping, getDefaultMapping } from "./iac-mapping";
+import { getResourceMapping, getDefaultMapping, resolveTechId } from "./iac-mapping";
 
 function exportToPulumi(design: DesignJSON): string {
   const imports = new Set<string>();
@@ -21,7 +21,8 @@ function exportToPulumi(design: DesignJSON): string {
     const varName = data.label.replace(/[^a-zA-Z0-9]/g, "_").replace(/^[0-9]/, "_$&") || "resource";
     const { resource: resourcePath } = mapping.pulumi;
 
-    resources.push(buildPulumiResource(varName, resourcePath, data));
+    const desc = (data as Record<string, unknown>).description as string | undefined;
+    resources.push(buildPulumiResource(varName, resourcePath, data, desc));
   }
 
   const sortedImports = [...imports].sort();
@@ -32,13 +33,20 @@ ${resources.join("\n\n")}
 `;
 }
 
-function buildPulumiResource(varName: string, resourcePath: string, data: SystemNodeData): string {
+function buildPulumiResource(
+  varName: string,
+  resourcePath: string,
+  data: SystemNodeData,
+  description?: string,
+): string {
   const lines: string[] = [];
+  if (description) lines.push(`// ${description}`);
   lines.push(`const ${varName} = new aws.${resourcePath}("${data.label}", {`);
 
   if (resourcePath === "rds.Instance") {
-    lines.push(`  engine: "${data.plan?.technology === "mysql" ? "mysql" : "postgres"}",`);
-    lines.push(`  engineVersion: "${data.plan?.technology === "mysql" ? "8.0" : "16"}",`);
+    const dbTech = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    lines.push(`  engine: "${dbTech === "mysql" || dbTech === "mariadb" ? "mysql" : "postgres"}",`);
+    lines.push(`  engineVersion: "${dbTech === "mysql" || dbTech === "mariadb" ? "8.0" : "16"}",`);
     lines.push(`  instanceClass: "db.t3.medium", // TODO: configure`);
     lines.push(`  allocatedStorage: 20,`);
     lines.push(`  username: "admin",`);
