@@ -42,20 +42,20 @@ Import from Native JSON, Excalidraw, CloudFormation, Terraform, and Kubernetes v
 
 Docker Compose export maps component technologies to pinned container images:
 
-| Category | Image |
-|---|---|
-| PostgreSQL | `postgres:17-alpine` |
-| MySQL | `mysql:9` |
-| MongoDB | `mongo:8` |
-| Redis | `redis:8-alpine` |
-| Kafka | `confluentinc/cp-kafka:7.9.0` |
-| RabbitMQ | `rabbitmq:4-management-alpine` |
-| Node.js | `node:22-alpine` (LTS) |
-| Go | `golang:1.24-alpine` |
-| Python | `python:3.13-slim` |
-| Java | `eclipse-temurin:21-jre-alpine` |
-| Nginx | `nginx:1.27-alpine` |
-| Elasticsearch | `elasticsearch:8.17.4` |
+| Category      | Image                           |
+| ------------- | ------------------------------- |
+| PostgreSQL    | `postgres:17-alpine`            |
+| MySQL         | `mysql:9`                       |
+| MongoDB       | `mongo:8`                       |
+| Redis         | `redis:8-alpine`                |
+| Kafka         | `confluentinc/cp-kafka:7.9.0`   |
+| RabbitMQ      | `rabbitmq:4-management-alpine`  |
+| Node.js       | `node:22-alpine` (LTS)          |
+| Go            | `golang:1.24-alpine`            |
+| Python        | `python:3.13-slim`              |
+| Java          | `eclipse-temurin:21-jre-alpine` |
+| Nginx         | `nginx:1.27-alpine`             |
+| Elasticsearch | `elasticsearch:8.17.4`          |
 
 Node descriptions are exported as comments (YAML `#`, TypeScript `//`, K8s annotations).
 

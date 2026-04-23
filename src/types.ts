@@ -75,6 +75,12 @@ export interface Endpoint {
   path: string;
 }
 
+export interface ResourceLink {
+  id: string;
+  label: string;
+  url: string;
+}
+
 export type EdgeProtocol =
   | "HTTP"
   | "HTTPS"
@@ -155,6 +161,7 @@ export interface SystemNodeData {
   sharded: boolean;
   shardKey: string;
   endpoints: Endpoint[];
+  links: ResourceLink[];
   capClassification: CAPClassification;
   stressFailure: StressFailure;
   capacityPercent: number;

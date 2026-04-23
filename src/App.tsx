@@ -526,6 +526,7 @@ function Canvas({
             sharded: false,
             shardKey: "",
             endpoints: [],
+            links: [],
             capClassification: "",
             stressFailure: "none",
             capacityPercent: 100,

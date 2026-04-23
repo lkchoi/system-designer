@@ -4,6 +4,7 @@ import type {
   SystemNodeData,
   NodeStatus,
   Endpoint,
+  ResourceLink,
   CAPClassification,
   EffectiveStress,
 } from "../types";
@@ -84,6 +85,23 @@ export default function PropertiesPanel({
       endpoints: (data.endpoints ?? []).filter((ep) => ep.id !== id),
     });
     if (editingEndpointId === id) setEditingEndpointId(null);
+  }
+
+  function addLink() {
+    const link: ResourceLink = { id: ulid(), label: "", url: "" };
+    onUpdate(node.id, { links: [...(data.links ?? []), link] });
+  }
+
+  function updateLink(id: string, partial: Partial<ResourceLink>) {
+    onUpdate(node.id, {
+      links: (data.links ?? []).map((l) => (l.id === id ? { ...l, ...partial } : l)),
+    });
+  }
+
+  function deleteLink(id: string) {
+    onUpdate(node.id, {
+      links: (data.links ?? []).filter((l) => l.id !== id),
+    });
   }
 
   return (
@@ -812,6 +830,85 @@ export default function PropertiesPanel({
             )}
           </div>
         )}
+
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[13px] font-semibold text-text-dim">Links</label>
+            <button
+              className="text-[11px] text-accent font-medium transition-colors duration-150 hover:text-text-bright"
+              onClick={addLink}
+            >
+              + Add
+            </button>
+          </div>
+          {(data.links ?? []).length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              {(data.links ?? []).map((link) => (
+                <div
+                  key={link.id}
+                  className="bg-surface-2 border border-border rounded-lg px-3 py-2 flex flex-col gap-1.5"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      className="flex-1 bg-transparent border-none outline-none text-[13px] text-text-bright placeholder:text-text-dim min-w-0"
+                      value={link.label}
+                      onChange={(e) => updateLink(link.id, { label: e.target.value })}
+                      placeholder="Label"
+                    />
+                    <button
+                      className="w-5 h-5 flex items-center justify-center rounded text-text-dim shrink-0 transition-colors duration-150 hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.12)]"
+                      onClick={() => deleteLink(link.id)}
+                      title="Remove link"
+                    >
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      className="flex-1 bg-transparent border-none outline-none text-[12px] text-text-dim placeholder:text-text-dim min-w-0 font-mono"
+                      value={link.url}
+                      onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                      placeholder="https://..."
+                    />
+                    {link.url && (
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-5 h-5 flex items-center justify-center rounded text-text-dim shrink-0 transition-colors duration-150 hover:text-accent hover:bg-accent-bg"
+                        title="Open link"
+                      >
+                        <svg
+                          width="10"
+                          height="10"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                        </svg>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
           <label className="text-[13px] font-semibold text-text-dim">Position</label>

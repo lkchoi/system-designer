@@ -1,0 +1,9 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "arkon",
+	"compatibility_date": "2025-09-27",
+	"assets": {
+		"directory": "dist"
+	},
+	"routes": [{ "pattern": "arkon.lkchoi.dev", "custom_domain": true }]
+}

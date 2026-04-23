@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "pricing:fetch": "npx tsx scripts/pricing/run.ts",
-    "pricing:list": "npx tsx scripts/pricing/run.ts --list"
+    "pricing:list": "npx tsx scripts/pricing/run.ts --list",
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
