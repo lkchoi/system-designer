@@ -1,5 +1,6 @@
 import type { DesignJSON } from "../db/io";
-import type { ComponentType, SystemNodeData } from "../types";
+import type { ComponentType, SystemNodeData, Vendor } from "../types";
+import { getTechnology } from "../technologies";
 import type { BundleCredential } from "./secrets";
 import type { ServiceUrl } from "./lifecycle";
 
@@ -48,8 +49,14 @@ firewall, client) are documented at the bottom but not deployed.
   sections.push(credentialsSection(credentials));
   sections.push(troubleshootingSection());
   sections.push(productionOnlySection(design, serviceNameByNodeId));
+  sections.push(notYetSupportedSection(design, serviceNameByNodeId));
 
-  return sections.join("\n\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+  return (
+    sections
+      .join("\n\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trimEnd() + "\n"
+  );
 }
 
 function prerequisitesSection(): string {
@@ -154,4 +161,58 @@ function renderProductionItem(name: string, data: SystemNodeData): string {
     for (const ep of data.endpoints) lines.push(`  - \`${ep.method} ${ep.path}\``);
   }
   return lines.join("\n") + "\n";
+}
+
+/**
+ * Vendors that require a local emulator / LocalStack / CLI wrapper to run.
+ * The bundle doesn't ship those adapters yet (original plan's PRs 5–7), so
+ * nodes tagged with these vendors get dropped from compose silently. List
+ * them here with a pointer to what would unblock them.
+ */
+const VENDOR_ENABLEMENT: Partial<Record<Vendor, string>> = {
+  aws: "would run under LocalStack (not yet wired into the bundle)",
+  gcp: "would run under GCP emulator containers (Pub/Sub, Firestore, fake-gcs, BigQuery — not yet wired in)",
+  azure: "would run under Azure emulators (Azurite, Cosmos DB — not yet wired in)",
+  cloudflare: "would run under `wrangler dev --local` (CLI wrapper not yet wired in)",
+  vercel: "would run under `vercel dev` (CLI wrapper not yet wired in)",
+  netlify: "would run under `netlify dev` (CLI wrapper not yet wired in)",
+};
+
+function notYetSupportedSection(
+  design: DesignJSON,
+  serviceNameByNodeId: Map<string, string>,
+): string {
+  const grouped = new Map<Vendor, Array<{ label: string; data: SystemNodeData }>>();
+  for (const node of design.nodes) {
+    if (node.type !== "system") continue;
+    const data = node.data as SystemNodeData;
+    if (serviceNameByNodeId.has(node.id)) continue; // deployed
+    if (EXCLUDED_TIER.includes(data.componentType)) continue; // covered by prod-only
+    const techName = data.plan?.technology;
+    if (!techName) continue;
+    const tech = getTechnology(data.componentType, techName);
+    const vendor = tech?.vendor;
+    if (!vendor || !VENDOR_ENABLEMENT[vendor]) continue;
+    const list = grouped.get(vendor) ?? [];
+    list.push({ label: data.label, data });
+    grouped.set(vendor, list);
+  }
+  if (grouped.size === 0) return "";
+
+  const blocks: string[] = [
+    `## Cloud services not yet runnable locally
+
+These nodes appear in the design but got skipped when generating the
+bundle — they're vendor-specific services that need an emulator or
+CLI wrapper the local-deploy exporter doesn't ship yet. They're still
+in your Terraform / CDK / Kubernetes exports.`,
+  ];
+  for (const [vendor, items] of grouped) {
+    const pointer = VENDOR_ENABLEMENT[vendor]!;
+    blocks.push(`### ${vendor.toUpperCase()} — ${pointer}\n`);
+    for (const item of items) {
+      blocks.push(renderProductionItem(item.label, item.data));
+    }
+  }
+  return blocks.join("\n");
 }

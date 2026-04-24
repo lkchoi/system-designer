@@ -75,6 +75,18 @@ const SAMPLE_DESIGN: DesignJSON = {
       },
     },
     {
+      id: "fn",
+      type: "system",
+      position: { x: 0, y: 0 },
+      data: {
+        label: "ImageResizer",
+        componentType: "serverless",
+        plan: { technology: "AWS Lambda" },
+        endpoints: [],
+        links: [],
+      },
+    },
+    {
       id: "lb",
       type: "system",
       position: { x: 0, y: 0 },
@@ -205,6 +217,18 @@ describe("docker-compose bundle", () => {
     expect(readme).toContain("## Production-only components");
     expect(readme).toContain("### Load Balancers");
     expect(readme).toContain("Edge LB");
+  });
+
+  it("surfaces dropped AWS Lambda node under 'not yet runnable locally'", async () => {
+    const files = await unpackBundle();
+    const readme = files.get("README.md")!;
+    expect(readme).toContain("## Cloud services not yet runnable locally");
+    expect(readme).toContain("### AWS");
+    expect(readme).toContain("LocalStack");
+    expect(readme).toContain("ImageResizer");
+    // Also confirm the Lambda node is NOT in compose.
+    const compose = files.get("docker-compose.yaml")!;
+    expect(compose).not.toMatch(/^\s+imageresizer:/m);
   });
 
   it("makes shell scripts executable", async () => {

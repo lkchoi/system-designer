@@ -9,6 +9,7 @@ import {
   getResourceMapping,
   resolveTechId,
 } from "./iac-mapping";
+import { getTechnology } from "../technologies";
 import { exportBundle, type BundleFile } from "./bundle";
 import { buildServiceEnv } from "./wiring";
 import { generateSecrets } from "./secrets";
@@ -77,13 +78,26 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
 
     // Decide what backs this entry:
     // - explicit image / buildContext from the node wins
-    // - service tier (service / serverless): always scaffolded from a template
-    //   unless the user supplied an image or buildContext above. The registry
-    //   mapping (e.g. node:22-alpine) is just a base image and doesn't ship
-    //   app code, so it's not useful on its own.
-    // - other tiers: use the registry's docker mapping; if none, drop the node
-    //   (we can't scaffold infra).
+    // - generic service tier (vendor = oss / multi / unknown) gets scaffolded
+    //   from a template — the registry's docker mapping (e.g. node:22-alpine)
+    //   is just a base image and doesn't ship app code.
+    // - vendor-specific serverless (AWS Lambda, GCP Cloud Functions, Workers,
+    //   Vercel functions, etc.): drop the node so readme.ts's
+    //   "not yet runnable locally" section surfaces it. Those need
+    //   LocalStack / an emulator / a CLI wrapper we don't ship yet.
+    // - other tiers: use the registry's docker mapping; drop if none.
     const isServiceTier = data.componentType === "service" || data.componentType === "serverless";
+    const techInfo = data.plan?.technology
+      ? getTechnology(data.componentType, data.plan.technology)
+      : undefined;
+    const vendorLocked =
+      techInfo?.vendor === "aws" ||
+      techInfo?.vendor === "gcp" ||
+      techInfo?.vendor === "azure" ||
+      techInfo?.vendor === "cloudflare" ||
+      techInfo?.vendor === "vercel" ||
+      techInfo?.vendor === "netlify";
+
     let image: string | undefined;
     let buildContext = data.buildContext;
     let scaffolded = false;
@@ -94,7 +108,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
       image = data.image;
     } else if (buildContext) {
       // user supplied their own build dir
-    } else if (isServiceTier) {
+    } else if (isServiceTier && !vendorLocked) {
       // scaffold below — needs the resolved name
     } else {
       image = mapping?.docker;
@@ -104,7 +118,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     const name = uniqueName(data.label, usedNames);
     usedNames.add(name);
 
-    if (isServiceTier && !image && !buildContext) {
+    if (isServiceTier && !vendorLocked && !image && !buildContext) {
       const scaffold = scaffoldService({
         serviceName: name,
         data,
