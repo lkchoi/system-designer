@@ -2,6 +2,7 @@ import type { SystemNodeData, Endpoint } from "../../types";
 import { resolveTechId } from "../iac-mapping";
 import type { BundleFile } from "../bundle";
 import { scaffoldNodeService } from "./node";
+import { scaffoldPythonService } from "./python";
 
 /**
  * Result of scaffolding a Service node: the files to drop into the bundle
@@ -29,6 +30,8 @@ export interface ScaffoldRequest {
 export function scaffoldService(req: ScaffoldRequest): ScaffoldResult {
   const techId = resolveTechId(req.data.componentType, req.data.plan?.technology ?? "");
   switch (techId) {
+    case "python-fastapi":
+      return scaffoldPythonService(req);
     case "nodejs":
     case "grpc":
       return scaffoldNodeService(req);

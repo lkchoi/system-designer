@@ -71,3 +71,48 @@ describe("scaffoldService — node.js", () => {
     expect(pkg.scripts.start).toBe("node src/index.js");
   });
 });
+
+describe("scaffoldService — python", () => {
+  const data: SystemNodeData = {
+    ...baseData,
+    plan: { technology: "Python (FastAPI/Django)" },
+  };
+
+  it("produces Dockerfile, requirements.txt, src/main.py, .dockerignore", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const paths = result.files.map((f) => f.path).sort();
+    expect(paths).toEqual([
+      "services/api/.dockerignore",
+      "services/api/Dockerfile",
+      "services/api/requirements.txt",
+      "services/api/src/main.py",
+    ]);
+    expect(result.containerPort).toBe(8000);
+  });
+
+  it("emits a /health route + uvicorn launch", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const main = String(result.files.find((f) => f.path.endsWith("main.py"))!.content);
+    expect(main).toContain('@app.get("/health")');
+    const dockerfile = String(result.files.find((f) => f.path.endsWith("Dockerfile"))!.content);
+    expect(dockerfile).toContain("uvicorn");
+  });
+
+  it("turns endpoints into FastAPI route handlers", () => {
+    const result = scaffoldService({
+      serviceName: "api",
+      data,
+      endpoints: [{ id: "1", method: "POST", path: "/users/:id" }],
+    });
+    const main = String(result.files.find((f) => f.path.endsWith("main.py"))!.content);
+    expect(main).toContain('@app.post("/users/:id")');
+    expect(main).toContain("handle_post_users_id");
+  });
+
+  it("requirements.txt pins fastapi + uvicorn", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const reqs = String(result.files.find((f) => f.path.endsWith("requirements.txt"))!.content);
+    expect(reqs).toContain("fastapi==");
+    expect(reqs).toContain("uvicorn[standard]");
+  });
+});
