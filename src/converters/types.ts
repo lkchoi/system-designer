@@ -20,6 +20,15 @@ export interface ExportResult {
   mimeType: string;
 }
 
+export interface ExportOptions {
+  /**
+   * When true, the local-deploy bundle injects LocalStack for AWS services
+   * (Lambda, SNS, Kinesis, EventBridge, SQS) instead of swapping in OSS
+   * equivalents. Has no effect for non-AWS exporters.
+   */
+  preferLocalStack?: boolean;
+}
+
 export interface ConverterModule {
   id: FormatId;
   label: string;
@@ -27,6 +36,6 @@ export interface ConverterModule {
   category: FormatCategory;
   fileExtensions: string[];
   canImport: boolean;
-  exportDesign(design: DesignJSON): ExportResult;
+  exportDesign(design: DesignJSON, options?: ExportOptions): ExportResult | Promise<ExportResult>;
   importDesign?(content: string): DesignJSON;
 }

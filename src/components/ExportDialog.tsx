@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { CONVERTERS, type ConverterModule } from "../converters";
 import { exportDesign, downloadFile } from "../db/io";
 
@@ -10,19 +10,21 @@ interface Props {
 }
 
 export default function ExportDialog({ open, onClose, designId, designName }: Props) {
-  if (!open) return null;
+  const [preferLocalStack, setPreferLocalStack] = useState(false);
 
   const handleExport = useCallback(
-    (converter: ConverterModule) => {
+    async (converter: ConverterModule) => {
       const json = exportDesign(designId);
       const design = JSON.parse(json);
       design.name = designName;
-      const result = converter.exportDesign(design);
+      const result = await converter.exportDesign(design, { preferLocalStack });
       downloadFile(result.content, result.filename, result.mimeType);
       onClose();
     },
-    [designId, designName, onClose],
+    [designId, designName, onClose, preferLocalStack],
   );
+
+  if (!open) return null;
 
   const diagramFormats = CONVERTERS.filter((c) => c.category === "diagram");
   const iacFormats = CONVERTERS.filter((c) => c.category === "iac");
@@ -56,6 +58,23 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
             </svg>
           </button>
         </div>
+
+        <label className="flex items-center gap-2 mb-5 px-3 py-2 bg-surface-2 border border-border rounded-lg cursor-pointer">
+          <input
+            type="checkbox"
+            checked={preferLocalStack}
+            onChange={(e) => setPreferLocalStack(e.target.checked)}
+            className="cursor-pointer"
+          />
+          <div className="flex flex-col">
+            <span className="text-[13px] text-text-bright">
+              Prefer LocalStack for AWS services
+            </span>
+            <span className="text-[11px] text-text-dim leading-tight">
+              Run Lambda, SNS, Kinesis, EventBridge, SQS via LocalStack instead of OSS swaps.
+            </span>
+          </div>
+        </label>
 
         {diagramFormats.length > 0 && (
           <div className="mb-5">
