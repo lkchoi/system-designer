@@ -116,3 +116,48 @@ describe("scaffoldService — python", () => {
     expect(reqs).toContain("uvicorn[standard]");
   });
 });
+
+describe("scaffoldService — go", () => {
+  const data: SystemNodeData = {
+    ...baseData,
+    plan: { technology: "Go (net/http, Gin, Fiber)" },
+  };
+
+  it("produces Dockerfile, go.mod, main.go, .dockerignore", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const paths = result.files.map((f) => f.path).sort();
+    expect(paths).toEqual([
+      "services/api/.dockerignore",
+      "services/api/Dockerfile",
+      "services/api/go.mod",
+      "services/api/main.go",
+    ]);
+    expect(result.containerPort).toBe(8080);
+  });
+
+  it("emits a /health handler in main.go", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const main = String(result.files.find((f) => f.path.endsWith("main.go"))!.content);
+    expect(main).toContain('mux.HandleFunc("/health"');
+    expect(main).toContain("package main");
+  });
+
+  it("turns endpoints into HandleFunc routes that gate on method", () => {
+    const result = scaffoldService({
+      serviceName: "api",
+      data,
+      endpoints: [{ id: "1", method: "GET", path: "/orders" }],
+    });
+    const main = String(result.files.find((f) => f.path.endsWith("main.go"))!.content);
+    expect(main).toContain('mux.HandleFunc("/orders"');
+    expect(main).toContain('r.Method != "GET"');
+  });
+
+  it("Dockerfile is multi-stage and produces a static alpine image", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const dockerfile = String(result.files.find((f) => f.path.endsWith("Dockerfile"))!.content);
+    expect(dockerfile).toContain("FROM golang:1.24-alpine AS build");
+    expect(dockerfile).toContain("FROM alpine");
+    expect(dockerfile).toContain("CGO_ENABLED=0");
+  });
+});

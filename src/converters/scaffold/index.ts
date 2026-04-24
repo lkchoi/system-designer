@@ -3,6 +3,7 @@ import { resolveTechId } from "../iac-mapping";
 import type { BundleFile } from "../bundle";
 import { scaffoldNodeService } from "./node";
 import { scaffoldPythonService } from "./python";
+import { scaffoldGoService } from "./go";
 
 /**
  * Result of scaffolding a Service node: the files to drop into the bundle
@@ -32,6 +33,8 @@ export function scaffoldService(req: ScaffoldRequest): ScaffoldResult {
   switch (techId) {
     case "python-fastapi":
       return scaffoldPythonService(req);
+    case "go":
+      return scaffoldGoService(req);
     case "nodejs":
     case "grpc":
       return scaffoldNodeService(req);
