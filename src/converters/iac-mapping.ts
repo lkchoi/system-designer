@@ -546,7 +546,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
     componentType: "cron",
     technologyId: "linux-cron",
     mapping: {
-      docker: "mcuadros/ofelia:v0.3.16",
+      docker: "mcuadros/ofelia:0.3.22",
       defaultPorts: [],
     },
   },
