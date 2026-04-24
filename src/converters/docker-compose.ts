@@ -32,7 +32,8 @@ function sanitizeName(label: string): string {
   return (
     label
       .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
       .replace(/^[^a-z]/, "s$&") || "service"
   );
 }

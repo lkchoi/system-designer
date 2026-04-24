@@ -275,6 +275,36 @@ describe("docker-compose bundle", () => {
     expect(startSh).toContain("→ waiting for ordersdb");
   });
 
+  it("collapses runs and trims trailing dashes when sanitizing labels", async () => {
+    const design: DesignJSON = {
+      version: 1,
+      name: "X",
+      nodes: [
+        {
+          id: "bus",
+          type: "system",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Redis (pub/sub)",
+            componentType: "message-queue",
+            plan: { technology: "Redis" },
+            endpoints: [],
+            links: [],
+          },
+        },
+      ] as unknown as DesignJSON["nodes"],
+      edges: [] as unknown as DesignJSON["edges"],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      flowPaths: [],
+    };
+    const result = await dockerComposeConverter.exportDesign(design);
+    const buf = await (result.content as Blob).arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const compose = await zip.files["docker-compose.yaml"].async("string");
+    expect(compose).toMatch(/^\s+redis-pub-sub:/m);
+    expect(compose).not.toContain("redis--pub-sub-");
+  });
+
   it("emits redis-cli ping for a redis-on-message-queue node", async () => {
     const design: DesignJSON = {
       version: 1,
