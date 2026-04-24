@@ -454,6 +454,40 @@ const OTHER_ENTRIES: MappingEntry[] = [
     },
   },
   {
+    componentType: "search-engine",
+    technologyId: "meilisearch",
+    mapping: {
+      docker: "getmeili/meilisearch:v1.10",
+      defaultPorts: [7700],
+    },
+  },
+  {
+    componentType: "search-engine",
+    technologyId: "typesense",
+    mapping: {
+      docker: "typesense/typesense:0.25.2",
+      defaultPorts: [8108],
+    },
+  },
+  {
+    componentType: "search-engine",
+    technologyId: "solr",
+    mapping: {
+      k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
+      docker: "solr:9",
+      defaultPorts: [8983],
+    },
+  },
+  {
+    componentType: "data-warehouse",
+    technologyId: "clickhouse",
+    mapping: {
+      k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
+      docker: "clickhouse/clickhouse-server:24",
+      defaultPorts: [8123, 9000],
+    },
+  },
+  {
     componentType: "data-warehouse",
     technologyId: "redshift",
     mapping: {
@@ -490,6 +524,14 @@ const OTHER_ENTRIES: MappingEntry[] = [
     },
   },
   {
+    componentType: "stream-processor",
+    technologyId: "risingwave",
+    mapping: {
+      docker: "risingwavelabs/risingwave:v2.0.0",
+      defaultPorts: [4566],
+    },
+  },
+  {
     componentType: "cron",
     technologyId: "eventbridge",
     mapping: {
@@ -501,6 +543,14 @@ const OTHER_ENTRIES: MappingEntry[] = [
     },
   },
   {
+    componentType: "cron",
+    technologyId: "linux-cron",
+    mapping: {
+      docker: "mcuadros/ofelia:v0.3.16",
+      defaultPorts: [],
+    },
+  },
+  {
     componentType: "webhook",
     technologyId: "sns",
     mapping: {
@@ -508,6 +558,14 @@ const OTHER_ENTRIES: MappingEntry[] = [
       terraform: "aws_sns_topic",
       cdk: { module: "aws-cdk-lib/aws-sns", construct: "Topic" },
       pulumi: { module: "@pulumi/aws", resource: "sns.Topic" },
+    },
+  },
+  {
+    componentType: "webhook",
+    technologyId: "custom-webhook",
+    mapping: {
+      docker: "tarampampam/webhook-tester:1.1.0",
+      defaultPorts: [8084],
     },
   },
 ];
