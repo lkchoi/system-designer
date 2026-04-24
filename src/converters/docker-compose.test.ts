@@ -102,7 +102,7 @@ async function unpackBundle(): Promise<Map<string, string>> {
 }
 
 describe("docker-compose bundle", () => {
-  it("packs the expected top-level files plus init scripts", async () => {
+  it("packs top-level files, init scripts, and the scaffolded service", async () => {
     const files = await unpackBundle();
     expect([...files.keys()].sort()).toEqual([
       ".env",
@@ -110,9 +110,19 @@ describe("docker-compose bundle", () => {
       "docker-compose.yaml",
       "init/ordersdb/schema.sql",
       "reset.sh",
+      "services/api/.dockerignore",
+      "services/api/Dockerfile",
+      "services/api/package.json",
+      "services/api/src/index.js",
       "start.sh",
       "stop.sh",
     ]);
+  });
+
+  it("compose entry uses build.context for the scaffolded service", async () => {
+    const files = await unpackBundle();
+    const compose = files.get("docker-compose.yaml")!;
+    expect(compose).toMatch(/api:\s*\n\s*restart: unless-stopped\s*\n\s*build:\s*\n\s*context: \.\/services\/api/);
   });
 
   it("generates a CREATE TABLE for each declared table", async () => {

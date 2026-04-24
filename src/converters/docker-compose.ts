@@ -15,6 +15,7 @@ import { generateSecrets } from "./secrets";
 import { buildLifecycleScripts, urlsFor } from "./lifecycle";
 import { buildReadme } from "./readme";
 import { generateInitScripts } from "./init-scripts";
+import { scaffoldService } from "./scaffold";
 
 /** Component types whose nodes are not deployed by the local-deploy bundle. */
 const EXCLUDED_TIER: ReadonlySet<ComponentType> = new Set([
@@ -35,6 +36,12 @@ function sanitizeName(label: string): string {
   );
 }
 
+function uniqueName(label: string, used: Set<string>): string {
+  let name = sanitizeName(label);
+  while (used.has(name)) name += "-2";
+  return name;
+}
+
 interface DeployableNode {
   nodeId: string;
   name: string;
@@ -44,6 +51,8 @@ interface DeployableNode {
   buildContext?: string;
   containerPorts: number[];
   hostPorts: number[];
+  /** True when this entry was scaffolded by us (vs user-provided image / context). */
+  scaffolded: boolean;
 }
 
 async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
@@ -53,6 +62,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
   const deployables: DeployableNode[] = [];
   const serviceNameByNodeId = new Map<string, string>();
   const hostPortByNodeId = new Map<string, number[]>();
+  const scaffoldFiles: BundleFile[] = [];
 
   for (const node of design.nodes) {
     if (node.type !== "system") continue;
@@ -63,18 +73,52 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     const mapping =
       getResourceMapping(data.componentType, techId) ?? getDefaultMapping(data.componentType);
 
-    // Skip nodes that have neither a mapping nor a user image/buildContext —
-    // there's nothing to deploy.
-    const image = data.image || mapping?.docker;
-    const buildContext = data.buildContext;
-    if (!image && !buildContext) continue;
+    // Decide what backs this entry:
+    // - explicit image / buildContext from the node wins
+    // - service tier (service / serverless): always scaffolded from a template
+    //   unless the user supplied an image or buildContext above. The registry
+    //   mapping (e.g. node:22-alpine) is just a base image and doesn't ship
+    //   app code, so it's not useful on its own.
+    // - other tiers: use the registry's docker mapping; if none, drop the node
+    //   (we can't scaffold infra).
+    const isServiceTier =
+      data.componentType === "service" || data.componentType === "serverless";
+    let image: string | undefined;
+    let buildContext = data.buildContext;
+    let scaffolded = false;
+    let containerPortOverride: number | undefined;
 
-    let name = sanitizeName(data.label);
-    while (usedNames.has(name)) name += "-2";
+    if (data.image) {
+      image = data.image;
+    } else if (buildContext) {
+      // user supplied their own build dir
+    } else if (isServiceTier) {
+      // scaffold below — needs the resolved name
+    } else {
+      image = mapping?.docker;
+      if (!image) continue;
+    }
+
+    const name = uniqueName(data.label, usedNames);
     usedNames.add(name);
+
+    if (isServiceTier && !image && !buildContext) {
+      const scaffold = scaffoldService({
+        serviceName: name,
+        data,
+        endpoints: data.endpoints ?? [],
+      });
+      scaffoldFiles.push(...scaffold.files);
+      buildContext = scaffold.buildContext;
+      containerPortOverride = scaffold.containerPort;
+      scaffolded = true;
+    }
+
     serviceNameByNodeId.set(node.id, name);
 
-    const containerPorts = getDefaultPorts(data.componentType, techId);
+    const baseContainerPorts = getDefaultPorts(data.componentType, techId);
+    const containerPorts =
+      containerPortOverride != null ? [containerPortOverride] : baseContainerPorts;
     const hostPorts = containerPorts.map((p) => allocateHostPort(p, usedHostPorts));
     hostPortByNodeId.set(node.id, hostPorts);
 
@@ -87,6 +131,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
       buildContext,
       containerPorts,
       hostPorts,
+      scaffolded,
     });
   }
 
@@ -187,6 +232,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     { path: "stop.sh", content: lifecycle.stopSh, executable: true },
     { path: "reset.sh", content: lifecycle.resetSh, executable: true },
     ...initScripts.files,
+    ...scaffoldFiles,
   ];
   return exportBundle(files, "local-stack");
 }
