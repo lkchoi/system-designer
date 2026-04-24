@@ -189,6 +189,12 @@ export interface SystemNodeData {
   stressFailure: StressFailure;
   capacityPercent: number;
   consumerRate: number;
+  /** Pre-built container image (e.g. "mycompany/api:v3"). Used by the local-deploy bundle. */
+  image?: string;
+  /** Path to a Dockerfile directory, relative to the bundle root. */
+  buildContext?: string;
+  /** Explicit env var overrides for the local-deploy bundle. */
+  env?: Record<string, string>;
   [key: string]: unknown;
 }
 

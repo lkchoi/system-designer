@@ -506,6 +506,11 @@ export default function PropertiesPanel({
           </div>
         )}
 
+        {mode === "plan" &&
+          (data.componentType === "service" || data.componentType === "serverless") && (
+            <DeployFields node={node} onUpdate={onUpdate} />
+          )}
+
         {mode === "plan" ? (
           <div className="flex flex-col gap-2">
             <label className="text-[13px] font-semibold text-text-dim">Plan</label>
@@ -929,5 +934,124 @@ export default function PropertiesPanel({
         </div>
       </div>
     </aside>
+  );
+}
+
+interface DeployFieldsProps {
+  node: Node<SystemNodeData>;
+  onUpdate: (id: string, data: Partial<SystemNodeData>) => void;
+}
+
+function DeployFields({ node, onUpdate }: DeployFieldsProps) {
+  const { data } = node;
+  const envEntries = Object.entries(data.env ?? {});
+
+  function updateEnvKey(idx: number, newKey: string) {
+    const next: Record<string, string> = {};
+    envEntries.forEach(([k, v], i) => {
+      next[i === idx ? newKey : k] = v;
+    });
+    onUpdate(node.id, { env: next });
+  }
+
+  function updateEnvValue(idx: number, newValue: string) {
+    const next: Record<string, string> = {};
+    envEntries.forEach(([k, v], i) => {
+      next[k] = i === idx ? newValue : v;
+    });
+    onUpdate(node.id, { env: next });
+  }
+
+  function addEnv() {
+    onUpdate(node.id, { env: { ...(data.env ?? {}), "": "" } });
+  }
+
+  function removeEnv(idx: number) {
+    const next: Record<string, string> = {};
+    envEntries.forEach(([k, v], i) => {
+      if (i !== idx) next[k] = v;
+    });
+    onUpdate(node.id, { env: next });
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-[13px] font-semibold text-text-dim">Deploy</label>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-text-dim">Image</label>
+        <input
+          className="bg-surface-2 border border-border rounded-md px-2.5 py-1.5 text-text-bright text-[13px] font-mono outline-none focus:border-accent placeholder:text-text-dim placeholder:italic"
+          value={data.image ?? ""}
+          onChange={(e) => onUpdate(node.id, { image: e.target.value || undefined })}
+          placeholder="mycompany/api:v3"
+        />
+      </div>
+      <div className="flex flex-col gap-1 mt-2">
+        <label className="text-xs font-medium text-text-dim">Build context</label>
+        <input
+          className="bg-surface-2 border border-border rounded-md px-2.5 py-1.5 text-text-bright text-[13px] font-mono outline-none focus:border-accent placeholder:text-text-dim placeholder:italic"
+          value={data.buildContext ?? ""}
+          onChange={(e) => onUpdate(node.id, { buildContext: e.target.value || undefined })}
+          placeholder="./services/api"
+        />
+        <span className="text-[11px] text-text-dim">
+          Leave both empty to scaffold a hello-world server in the chosen runtime.
+        </span>
+      </div>
+      <div className="flex flex-col gap-1 mt-2">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-text-dim">Env overrides</label>
+          <button
+            className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium text-accent transition-all duration-150 hover:bg-accent-bg"
+            onClick={addEnv}
+          >
+            + Add
+          </button>
+        </div>
+        {envEntries.length === 0 ? (
+          <span className="text-[11px] text-text-dim italic">
+            None — exporter will inject defaults from connected nodes.
+          </span>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {envEntries.map(([k, v], i) => (
+              <div key={i} className="flex items-center gap-1">
+                <input
+                  className="flex-1 min-w-0 bg-surface-2 border border-border rounded-md px-2 py-1 text-text-bright text-[12px] font-mono outline-none focus:border-accent"
+                  value={k}
+                  onChange={(e) => updateEnvKey(i, e.target.value)}
+                  placeholder="KEY"
+                />
+                <span className="text-text-dim text-[11px]">=</span>
+                <input
+                  className="flex-1 min-w-0 bg-surface-2 border border-border rounded-md px-2 py-1 text-text-bright text-[12px] font-mono outline-none focus:border-accent"
+                  value={v}
+                  onChange={(e) => updateEnvValue(i, e.target.value)}
+                  placeholder="value"
+                />
+                <button
+                  className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
+                  onClick={() => removeEnv(i)}
+                  title="Remove"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
