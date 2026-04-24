@@ -1,7 +1,22 @@
 import { useState, type RefObject, type MutableRefObject } from "react";
 import { registry } from "../registry";
 import { BUILTIN_PATTERNS } from "../patterns";
-import type { SavedFlow } from "../types";
+import type { SavedFlow, Vendor } from "../types";
+import { VENDORS } from "../types";
+
+type VendorFilter = Vendor | "all";
+
+const VENDOR_LABELS: Record<VendorFilter, string> = {
+  all: "All vendors",
+  aws: "AWS",
+  gcp: "GCP",
+  azure: "Azure",
+  cloudflare: "Cloudflare",
+  vercel: "Vercel",
+  netlify: "Netlify",
+  oss: "OSS",
+  multi: "Cross-vendor",
+};
 
 const ANNOTATION_ITEMS = [
   {
@@ -53,7 +68,12 @@ export default function Sidebar({
   clearFilterRef,
 }: SidebarProps) {
   const [filter, setFilter] = useState("");
-  if (clearFilterRef) clearFilterRef.current = () => setFilter("");
+  const [vendor, setVendor] = useState<VendorFilter>("all");
+  if (clearFilterRef)
+    clearFilterRef.current = () => {
+      setFilter("");
+      setVendor("all");
+    };
   const q = filter.toLowerCase();
 
   const builtins = registry
@@ -62,7 +82,8 @@ export default function Sidebar({
       (e) =>
         e.label.toLowerCase().includes(q) ||
         e.technologies.some((t) => t.name.toLowerCase().includes(q)),
-    );
+    )
+    .filter((e) => vendor === "all" || e.technologies.some((t) => t.vendor === vendor));
   const patterns = BUILTIN_PATTERNS.filter(
     (p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q),
   );
@@ -177,12 +198,25 @@ export default function Sidebar({
               </button>
             )}
           </div>
+          <select
+            className="w-full mt-2 bg-surface-2 border border-border rounded-md text-xs text-text-bright px-2 py-1.5 outline-none cursor-pointer focus:border-accent transition-colors duration-150"
+            value={vendor}
+            onChange={(e) => setVendor(e.target.value as VendorFilter)}
+            title="Filter components by vendor"
+          >
+            <option value="all">{VENDOR_LABELS.all}</option>
+            {VENDORS.map((v) => (
+              <option key={v} value={v}>
+                {VENDOR_LABELS[v]}
+              </option>
+            ))}
+          </select>
         </div>
       )}
       {collapsed ? (
         <>
           <div className="px-1 overflow-visible flex flex-col gap-0.5">
-            {registry.getBuiltins().map((entry) => (
+            {builtins.map((entry) => (
               <div
                 key={entry.id}
                 className="sidebar-item-tooltip relative flex items-center gap-3 rounded-lg cursor-grab select-none text-text-bright text-sm font-medium transition-colors duration-150 hover:bg-surface-2 active:cursor-grabbing active:bg-surface-3 justify-center p-2"
@@ -385,10 +419,13 @@ export default function Sidebar({
               </div>
             </>
           )}
-          {q && builtins.length === 0 && patterns.length === 0 && annotations.length === 0 && (
-            <div className="px-4 py-6 text-sm text-text-dim text-center">No matches</div>
-          )}
-          {!q && savedFlows.length > 0 && (
+          {(q || vendor !== "all") &&
+            builtins.length === 0 &&
+            patterns.length === 0 &&
+            annotations.length === 0 && (
+              <div className="px-4 py-6 text-sm text-text-dim text-center">No matches</div>
+            )}
+          {!q && vendor === "all" && savedFlows.length > 0 && (
             <>
               <h2 className="text-[13px] font-semibold uppercase tracking-wide text-text-dim pt-3 px-4 pb-3">
                 Paths
