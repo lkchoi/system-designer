@@ -136,7 +136,7 @@ function envVarsFor(
     case "nats":
       return { NATS_URL: `nats://${targetName}:${port}` };
     case "minio": {
-      const bucket = data.plan?.bucket || "default";
+      const bucket = parseFirstBucket(data.plan?.bucketName) || "default";
       return {
         S3_ENDPOINT: `http://${targetName}:${port}`,
         S3_ACCESS_KEY: `\${${upper}_ROOT_USER}`,
@@ -150,4 +150,14 @@ function envVarsFor(
     case "warehouse":
       return { WAREHOUSE_URL: `http://${targetName}:${port}` };
   }
+}
+
+/**
+ * Storage nodes can write `s3://bucket-name`, `bucket-name`, or a CSV like
+ * `bucket-a, bucket-b`. Pull just the leading bucket name for env wiring.
+ */
+function parseFirstBucket(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const first = value.split(",")[0].trim();
+  return first.replace(/^s3:\/\//, "").replace(/\/.*$/, "") || undefined;
 }

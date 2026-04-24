@@ -41,7 +41,11 @@ function designWith(
     version: 1,
     name: "t",
     nodes: nodes as unknown as DesignJSON["nodes"],
-    edges: edges.map((e, i) => ({ id: `e${i}`, source: e.source, target: e.target })) as unknown as DesignJSON["edges"],
+    edges: edges.map((e, i) => ({
+      id: `e${i}`,
+      source: e.source,
+      target: e.target,
+    })) as unknown as DesignJSON["edges"],
     viewport: { x: 0, y: 0, zoom: 1 },
     flowPaths: [],
   };
@@ -64,7 +68,9 @@ describe("buildServiceEnv", () => {
 
   it("wires postgres edges into DB_* and DATABASE_URL", () => {
     const svc = makeNode("svc", "service");
-    const db = makeNode("db", "database", { plan: { technology: "PostgreSQL", database: "users" } });
+    const db = makeNode("db", "database", {
+      plan: { technology: "PostgreSQL", database: "users" },
+    });
     const env = buildServiceEnv(
       svc,
       designWith([svc, db], [{ source: "svc", target: "db" }]),
@@ -112,7 +118,7 @@ describe("buildServiceEnv", () => {
   it("wires minio into S3_* + AWS_ENDPOINT_URL", () => {
     const svc = makeNode("svc", "service");
     const bucket = makeNode("b", "storage", {
-      plan: { technology: "Amazon S3", bucket: "uploads" },
+      plan: { technology: "Amazon S3", bucketName: "uploads" },
     });
     const env = buildServiceEnv(
       svc,
@@ -126,6 +132,36 @@ describe("buildServiceEnv", () => {
     expect(env.S3_BUCKET).toBe("uploads");
     expect(env.S3_ACCESS_KEY).toBe("${ASSETS_ROOT_USER}");
     expect(env.AWS_ENDPOINT_URL).toBe("http://assets:9000");
+  });
+
+  it("strips s3:// prefixes and trailing paths from bucketName", () => {
+    const svc = makeNode("svc", "service");
+    const bucket = makeNode("b", "storage", {
+      plan: { technology: "Amazon S3", bucketName: "s3://my-bucket/some/path" },
+    });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, bucket], [{ source: "svc", target: "b" }]),
+      new Map([
+        ["svc", "svc"],
+        ["b", "assets"],
+      ]),
+    );
+    expect(env.S3_BUCKET).toBe("my-bucket");
+  });
+
+  it("falls back to 'default' when bucketName is empty", () => {
+    const svc = makeNode("svc", "service");
+    const bucket = makeNode("b", "storage", { plan: { technology: "Amazon S3" } });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, bucket], [{ source: "svc", target: "b" }]),
+      new Map([
+        ["svc", "svc"],
+        ["b", "assets"],
+      ]),
+    );
+    expect(env.S3_BUCKET).toBe("default");
   });
 
   it("keeps only the first edge of a given wiring kind", () => {
