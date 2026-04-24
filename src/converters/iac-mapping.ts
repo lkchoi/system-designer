@@ -591,13 +591,23 @@ for (const entry of ALL_ENTRIES) {
 /**
  * Resolve a technology display name (e.g. "PostgreSQL") to its ID (e.g. "postgresql").
  * Returns the input unchanged if already an ID or not found in the catalog.
+ *
+ * If the input is empty, falls back to the registry's default tech for the
+ * component type — so a Database node with no tech selected still resolves
+ * to "postgresql" instead of "" (which would silently disable health checks,
+ * env wiring, and schema generation in downstream consumers).
  */
 export function resolveTechId(componentType: ComponentType, techNameOrId: string): string {
-  // Try direct ID match first
-  if (MAPPING_INDEX.has(`${componentType}:${techNameOrId}`)) return techNameOrId;
-  // Resolve display name via technology catalog
-  const info = getTechnology(componentType, techNameOrId);
-  return info?.id ?? techNameOrId.toLowerCase().replace(/\s+/g, "-");
+  if (techNameOrId) {
+    if (MAPPING_INDEX.has(`${componentType}:${techNameOrId}`)) return techNameOrId;
+    const info = getTechnology(componentType, techNameOrId);
+    if (info?.id) return info.id;
+    return techNameOrId.toLowerCase().replace(/\s+/g, "-");
+  }
+  for (const entry of ALL_ENTRIES) {
+    if (entry.componentType === componentType) return entry.technologyId;
+  }
+  return "";
 }
 
 /**

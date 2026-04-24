@@ -95,6 +95,11 @@ function healthCheckFor(
           serviceName,
           cmd: `docker compose exec -T ${serviceName} rabbitmq-diagnostics ping`,
         };
+      if (techId === "redis")
+        return {
+          serviceName,
+          cmd: `docker compose exec -T ${serviceName} redis-cli ping | grep -q PONG`,
+        };
       return null;
     case "storage":
       if (techId === "s3" || techId === "minio")

@@ -245,6 +245,66 @@ describe("docker-compose bundle", () => {
     expect(result.mimeType).toBe("application/zip");
   });
 
+  it("emits pg_isready for a postgres node even when plan.technology is blank", async () => {
+    const design: DesignJSON = {
+      version: 1,
+      name: "X",
+      nodes: [
+        {
+          id: "db",
+          type: "system",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "OrdersDB",
+            componentType: "database",
+            plan: {}, // no technology set
+            endpoints: [],
+            links: [],
+          },
+        },
+      ] as unknown as DesignJSON["nodes"],
+      edges: [] as unknown as DesignJSON["edges"],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      flowPaths: [],
+    };
+    const result = await dockerComposeConverter.exportDesign(design);
+    const buf = await (result.content as Blob).arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const startSh = await zip.files["start.sh"].async("string");
+    expect(startSh).toContain("pg_isready -U admin");
+    expect(startSh).toContain("→ waiting for ordersdb");
+  });
+
+  it("emits redis-cli ping for a redis-on-message-queue node", async () => {
+    const design: DesignJSON = {
+      version: 1,
+      name: "X",
+      nodes: [
+        {
+          id: "bus",
+          type: "system",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Pub Sub",
+            componentType: "message-queue",
+            plan: { technology: "Redis" },
+            endpoints: [],
+            links: [],
+          },
+        },
+      ] as unknown as DesignJSON["nodes"],
+      edges: [] as unknown as DesignJSON["edges"],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      flowPaths: [],
+    };
+    const result = await dockerComposeConverter.exportDesign(design);
+    const buf = await (result.content as Blob).arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const startSh = await zip.files["start.sh"].async("string");
+    expect(startSh).toContain("redis-cli ping | grep -q PONG");
+    expect(startSh).toContain("→ waiting for pub-sub");
+  });
+
   it("prefixes every line of a multi-line description with #", async () => {
     const design: DesignJSON = {
       version: 1,
@@ -272,6 +332,8 @@ describe("docker-compose bundle", () => {
     const buf = await (result.content as Blob).arrayBuffer();
     const zip = await JSZip.loadAsync(buf);
     const compose = await zip.files["docker-compose.yaml"].async("string");
-    expect(compose).toContain("  # 1. Parse mentions\n  # 2. CRUD comments\n  # 3. Pub notifications\n  api:");
+    expect(compose).toContain(
+      "  # 1. Parse mentions\n  # 2. CRUD comments\n  # 3. Pub notifications\n  api:",
+    );
   });
 });
