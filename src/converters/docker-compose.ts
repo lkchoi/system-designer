@@ -209,9 +209,25 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     }
   }
 
+  // 4b) Add init sidecars (one-shot services that pre-create buckets, topics,
+  // indexes — anything that doesn't have a docker-entrypoint convention).
+  for (const sidecar of initScripts.sidecars) {
+    services[sidecar.name] = {
+      image: sidecar.image,
+      depends_on: [sidecar.dependsOn],
+      restart: "no",
+      entrypoint: ["/bin/sh", "-c"],
+      command: [sidecar.command],
+      ...(sidecar.environment ? { environment: sidecar.environment } : {}),
+      ...(sidecar.volumes ? { volumes: sidecar.volumes } : {}),
+    };
+  }
+
   const compose: Record<string, unknown> = { services };
   if (Object.keys(volumes).length > 0) compose.volumes = volumes;
-  let composeYaml = yaml.dump(compose, { lineWidth: 120, noRefs: true });
+  // lineWidth: -1 disables folding; we'd rather have long shell commands on
+  // one line than have YAML insert newlines into them.
+  let composeYaml = yaml.dump(compose, { lineWidth: -1, noRefs: true });
   // Inject service descriptions as comments above each service block.
   for (const [name, desc] of serviceDescriptions) {
     const marker = `  ${name}:\n`;

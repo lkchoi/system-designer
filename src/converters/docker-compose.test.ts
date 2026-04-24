@@ -63,6 +63,18 @@ const SAMPLE_DESIGN: DesignJSON = {
       },
     },
     {
+      id: "bucket",
+      type: "system",
+      position: { x: 0, y: 0 },
+      data: {
+        label: "Uploads",
+        componentType: "storage",
+        plan: { technology: "Amazon S3", bucketName: "uploads, archive" },
+        endpoints: [],
+        links: [],
+      },
+    },
+    {
       id: "lb",
       type: "system",
       position: { x: 0, y: 0 },
@@ -78,6 +90,7 @@ const SAMPLE_DESIGN: DesignJSON = {
   edges: [
     { id: "e1", source: "svc", target: "db" },
     { id: "e2", source: "svc", target: "cache" },
+    { id: "e3", source: "svc", target: "bucket" },
   ] as unknown as DesignJSON["edges"],
   viewport: { x: 0, y: 0, zoom: 1 },
   flowPaths: [],
@@ -109,6 +122,7 @@ describe("docker-compose bundle", () => {
       "README.md",
       "docker-compose.yaml",
       "init/ordersdb/schema.sql",
+      "init/uploads/create-buckets.sh",
       "reset.sh",
       "services/api/.dockerignore",
       "services/api/Dockerfile",
@@ -119,6 +133,15 @@ describe("docker-compose bundle", () => {
       "stop.sh",
       "test.sh",
     ]);
+  });
+
+  it("adds an uploads-init sidecar service to compose for MinIO bucket creation", async () => {
+    const files = await unpackBundle();
+    const compose = files.get("docker-compose.yaml")!;
+    expect(compose).toContain("uploads-init:");
+    expect(compose).toContain("image: minio/mc:latest");
+    expect(compose).toContain("mc mb --ignore-existing local/uploads");
+    expect(compose).toContain("mc mb --ignore-existing local/archive");
   });
 
   it("test.sh runs each scaffolded service's tests via docker compose", async () => {
