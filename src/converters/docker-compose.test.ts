@@ -114,6 +114,7 @@ describe("docker-compose bundle", () => {
       "services/api/Dockerfile",
       "services/api/package.json",
       "services/api/src/index.js",
+      "services/api/test/health.test.js",
       "start.sh",
       "stop.sh",
     ]);
@@ -122,7 +123,9 @@ describe("docker-compose bundle", () => {
   it("compose entry uses build.context for the scaffolded service", async () => {
     const files = await unpackBundle();
     const compose = files.get("docker-compose.yaml")!;
-    expect(compose).toMatch(/api:\s*\n\s*restart: unless-stopped\s*\n\s*build:\s*\n\s*context: \.\/services\/api/);
+    expect(compose).toMatch(
+      /api:\s*\n\s*restart: unless-stopped\s*\n\s*build:\s*\n\s*context: \.\/services\/api/,
+    );
   });
 
   it("generates a CREATE TABLE for each declared table", async () => {

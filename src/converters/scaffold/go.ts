@@ -11,24 +11,28 @@ export function scaffoldGoService(req: ScaffoldRequest): ScaffoldResult {
     { path: `${dir}/Dockerfile`, content: dockerfile() },
     { path: `${dir}/go.mod`, content: goMod(mod) },
     { path: `${dir}/main.go`, content: mainGo(req.serviceName, req.endpoints) },
+    { path: `${dir}/main_test.go`, content: mainTestGo() },
     { path: `${dir}/.dockerignore`, content: ".git\n*.test\n*.out\n" },
   ];
-  return { files, buildContext: `./${dir}`, containerPort: PORT };
+  return {
+    files,
+    buildContext: `./${dir}`,
+    containerPort: PORT,
+    testCommand: "go test ./...",
+  };
 }
 
 function dockerfile(): string {
-  return `# syntax=docker/dockerfile:1.7
-FROM golang:1.24-alpine AS build
-WORKDIR /src
+  // Single-stage so \`docker compose run --rm <svc> go test ./...\` works
+  // without rebuilding into a separate test image. Image is bigger than a
+  // multi-stage scratch build, but local-deploy doesn't care.
+  return `FROM golang:1.24-alpine
+WORKDIR /app
 COPY go.mod ./
-RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /out/app ./...
-
-FROM alpine:3.20
-COPY --from=build /out/app /usr/local/bin/app
+RUN go build -o /usr/local/bin/app ./...
 EXPOSE ${PORT}
-ENTRYPOINT ["/usr/local/bin/app"]
+CMD ["/usr/local/bin/app"]
 `;
 }
 
@@ -72,13 +76,11 @@ import (
 	"time"
 )
 
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "${PORT}"
-	}
+var startedAt = time.Now()
 
-	startedAt := time.Now()
+// newMux returns the request multiplexer used by both the runtime server and
+// the test suite, so tests can hit handlers without binding a port.
+func newMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -90,9 +92,18 @@ func main() {
 
 ${handlers || "	// No endpoints declared on this Service node yet."}
 
+	return mux
+}
+
+func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "${PORT}"
+	}
+
 	logEnv()
 	log.Printf("[${serviceName}] listening on :%s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, newMux()); err != nil {
 		log.Fatalf("listen: %v", err)
 	}
 }
@@ -122,6 +133,44 @@ func logEnv() {
 	sort.Strings(keys)
 	for _, k := range keys {
 		log.Printf("  env %s=%s", k, os.Getenv(k))
+	}
+}
+`;
+}
+
+function mainTestGo(): string {
+  return `package main
+
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
+
+func TestHealthReturnsOK(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	newMux().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	var body map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body["ok"] != true {
+		t.Errorf("expected ok=true, got %v", body)
+	}
+}
+
+func TestUnknownRouteIs404(t *testing.T) {
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/no-such-route", nil)
+	newMux().ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rec.Code)
 	}
 }
 `;

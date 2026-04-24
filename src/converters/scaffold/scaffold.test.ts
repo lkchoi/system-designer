@@ -20,7 +20,7 @@ const baseData: SystemNodeData = {
 };
 
 describe("scaffoldService — node.js", () => {
-  it("produces Dockerfile, package.json, src/index.js, .dockerignore", () => {
+  it("produces Dockerfile, package.json, src/index.js, test/health.test.js, .dockerignore", () => {
     const result = scaffoldService({ serviceName: "api", data: baseData, endpoints: [] });
     const paths = result.files.map((f) => f.path).sort();
     expect(paths).toEqual([
@@ -28,9 +28,29 @@ describe("scaffoldService — node.js", () => {
       "services/api/Dockerfile",
       "services/api/package.json",
       "services/api/src/index.js",
+      "services/api/test/health.test.js",
     ]);
     expect(result.buildContext).toBe("./services/api");
     expect(result.containerPort).toBe(8080);
+    expect(result.testCommand).toBe("npm test");
+  });
+
+  it("package.json includes vitest as a dev dep + test script", () => {
+    const result = scaffoldService({ serviceName: "api", data: baseData, endpoints: [] });
+    const pkg = JSON.parse(
+      String(result.files.find((f) => f.path.endsWith("package.json"))!.content),
+    );
+    expect(pkg.devDependencies.vitest).toBeDefined();
+    expect(pkg.scripts.test).toBe("vitest run");
+  });
+
+  it("test file imports makeHandler from src/index.js", () => {
+    const result = scaffoldService({ serviceName: "api", data: baseData, endpoints: [] });
+    const test = String(
+      result.files.find((f) => f.path.endsWith("health.test.js"))!.content,
+    );
+    expect(test).toContain('from "../src/index.js"');
+    expect(test).toContain("makeHandler");
   });
 
   it("emits a /health route always", () => {
@@ -54,11 +74,12 @@ describe("scaffoldService — node.js", () => {
     expect(index).toContain('"GET /users"');
   });
 
-  it("Dockerfile installs prod deps and exposes the service port", () => {
+  it("Dockerfile installs deps (incl. dev) and exposes the service port", () => {
     const result = scaffoldService({ serviceName: "api", data: baseData, endpoints: [] });
     const dockerfile = String(result.files.find((f) => f.path.endsWith("Dockerfile"))!.content);
     expect(dockerfile).toContain("FROM node:22-alpine");
-    expect(dockerfile).toContain("npm install --omit=dev");
+    expect(dockerfile).toContain("RUN npm install");
+    expect(dockerfile).not.toContain("--omit=dev");
     expect(dockerfile).toContain("EXPOSE 8080");
   });
 
@@ -78,16 +99,27 @@ describe("scaffoldService — python", () => {
     plan: { technology: "Python (FastAPI/Django)" },
   };
 
-  it("produces Dockerfile, requirements.txt, src/main.py, .dockerignore", () => {
+  it("produces Dockerfile, requirements.txt, src + tests packages, .dockerignore", () => {
     const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
     const paths = result.files.map((f) => f.path).sort();
     expect(paths).toEqual([
       "services/api/.dockerignore",
       "services/api/Dockerfile",
       "services/api/requirements.txt",
+      "services/api/src/__init__.py",
       "services/api/src/main.py",
+      "services/api/tests/__init__.py",
+      "services/api/tests/test_health.py",
     ]);
     expect(result.containerPort).toBe(8000);
+    expect(result.testCommand).toBe("pytest -q");
+  });
+
+  it("requirements pin pytest + httpx for the test client", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const reqs = String(result.files.find((f) => f.path.endsWith("requirements.txt"))!.content);
+    expect(reqs).toContain("pytest==");
+    expect(reqs).toContain("httpx==");
   });
 
   it("emits a /health route + uvicorn launch", () => {
@@ -123,7 +155,7 @@ describe("scaffoldService — go", () => {
     plan: { technology: "Go (net/http, Gin, Fiber)" },
   };
 
-  it("produces Dockerfile, go.mod, main.go, .dockerignore", () => {
+  it("produces Dockerfile, go.mod, main.go, main_test.go, .dockerignore", () => {
     const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
     const paths = result.files.map((f) => f.path).sort();
     expect(paths).toEqual([
@@ -131,8 +163,17 @@ describe("scaffoldService — go", () => {
       "services/api/Dockerfile",
       "services/api/go.mod",
       "services/api/main.go",
+      "services/api/main_test.go",
     ]);
     expect(result.containerPort).toBe(8080);
+    expect(result.testCommand).toBe("go test ./...");
+  });
+
+  it("main_test.go uses httptest against newMux", () => {
+    const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
+    const test = String(result.files.find((f) => f.path.endsWith("main_test.go"))!.content);
+    expect(test).toContain("net/http/httptest");
+    expect(test).toContain("newMux().ServeHTTP");
   });
 
   it("emits a /health handler in main.go", () => {
@@ -153,11 +194,10 @@ describe("scaffoldService — go", () => {
     expect(main).toContain('r.Method != "GET"');
   });
 
-  it("Dockerfile is multi-stage and produces a static alpine image", () => {
+  it("Dockerfile uses golang:1.24-alpine and builds the binary in-place", () => {
     const result = scaffoldService({ serviceName: "api", data, endpoints: [] });
     const dockerfile = String(result.files.find((f) => f.path.endsWith("Dockerfile"))!.content);
-    expect(dockerfile).toContain("FROM golang:1.24-alpine AS build");
-    expect(dockerfile).toContain("FROM alpine");
-    expect(dockerfile).toContain("CGO_ENABLED=0");
+    expect(dockerfile).toContain("FROM golang:1.24-alpine");
+    expect(dockerfile).toContain("go build -o /usr/local/bin/app ./...");
   });
 });

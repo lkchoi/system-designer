@@ -16,6 +16,12 @@ export interface ScaffoldResult {
   buildContext: string;
   /** The in-container port the scaffolded server listens on. */
   containerPort: number;
+  /**
+   * Shell command to run inside the service container to execute its tests.
+   * The bundle's test.sh runs `docker compose run --rm --no-deps <service>
+   * <testCommand>` for every scaffolded service.
+   */
+  testCommand: string;
 }
 
 export interface ScaffoldRequest {

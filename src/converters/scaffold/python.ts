@@ -10,9 +10,17 @@ export function scaffoldPythonService(req: ScaffoldRequest): ScaffoldResult {
     { path: `${dir}/Dockerfile`, content: dockerfile() },
     { path: `${dir}/requirements.txt`, content: requirements() },
     { path: `${dir}/src/main.py`, content: mainPy(req.serviceName, req.endpoints) },
+    { path: `${dir}/src/__init__.py`, content: "" },
+    { path: `${dir}/tests/test_health.py`, content: testHealthPy() },
+    { path: `${dir}/tests/__init__.py`, content: "" },
     { path: `${dir}/.dockerignore`, content: "__pycache__\n*.pyc\n.venv\n.pytest_cache\n" },
   ];
-  return { files, buildContext: `./${dir}`, containerPort: PORT };
+  return {
+    files,
+    buildContext: `./${dir}`,
+    containerPort: PORT,
+    testCommand: "pytest -q",
+  };
 }
 
 function dockerfile(): string {
@@ -30,6 +38,30 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
 function requirements(): string {
   return `fastapi==0.115.5
 uvicorn[standard]==0.32.1
+pytest==8.3.4
+httpx==0.28.1
+`;
+}
+
+function testHealthPy(): string {
+  return `from fastapi.testclient import TestClient
+
+from src.main import app
+
+client = TestClient(app)
+
+
+def test_health_returns_ok():
+    res = client.get("/health")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["ok"] is True
+    assert "uptime_seconds" in body
+
+
+def test_unknown_route_is_404():
+    res = client.get("/no-such-route")
+    assert res.status_code == 404
 `;
 }
 
