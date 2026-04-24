@@ -6,6 +6,8 @@ import { cloudformationConverter } from "./cloudformation";
 function exportToLocalStack(design: DesignJSON): string {
   // Generate CloudFormation template
   const cfnResult = cloudformationConverter.exportDesign(design);
+  const cfnContent =
+    typeof cfnResult.content === "string" ? cfnResult.content : "<binary cfn output>";
 
   // Generate docker-compose for LocalStack
   const compose = {
@@ -59,7 +61,7 @@ echo "Stack deployment initiated"
 # --- docker-compose.yaml ---
 ${composeYaml}
 # --- init/template.yaml ---
-${cfnResult.content}
+${cfnContent}
 # --- init/deploy.sh ---
 ${initScript}`;
 }

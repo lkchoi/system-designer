@@ -15,7 +15,7 @@ export type FormatId =
 export type FormatCategory = "diagram" | "iac";
 
 export interface ExportResult {
-  content: string;
+  content: string | Blob;
   filename: string;
   mimeType: string;
 }
