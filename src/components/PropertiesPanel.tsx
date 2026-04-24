@@ -963,7 +963,7 @@ function DeployFields({ node, onUpdate }: DeployFieldsProps) {
   }
 
   function addEnv() {
-    onUpdate(node.id, { env: { ...(data.env ?? {}), "": "" } });
+    onUpdate(node.id, { env: { ...data.env, "": "" } });
   }
 
   function removeEnv(idx: number) {
