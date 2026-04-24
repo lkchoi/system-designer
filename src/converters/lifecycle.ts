@@ -115,7 +115,12 @@ function healthCheckFor(
   }
 }
 
-function urlsFor(
+/**
+ * URLs to print for a single node, given its host ports. Exported because the
+ * README generator needs the same logic to keep its URL table aligned with
+ * what `start.sh` prints at the end of a successful boot.
+ */
+export function urlsFor(
   componentType: SystemNodeData["componentType"],
   techId: string,
   serviceName: string,
@@ -129,14 +134,12 @@ function urlsFor(
         return [{ label: serviceName, url: `postgres://admin@localhost:${port}/app` }];
       if (techId === "mysql" || techId === "mariadb")
         return [{ label: serviceName, url: `mysql://root@localhost:${port}` }];
-      if (techId === "mongodb")
-        return [{ label: serviceName, url: `mongodb://localhost:${port}` }];
+      if (techId === "mongodb") return [{ label: serviceName, url: `mongodb://localhost:${port}` }];
       return [{ label: serviceName, url: `localhost:${port}` }];
     case "cache":
       return [{ label: serviceName, url: `redis://localhost:${port}` }];
     case "message-queue":
-      if (techId === "kafka")
-        return [{ label: serviceName, url: `localhost:${port} (kafka)` }];
+      if (techId === "kafka") return [{ label: serviceName, url: `localhost:${port} (kafka)` }];
       if (techId === "rabbitmq")
         return [
           { label: serviceName, url: `amqp://guest:guest@localhost:${port}` },
@@ -181,9 +184,7 @@ done`,
     .join("\n\n");
 
   const urlLines = urls.length
-    ? urls
-        .map((u) => `  printf "  %-32s %s\\n" "${u.label}" "${u.url}"`)
-        .join("\n")
+    ? urls.map((u) => `  printf "  %-32s %s\\n" "${u.label}" "${u.url}"`).join("\n")
     : '  echo "  (no service URLs)"';
 
   return `#!/usr/bin/env bash
