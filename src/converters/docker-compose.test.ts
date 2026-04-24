@@ -117,7 +117,15 @@ describe("docker-compose bundle", () => {
       "services/api/test/health.test.js",
       "start.sh",
       "stop.sh",
+      "test.sh",
     ]);
+  });
+
+  it("test.sh runs each scaffolded service's tests via docker compose", async () => {
+    const files = await unpackBundle();
+    const testSh = files.get("test.sh")!;
+    expect(testSh).toContain("docker compose run --rm --no-deps api npm test");
+    expect(testSh).toContain('echo "→ tests for api"');
   });
 
   it("compose entry uses build.context for the scaffolded service", async () => {

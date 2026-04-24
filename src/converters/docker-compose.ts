@@ -53,6 +53,8 @@ interface DeployableNode {
   hostPorts: number[];
   /** True when this entry was scaffolded by us (vs user-provided image / context). */
   scaffolded: boolean;
+  /** Shell command to run tests for a scaffolded service (e.g. "npm test"). */
+  testCommand?: string;
 }
 
 async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
@@ -81,12 +83,12 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     //   app code, so it's not useful on its own.
     // - other tiers: use the registry's docker mapping; if none, drop the node
     //   (we can't scaffold infra).
-    const isServiceTier =
-      data.componentType === "service" || data.componentType === "serverless";
+    const isServiceTier = data.componentType === "service" || data.componentType === "serverless";
     let image: string | undefined;
     let buildContext = data.buildContext;
     let scaffolded = false;
     let containerPortOverride: number | undefined;
+    let testCommand: string | undefined;
 
     if (data.image) {
       image = data.image;
@@ -111,6 +113,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
       scaffoldFiles.push(...scaffold.files);
       buildContext = scaffold.buildContext;
       containerPortOverride = scaffold.containerPort;
+      testCommand = scaffold.testCommand;
       scaffolded = true;
     }
 
@@ -132,6 +135,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
       containerPorts,
       hostPorts,
       scaffolded,
+      testCommand,
     });
   }
 
@@ -224,6 +228,10 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
   const readme = buildReadme(design, serviceNameByNodeId, urls, secrets.credentials);
 
   // 6) Pack into a zip bundle.
+  const testableServices = deployables
+    .filter((d) => d.scaffolded && d.testCommand)
+    .map((d) => ({ name: d.name, cmd: d.testCommand! }));
+
   const files: BundleFile[] = [
     { path: "docker-compose.yaml", content: composeYaml },
     { path: ".env", content: secrets.envFileContent },
@@ -231,10 +239,45 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     { path: "start.sh", content: lifecycle.startSh, executable: true },
     { path: "stop.sh", content: lifecycle.stopSh, executable: true },
     { path: "reset.sh", content: lifecycle.resetSh, executable: true },
+    { path: "test.sh", content: renderTestSh(testableServices), executable: true },
     ...initScripts.files,
     ...scaffoldFiles,
   ];
   return exportBundle(files, "local-stack");
+}
+
+function renderTestSh(services: Array<{ name: string; cmd: string }>): string {
+  if (services.length === 0) {
+    return `#!/usr/bin/env bash
+echo "No scaffolded services have tests."
+`;
+  }
+  const lines = services
+    .map(
+      (s) => `echo "→ tests for ${s.name}"
+docker compose run --rm --no-deps ${s.name} ${s.cmd} || fail=1`,
+    )
+    .join("\n\n");
+  return `#!/usr/bin/env bash
+# Runs every scaffolded service's tests inside its container.
+# A failure in any service short-circuits the exit code but lets the
+# remaining suites still run, so you see all failures in one pass.
+set -uo pipefail
+cd "$(dirname "$0")"
+
+fail=0
+
+${lines}
+
+if [ "$fail" -ne 0 ]; then
+  echo
+  echo "✗ One or more service test suites failed."
+  exit 1
+fi
+
+echo
+echo "✓ All service tests passed."
+`;
 }
 
 function needsDataVolume(componentType: ComponentType, techId: string): boolean {
