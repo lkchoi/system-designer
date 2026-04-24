@@ -59,6 +59,27 @@ export interface TechnologyPricing {
   modes?: PricingMode[];
 }
 
+export type Vendor =
+  | "aws"
+  | "gcp"
+  | "azure"
+  | "cloudflare"
+  | "vercel"
+  | "netlify"
+  | "oss"
+  | "multi";
+
+export const VENDORS: Vendor[] = [
+  "aws",
+  "gcp",
+  "azure",
+  "cloudflare",
+  "vercel",
+  "netlify",
+  "oss",
+  "multi",
+];
+
 export interface TechnologyInfo {
   id: string;
   name: string;
@@ -66,6 +87,7 @@ export interface TechnologyInfo {
   limits: string;
   purpose: string;
   providers: string[];
+  vendor: Vendor;
   pricing?: TechnologyPricing;
 }
 

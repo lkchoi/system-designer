@@ -1,4 +1,4 @@
-import type { ComponentType, TechnologyInfo } from "./types";
+import type { ComponentType, TechnologyInfo, Vendor } from "./types";
 
 // ---------------------------------------------------------------------------
 // Shared technology bases – cross-cutting techs whose name + providers are
@@ -8,32 +8,39 @@ import type { ComponentType, TechnologyInfo } from "./types";
 interface TechBase {
   name: string;
   providers: string[];
+  vendor: Vendor;
 }
 
 const SHARED: Record<string, TechBase> = {
   redis: {
     name: "Redis",
     providers: ["AWS ElastiCache", "GCP Memorystore", "Azure Cache", "Redis Cloud", "Upstash"],
+    vendor: "multi",
   },
   kafka: {
     name: "Apache Kafka",
     providers: ["Confluent Cloud", "AWS MSK", "Azure Event Hubs", "Aiven"],
+    vendor: "multi",
   },
   nginx: {
     name: "Nginx",
     providers: ["Self-hosted", "F5 Cloud", "AWS Marketplace"],
+    vendor: "oss",
   },
   envoy: {
     name: "Envoy",
     providers: ["Self-hosted", "Tetrate", "AWS App Mesh"],
+    vendor: "oss",
   },
   eventbridge: {
     name: "AWS EventBridge",
     providers: ["AWS"],
+    vendor: "aws",
   },
   flink: {
     name: "Apache Flink",
     providers: ["AWS Kinesis Data Analytics", "Confluent", "Ververica"],
+    vendor: "oss",
   },
 };
 
@@ -55,6 +62,7 @@ type Standalone = {
   throughput: string;
   limits: string;
   purpose: string;
+  vendor: Vendor;
 };
 
 type CatalogEntry = SharedRef | Standalone;
@@ -70,6 +78,7 @@ function resolve(entry: CatalogEntry): TechnologyInfo {
       id: entry.ref,
       name: base.name,
       providers: base.providers,
+      vendor: base.vendor,
       throughput: entry.throughput,
       limits: entry.limits,
       purpose: entry.purpose,
@@ -91,6 +100,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "32 TB max DB size, 1600 max connections default",
       purpose: "General-purpose OLTP relational database with strong ACID compliance",
       providers: ["AWS RDS", "GCP Cloud SQL", "Azure Database", "Neon", "Supabase"],
+      vendor: "oss",
     },
     {
       id: "mysql",
@@ -99,6 +109,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "256 TB max table size (InnoDB), 151 max connections default",
       purpose: "Widely deployed relational database, strong read performance",
       providers: ["AWS RDS", "GCP Cloud SQL", "Azure Database", "PlanetScale"],
+      vendor: "oss",
     },
     {
       id: "mongodb",
@@ -107,6 +118,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "16 MB max document size, no max DB size",
       purpose: "Document database for flexible schemas and rapid iteration",
       providers: ["MongoDB Atlas", "AWS DocumentDB", "Azure Cosmos DB"],
+      vendor: "oss",
     },
     {
       id: "dynamodb",
@@ -115,6 +127,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "400 KB max item size, 10 GB per partition",
       purpose: "Fully managed serverless key-value and document database",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "cassandra",
@@ -123,6 +136,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "2 GB max partition recommended, 2 billion cells per partition",
       purpose: "Wide-column store optimized for high write throughput and linear scalability",
       providers: ["AWS Keyspaces", "DataStax Astra", "Azure Managed Instance"],
+      vendor: "oss",
     },
     {
       id: "cockroachdb",
@@ -131,6 +145,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No max DB size, 64 MiB max SQL statement size",
       purpose: "Distributed SQL database with serializable isolation and automatic sharding",
       providers: ["CockroachDB Cloud", "AWS Marketplace", "GCP Marketplace"],
+      vendor: "oss",
     },
     {
       id: "sql-server",
@@ -139,6 +154,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "524 PB max DB size, 32767 max connections",
       purpose: "Enterprise relational database with deep BI and analytics integration",
       providers: ["Azure SQL", "AWS RDS", "GCP Cloud SQL"],
+      vendor: "multi",
     },
     {
       id: "oracle",
@@ -147,6 +163,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "128 TB max datafile, 65535 max sessions",
       purpose: "Enterprise-grade RDBMS for mission-critical OLTP and mixed workloads",
       providers: ["Oracle Cloud", "AWS RDS", "Azure"],
+      vendor: "multi",
     },
     {
       id: "tidb",
@@ -155,6 +172,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No max size, MySQL compatible",
       purpose: "Distributed NewSQL database combining OLTP and OLAP (HTAP)",
       providers: ["TiDB Cloud", "AWS Marketplace", "GCP Marketplace"],
+      vendor: "oss",
     },
     {
       id: "scylladb",
@@ -163,6 +181,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Cassandra-compatible, no hard partition size limit",
       purpose: "High-performance wide-column store, drop-in Cassandra replacement in C++",
       providers: ["ScyllaDB Cloud", "AWS Marketplace"],
+      vendor: "oss",
     },
     {
       id: "mariadb",
@@ -171,6 +190,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "256 TB max table size (InnoDB), configurable max connections",
       purpose: "Community-driven MySQL fork with enhanced storage engines and features",
       providers: ["AWS RDS", "Azure Database", "SkySQL", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "aurora",
@@ -179,6 +199,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "128 TB max storage, 5000 max connections (varies by instance)",
       purpose: "AWS-managed MySQL/PostgreSQL-compatible database with auto-scaling storage",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "sqlite",
@@ -187,6 +208,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "281 TB max DB size, single-writer concurrency, no network access",
       purpose: "Embedded serverless database for local storage, mobile apps, and edge computing",
       providers: ["Embedded (in-process)", "Turso (distributed)", "Cloudflare D1"],
+      vendor: "oss",
     },
     {
       id: "neo4j",
@@ -195,6 +217,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "34 billion nodes, 34 billion relationships per database",
       purpose: "Native graph database for connected data, knowledge graphs, and recommendations",
       providers: ["Neo4j Aura", "AWS Marketplace", "GCP Marketplace"],
+      vendor: "oss",
     },
     {
       id: "cosmos-db",
@@ -203,6 +226,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "2 MB max document size, 20 GB per logical partition",
       purpose: "Globally distributed multi-model database with turnkey geo-replication",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "influxdb",
@@ -211,6 +235,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 MB max line protocol payload, configurable retention",
       purpose: "Purpose-built time-series database for metrics, events, and IoT data",
       providers: ["InfluxDB Cloud", "AWS Marketplace", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "firestore",
@@ -219,6 +244,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 MB max document size, 1 MiB max field value, 40K indexes per database",
       purpose: "Serverless document database with real-time sync for mobile and web apps",
       providers: ["GCP", "Firebase"],
+      vendor: "gcp",
     },
     {
       id: "couchbase",
@@ -227,6 +253,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "20 MB max document size, configurable memory quota",
       purpose: "Distributed multi-model database with built-in cache, full-text search, and SQL++",
       providers: ["Couchbase Capella", "AWS Marketplace", "Azure Marketplace"],
+      vendor: "oss",
     },
   ],
 
@@ -250,6 +277,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limit, depends on plugins",
       purpose: "Open-source API gateway with extensive plugin ecosystem",
       providers: ["Kong Cloud", "AWS Marketplace", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "aws-api-gateway",
@@ -258,6 +286,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 MB payload, 29 sec timeout, 10K RPS soft limit",
       purpose: "Fully managed API gateway with native AWS integration",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "traefik",
@@ -266,6 +295,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limits, configurable",
       purpose: "Cloud-native reverse proxy with automatic service discovery",
       providers: ["Traefik Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "apigee",
@@ -274,6 +304,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 MB payload, quotas configurable",
       purpose: "Enterprise API management platform with analytics and monetization",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "azure-api-mgmt",
@@ -282,6 +313,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Varies by tier, 2 MB-6.5 MB request body",
       purpose: "Full-lifecycle API management with developer portal",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "cloudflare-api-gw",
@@ -290,6 +322,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "100 MB request body, configurable rate limits",
       purpose: "Edge-native API gateway with built-in DDoS protection",
       providers: ["Cloudflare"],
+      vendor: "cloudflare",
     },
   ],
 
@@ -301,6 +334,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1.7 GB heap default (V8), event loop single-threaded",
       purpose: "JavaScript runtime for I/O-intensive microservices",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
     {
       id: "go",
@@ -309,6 +343,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limits, goroutine-based concurrency",
       purpose: "Compiled language with goroutines for high-concurrency services",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
     {
       id: "java-spring",
@@ -317,6 +352,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "JVM heap configurable, thread-pool based",
       purpose: "Enterprise-grade framework with vast ecosystem and mature tooling",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
     {
       id: "python-fastapi",
@@ -325,6 +361,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "GIL limits CPU-bound concurrency, configurable workers",
       purpose: "Rapid development with strong data science and ML ecosystem",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
     {
       id: "rust-actix",
@@ -333,6 +370,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No GC, memory-safe without runtime overhead",
       purpose: "Systems-level performance with memory safety guarantees",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
     {
       id: "dotnet",
@@ -341,6 +379,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limits, async/await concurrency model",
       purpose: "Cross-platform high-performance framework with enterprise support",
       providers: ["Azure App Service", "Any cloud/container platform"],
+      vendor: "oss",
     },
     {
       id: "elixir-phoenix",
@@ -349,6 +388,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "BEAM VM soft real-time, per-process heap",
       purpose: "Fault-tolerant concurrent services leveraging Erlang VM",
       providers: ["Any cloud/container platform", "Fly.io"],
+      vendor: "oss",
     },
     {
       id: "grpc",
@@ -357,6 +397,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "4 MB default message size, configurable",
       purpose: "High-performance RPC framework with Protobuf serialization",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
   ],
 
@@ -374,6 +415,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 MB max value size, no persistence",
       purpose: "Simple high-performance distributed memory cache",
       providers: ["AWS ElastiCache", "GCP Memorystore"],
+      vendor: "oss",
     },
     {
       id: "dragonfly",
@@ -382,6 +424,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Redis-compatible, utilizes all CPU cores",
       purpose: "Modern in-memory store, multi-threaded Redis replacement",
       providers: ["Dragonfly Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "keydb",
@@ -390,6 +433,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Redis-compatible, multi-threaded",
       purpose: "Multi-threaded fork of Redis with active replication",
       providers: ["Self-hosted", "Snap"],
+      vendor: "oss",
     },
     {
       id: "hazelcast",
@@ -398,6 +442,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, distributed across cluster",
       purpose: "Distributed in-memory computing platform with data grid",
       providers: ["Hazelcast Cloud", "AWS Marketplace"],
+      vendor: "oss",
     },
     {
       id: "varnish",
@@ -406,6 +451,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Disk + memory, configurable",
       purpose: "HTTP accelerator for content-heavy web applications",
       providers: ["Self-hosted", "Fastly (Varnish-based)"],
+      vendor: "oss",
     },
     {
       id: "cdn-edge-cache",
@@ -414,6 +460,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Varies by provider, typically 512 MB max object",
       purpose: "Edge caching layer for static and dynamic content",
       providers: ["Cloudflare", "Fastly", "AWS CloudFront"],
+      vendor: "multi",
     },
   ],
 
@@ -437,6 +484,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "128 MB default max message size, configurable",
       purpose: "Feature-rich message broker with flexible routing (AMQP)",
       providers: ["AWS Amazon MQ", "CloudAMQP", "Azure"],
+      vendor: "oss",
     },
     {
       id: "sqs",
@@ -445,6 +493,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "256 KB max message size, 14 days retention",
       purpose: "Fully managed serverless message queue",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "google-pubsub",
@@ -453,6 +502,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 MB max message size, 31 days retention",
       purpose: "Fully managed real-time messaging with global ordering",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "nats",
@@ -461,6 +511,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 MB default max message size, configurable",
       purpose: "Lightweight cloud-native messaging with at-most-once and JetStream",
       providers: ["Synadia Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "pulsar",
@@ -469,6 +520,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5 MB default max message size, tiered storage",
       purpose: "Multi-tenant distributed messaging with built-in geo-replication",
       providers: ["StreamNative Cloud", "AWS Marketplace"],
+      vendor: "oss",
     },
     {
       id: "azure-service-bus",
@@ -477,6 +529,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "256 KB-100 MB depending on tier, 14 days default retention",
       purpose: "Enterprise message broker with transactions and dead-lettering",
       providers: ["Azure"],
+      vendor: "azure",
     },
   ],
 
@@ -488,6 +541,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5 TB max object size, unlimited total storage",
       purpose: "Industry-standard object storage with 11 nines durability",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "gcs",
@@ -496,6 +550,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5 TB max object size, unlimited total storage",
       purpose: "Unified object storage with multi-region and autoclass",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "azure-blob",
@@ -504,6 +559,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "4.75 TB max block blob, unlimited total storage",
       purpose: "Scalable object storage with hot/cool/archive tiers",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "minio",
@@ -512,6 +568,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5 TB max object size, S3-compatible",
       purpose: "High-performance S3-compatible object storage for private cloud",
       providers: ["Self-hosted", "MinIO Cloud"],
+      vendor: "oss",
     },
     {
       id: "r2",
@@ -520,6 +577,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5 TB max object size, no egress fees",
       purpose: "S3-compatible object storage with zero egress cost",
       providers: ["Cloudflare"],
+      vendor: "cloudflare",
     },
     {
       id: "efs",
@@ -528,6 +586,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No max file system size, 256 bytes min I/O",
       purpose: "Managed elastic NFS file system for shared workloads",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "ebs",
@@ -536,6 +595,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "64 TB max volume size, single-AZ",
       purpose: "Block storage volumes for EC2 instances",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "ceph",
@@ -544,6 +604,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limits, scales horizontally",
       purpose: "Unified distributed storage providing block, file, and object",
       providers: ["Self-hosted", "Red Hat Ceph"],
+      vendor: "oss",
     },
   ],
 
@@ -555,6 +616,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "100 MB free plan upload, 500 MB pro plan",
       purpose: "Global edge network with integrated security and Workers",
       providers: ["Cloudflare"],
+      vendor: "cloudflare",
     },
     {
       id: "cloudfront",
@@ -563,6 +625,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "30 GB max object, 250K RPS soft limit",
       purpose: "Global CDN tightly integrated with AWS ecosystem",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "fastly",
@@ -571,6 +634,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5 GB max object, configurable",
       purpose: "Edge cloud platform with real-time purging and Compute@Edge",
       providers: ["Fastly"],
+      vendor: "multi",
     },
     {
       id: "akamai",
@@ -579,6 +643,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable per contract",
       purpose: "World's largest CDN with advanced security and performance",
       providers: ["Akamai"],
+      vendor: "multi",
     },
     {
       id: "azure-cdn",
@@ -587,6 +652,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable per profile",
       purpose: "Global CDN with Microsoft and Verizon PoP networks",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "gcp-cloud-cdn",
@@ -595,6 +661,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 MB max cacheable object default",
       purpose: "CDN integrated with Google Cloud load balancing",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "vercel-edge",
@@ -603,6 +670,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "4 MB serverless function response, 50 MB edge function",
       purpose: "Frontend-optimized edge network with ISR and edge functions",
       providers: ["Vercel"],
+      vendor: "vercel",
     },
   ],
 
@@ -626,6 +694,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, minimal overhead",
       purpose: "Reliable, high-performance TCP/HTTP load balancer",
       providers: ["Self-hosted", "HAProxy Cloud"],
+      vendor: "oss",
     },
     {
       id: "aws-alb",
@@ -634,6 +703,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "100 targets per target group default, adjustable",
       purpose: "Layer 7 load balancer with content-based routing",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "aws-nlb",
@@ -642,6 +712,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Static IP per AZ, TCP/UDP/TLS",
       purpose: "Layer 4 load balancer for extreme performance",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "gcp-cloud-lb",
@@ -650,6 +721,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Global or regional, configurable",
       purpose: "Global anycast load balancing with auto-scaling",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "azure-lb",
@@ -658,6 +730,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Standard SKU supports availability zones",
       purpose: "Layer 4 load balancer for Azure virtual networks",
       providers: ["Azure"],
+      vendor: "azure",
     },
   ],
 
@@ -669,6 +742,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 rules per web ACL default (adjustable), 8 KB header inspection",
       purpose: "Web application firewall for AWS resources",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "cloudflare-waf",
@@ -677,6 +751,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable rules per zone",
       purpose: "Edge-deployed WAF with managed and custom rulesets",
       providers: ["Cloudflare"],
+      vendor: "cloudflare",
     },
     {
       id: "aws-security-groups",
@@ -685,6 +760,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "60 inbound + 60 outbound rules per SG",
       purpose: "Virtual firewall for EC2 instance-level network control",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "azure-firewall",
@@ -693,6 +769,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable rules, FQDN filtering",
       purpose: "Managed network security service for Azure VNets",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "gcp-cloud-armor",
@@ -701,6 +778,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, per-project quotas",
       purpose: "DDoS protection and WAF for Google Cloud workloads",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "palo-alto",
@@ -709,6 +787,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Model-dependent",
       purpose: "Enterprise next-generation firewall with threat prevention",
       providers: ["Palo Alto Cloud NGFW", "Self-hosted"],
+      vendor: "multi",
     },
     {
       id: "modsecurity",
@@ -717,6 +796,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, runs as module in Nginx/Apache",
       purpose: "Open-source WAF engine with OWASP Core Rule Set",
       providers: ["Self-hosted"],
+      vendor: "oss",
     },
   ],
 
@@ -734,6 +814,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable retry policies, 30 day message retention",
       purpose: "Enterprise webhook delivery platform with retry and verification",
       providers: ["Svix Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "hookdeck",
@@ -742,6 +823,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable rate limits, 30 day retention",
       purpose: "Webhook infrastructure for reliable ingestion and delivery",
       providers: ["Hookdeck Cloud"],
+      vendor: "multi",
     },
     {
       id: "zapier-webhooks",
@@ -750,6 +832,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 MB max payload, plan-dependent rate limits",
       purpose: "No-code webhook integration and automation platform",
       providers: ["Zapier"],
+      vendor: "multi",
     },
     {
       id: "ngrok",
@@ -758,6 +841,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Plan-dependent connections and bandwidth",
       purpose: "Ingress-as-a-service for exposing local services via webhook",
       providers: ["ngrok Cloud"],
+      vendor: "multi",
     },
     {
       id: "custom-webhook",
@@ -766,6 +850,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Application-dependent",
       purpose: "Self-built webhook endpoint with custom validation and processing",
       providers: ["Any cloud/container platform"],
+      vendor: "oss",
     },
   ],
 
@@ -783,6 +868,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "500 jobs per project, 1 minute minimum interval",
       purpose: "Managed cron job service for GCP",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "linux-cron",
@@ -791,6 +877,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 minute minimum granularity",
       purpose: "Standard Unix job scheduler for recurring tasks",
       providers: ["Any Linux server"],
+      vendor: "oss",
     },
     {
       id: "k8s-cronjob",
@@ -799,6 +886,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "100 CronJobs per namespace default, 1 minute granularity",
       purpose: "Kubernetes-native scheduled job execution",
       providers: ["Any Kubernetes cluster"],
+      vendor: "oss",
     },
     {
       id: "celery-beat",
@@ -807,6 +895,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Python, requires broker (Redis/RabbitMQ)",
       purpose: "Periodic task scheduler for Python Celery workers",
       providers: ["Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "temporal",
@@ -815,6 +904,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, 50 MB max event history",
       purpose: "Durable execution platform for reliable scheduled workflows",
       providers: ["Temporal Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "azure-logic-apps",
@@ -823,6 +913,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Recurrence trigger configurable, 4 MB action input",
       purpose: "Low-code workflow automation with scheduling triggers",
       providers: ["Azure"],
+      vendor: "azure",
     },
   ],
 
@@ -834,6 +925,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Browser memory, no hard limits",
       purpose: "Component-based UI library for building interactive web apps",
       providers: ["Vercel", "Netlify", "Any static host"],
+      vendor: "oss",
     },
     {
       id: "nextjs",
@@ -842,6 +934,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "50 MB serverless function, 4 MB edge function",
       purpose: "Full-stack React framework with SSR, SSG, and API routes",
       providers: ["Vercel", "AWS Amplify", "Any Node.js host"],
+      vendor: "oss",
     },
     {
       id: "vuejs",
@@ -850,6 +943,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Browser memory, no hard limits",
       purpose: "Progressive framework for building approachable UIs",
       providers: ["Any static host"],
+      vendor: "oss",
     },
     {
       id: "angular",
@@ -858,6 +952,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Browser memory, no hard limits",
       purpose: "Full-featured enterprise framework with dependency injection",
       providers: ["Any static host", "Firebase Hosting"],
+      vendor: "oss",
     },
     {
       id: "react-native",
@@ -866,6 +961,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Platform-dependent (iOS/Android)",
       purpose: "Cross-platform mobile development with React",
       providers: ["App Store", "Google Play", "Expo"],
+      vendor: "oss",
     },
     {
       id: "flutter",
@@ -874,6 +970,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Platform-dependent",
       purpose: "Cross-platform UI toolkit with Dart for mobile, web, and desktop",
       providers: ["App Store", "Google Play", "Web"],
+      vendor: "oss",
     },
     {
       id: "swiftui",
@@ -882,6 +979,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "iOS/macOS platform limits",
       purpose: "Native Apple platform development",
       providers: ["App Store"],
+      vendor: "oss",
     },
     {
       id: "kotlin-compose",
@@ -890,6 +988,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Android platform limits",
       purpose: "Modern Android native development with declarative UI",
       providers: ["Google Play"],
+      vendor: "oss",
     },
   ],
 
@@ -901,6 +1000,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard index size limit, ~2 billion documents per shard recommended",
       purpose: "Distributed search and analytics engine built on Apache Lucene",
       providers: ["Elastic Cloud", "AWS OpenSearch", "Azure"],
+      vendor: "oss",
     },
     {
       id: "opensearch",
@@ -909,6 +1009,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Similar to Elasticsearch (Lucene-based)",
       purpose: "Open-source fork of Elasticsearch for search and observability",
       providers: ["AWS OpenSearch", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "typesense",
@@ -917,6 +1018,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "In-memory, limited by RAM",
       purpose: "Fast typo-tolerant search engine optimized for instant search",
       providers: ["Typesense Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "meilisearch",
@@ -925,6 +1027,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "100 GB recommended max dataset, 500 indexes",
       purpose: "Lightning-fast search with typo tolerance and easy setup",
       providers: ["Meilisearch Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "algolia",
@@ -933,6 +1036,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "100 KB max record size, plan-dependent operations",
       purpose: "Hosted search API for fast, relevant search experiences",
       providers: ["Algolia"],
+      vendor: "multi",
     },
     {
       id: "solr",
@@ -941,6 +1045,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limits, Lucene-based",
       purpose: "Enterprise search platform with rich text processing",
       providers: ["Self-hosted", "SearchStax"],
+      vendor: "oss",
     },
     {
       id: "pinecone",
@@ -949,6 +1054,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "40 KB max metadata per vector, plan-dependent",
       purpose: "Vector database for similarity search and AI applications",
       providers: ["Pinecone"],
+      vendor: "multi",
     },
   ],
 
@@ -960,6 +1066,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "500 hosted zones, 10K records per zone default",
       purpose: "Highly available DNS with health checking and traffic routing",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "cloudflare-dns",
@@ -968,6 +1075,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "3500 DNS records per zone (free)",
       purpose: "Fastest authoritative DNS with global anycast and DDoS protection",
       providers: ["Cloudflare"],
+      vendor: "cloudflare",
     },
     {
       id: "gcp-cloud-dns",
@@ -976,6 +1084,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10K records per zone, 100 zones per project",
       purpose: "Managed authoritative DNS on Google's infrastructure",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "azure-dns",
@@ -984,6 +1093,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10K records per zone",
       purpose: "DNS hosting on Azure's global anycast network",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "ns1",
@@ -992,6 +1102,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Plan-dependent zones and records",
       purpose: "Intelligent DNS with traffic management and filter chains",
       providers: ["NS1/IBM Cloud"],
+      vendor: "multi",
     },
     {
       id: "coredns",
@@ -1000,6 +1111,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, plugin-based",
       purpose: "Flexible DNS server and Kubernetes default cluster DNS",
       providers: ["Self-hosted", "Kubernetes built-in"],
+      vendor: "oss",
     },
   ],
 
@@ -1011,6 +1123,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "15 min timeout, 10 GB memory, 250 MB package (unzipped)",
       purpose: "Event-driven serverless compute with broad trigger integration",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "gcf",
@@ -1019,6 +1132,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "9 min (1st gen) / 60 min (2nd gen), 32 GB memory",
       purpose: "Lightweight serverless functions on Google Cloud",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "azure-functions",
@@ -1027,6 +1141,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 min (consumption), 230 sec HTTP trigger, 1.5 GB memory",
       purpose: "Event-driven serverless compute with durable functions",
       providers: ["Azure"],
+      vendor: "azure",
     },
     {
       id: "cf-workers",
@@ -1035,6 +1150,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "128 MB memory, 10-30 ms CPU time (free), 50 ms (paid)",
       purpose: "Edge-deployed serverless with V8 isolates for ultra-low latency",
       providers: ["Cloudflare"],
+      vendor: "cloudflare",
     },
     {
       id: "vercel-functions",
@@ -1043,6 +1159,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 sec (hobby) / 300 sec (pro) timeout, 50 MB function size",
       purpose: "Serverless functions optimized for Next.js and frontend frameworks",
       providers: ["Vercel"],
+      vendor: "vercel",
     },
     {
       id: "fargate",
@@ -1051,6 +1168,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "4 vCPU, 30 GB memory per task",
       purpose: "Serverless containers without managing infrastructure",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "cloud-run",
@@ -1059,6 +1177,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "60 min timeout, 32 GB memory, 8 vCPU",
       purpose: "Serverless containers with scale-to-zero and request-based billing",
       providers: ["GCP"],
+      vendor: "gcp",
     },
   ],
 
@@ -1070,6 +1189,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "300K total containers, 110 pods per node default",
       purpose: "Industry-standard container orchestration for production workloads",
       providers: ["AWS EKS", "GCP GKE", "Azure AKS", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "ecs",
@@ -1078,6 +1198,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "5000 services per cluster, 10 containers per task",
       purpose: "AWS-native container orchestration with deep service integration",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "docker-swarm",
@@ -1086,6 +1207,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard limits, simpler than K8s",
       purpose: "Lightweight Docker-native container orchestration",
       providers: ["Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "nomad",
@@ -1094,6 +1216,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable, supports containers and non-containers",
       purpose: "Flexible workload orchestrator for containers, VMs, and binaries",
       providers: ["HashiCorp Cloud", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "openshift",
@@ -1102,6 +1225,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Cluster-size dependent",
       purpose: "Enterprise Kubernetes platform with integrated CI/CD and developer tools",
       providers: ["Red Hat Cloud", "AWS ROSA", "Azure ARO"],
+      vendor: "oss",
     },
     {
       id: "gke-autopilot",
@@ -1110,6 +1234,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Per-pod resource limits, Google-managed nodes",
       purpose: "Fully managed Kubernetes with per-pod billing and auto-provisioning",
       providers: ["GCP"],
+      vendor: "gcp",
     },
   ],
 
@@ -1133,6 +1258,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Micro-batch based, latency 100ms-seconds",
       purpose: "Micro-batch stream processing integrated with Spark ecosystem",
       providers: ["AWS EMR", "Databricks", "GCP Dataproc"],
+      vendor: "oss",
     },
     {
       id: "kinesis-streams",
@@ -1141,6 +1267,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 MB max record, 500 shards per account default",
       purpose: "Managed real-time data streaming on AWS",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "dataflow",
@@ -1149,6 +1276,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Configurable workers, unified batch and stream",
       purpose: "Fully managed stream and batch processing (Apache Beam)",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "kinesis-firehose",
@@ -1157,6 +1285,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1 MB max record, 60-900 sec buffer",
       purpose: "Serverless streaming ETL to data stores and analytics",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "risingwave",
@@ -1165,6 +1294,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "PostgreSQL-compatible, cloud-native",
       purpose: "Streaming database for real-time materialized views with SQL",
       providers: ["RisingWave Cloud", "Self-hosted"],
+      vendor: "oss",
     },
   ],
 
@@ -1176,6 +1306,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No storage limit, 16 MB max VARCHAR, compute credit-based",
       purpose: "Cloud-native data warehouse with separation of compute and storage",
       providers: ["Snowflake (AWS/GCP/Azure)"],
+      vendor: "multi",
     },
     {
       id: "bigquery",
@@ -1184,6 +1315,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "10 MB max row size, 4000 columns per table, 10 TB per query",
       purpose: "Serverless columnar data warehouse with built-in ML",
       providers: ["GCP"],
+      vendor: "gcp",
     },
     {
       id: "redshift",
@@ -1192,6 +1324,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "1.6 PB per cluster (RA3), 60 user tables per schema for Serverless",
       purpose: "Petabyte-scale columnar warehouse with Spectrum for S3 queries",
       providers: ["AWS"],
+      vendor: "aws",
     },
     {
       id: "databricks",
@@ -1200,6 +1333,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Based on underlying cloud storage, no fixed data size limits",
       purpose: "Unified analytics platform combining data lake and warehouse",
       providers: ["Databricks (AWS/GCP/Azure)"],
+      vendor: "multi",
     },
     {
       id: "clickhouse",
@@ -1208,6 +1342,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "No hard row count limit, columnar compression",
       purpose: "Blazing-fast OLAP column-oriented database for real-time analytics",
       providers: ["ClickHouse Cloud", "AWS Marketplace", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "druid",
@@ -1216,6 +1351,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Depends on cluster, segment-based storage",
       purpose: "Real-time analytics database for high-concurrency OLAP queries",
       providers: ["Imply Cloud", "AWS Marketplace", "Self-hosted"],
+      vendor: "oss",
     },
     {
       id: "duckdb",
@@ -1224,6 +1360,7 @@ const RAW_CATALOG: Record<ComponentType, CatalogEntry[]> = {
       limits: "Limited by local memory/disk",
       purpose: "Embedded analytical database for local OLAP on files and data frames",
       providers: ["Embedded (in-process)", "MotherDuck (cloud)"],
+      vendor: "oss",
     },
   ],
 };
