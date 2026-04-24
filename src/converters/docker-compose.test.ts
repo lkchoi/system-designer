@@ -244,4 +244,34 @@ describe("docker-compose bundle", () => {
     expect(result.filename).toBe("local-stack.zip");
     expect(result.mimeType).toBe("application/zip");
   });
+
+  it("prefixes every line of a multi-line description with #", async () => {
+    const design: DesignJSON = {
+      version: 1,
+      name: "X",
+      nodes: [
+        {
+          id: "svc",
+          type: "system",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "API",
+            description: "1. Parse mentions\n2. CRUD comments\n3. Pub notifications",
+            componentType: "service",
+            plan: { technology: "Node.js (Express/Fastify)" },
+            endpoints: [],
+            links: [],
+          },
+        },
+      ] as unknown as DesignJSON["nodes"],
+      edges: [] as unknown as DesignJSON["edges"],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      flowPaths: [],
+    };
+    const result = await dockerComposeConverter.exportDesign(design);
+    const buf = await (result.content as Blob).arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const compose = await zip.files["docker-compose.yaml"].async("string");
+    expect(compose).toContain("  # 1. Parse mentions\n  # 2. CRUD comments\n  # 3. Pub notifications\n  api:");
+  });
 });

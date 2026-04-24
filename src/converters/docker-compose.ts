@@ -242,12 +242,19 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
   // lineWidth: -1 disables folding; we'd rather have long shell commands on
   // one line than have YAML insert newlines into them.
   let composeYaml = yaml.dump(compose, { lineWidth: -1, noRefs: true });
-  // Inject service descriptions as comments above each service block.
+  // Inject service descriptions as comments above each service block. Each
+  // line of the description gets its own `# ` prefix so multi-line text
+  // doesn't break YAML.
   for (const [name, desc] of serviceDescriptions) {
     const marker = `  ${name}:\n`;
     const idx = composeYaml.indexOf(marker);
     if (idx === -1) continue;
-    composeYaml = composeYaml.slice(0, idx) + `  # ${desc}\n` + composeYaml.slice(idx);
+    const commentBlock =
+      desc
+        .split("\n")
+        .map((line) => `  # ${line}`)
+        .join("\n") + "\n";
+    composeYaml = composeYaml.slice(0, idx) + commentBlock + composeYaml.slice(idx);
   }
 
   // 5) Lifecycle scripts + README.
