@@ -15,6 +15,8 @@ export interface ResourceMapping {
   k8s?: { kind: string; apiVersion: string };
   /** Docker image for docker-compose / LocalStack */
   docker?: string;
+  /** Default in-container port(s) the docker image listens on. */
+  defaultPorts?: number[];
   /** CDK module and construct */
   cdk?: { module: string; construct: string };
   /** Pulumi module and resource */
@@ -37,6 +39,7 @@ const DB_ENTRIES: MappingEntry[] = [
       terraform: "aws_db_instance",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "postgres:17-alpine",
+      defaultPorts: [5432],
       cdk: { module: "aws-cdk-lib/aws-rds", construct: "DatabaseInstance" },
       pulumi: { module: "@pulumi/aws", resource: "rds.Instance" },
     },
@@ -49,6 +52,7 @@ const DB_ENTRIES: MappingEntry[] = [
       terraform: "aws_db_instance",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "mysql:9",
+      defaultPorts: [3306],
       cdk: { module: "aws-cdk-lib/aws-rds", construct: "DatabaseInstance" },
       pulumi: { module: "@pulumi/aws", resource: "rds.Instance" },
     },
@@ -60,6 +64,7 @@ const DB_ENTRIES: MappingEntry[] = [
       terraform: "mongodbatlas_cluster",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "mongo:8",
+      defaultPorts: [27017],
     },
   },
   {
@@ -69,6 +74,7 @@ const DB_ENTRIES: MappingEntry[] = [
       cfn: "AWS::DynamoDB::Table",
       terraform: "aws_dynamodb_table",
       docker: "amazon/dynamodb-local:latest",
+      defaultPorts: [8000],
       cdk: { module: "aws-cdk-lib/aws-dynamodb", construct: "Table" },
       pulumi: { module: "@pulumi/aws", resource: "dynamodb.Table" },
     },
@@ -81,6 +87,7 @@ const DB_ENTRIES: MappingEntry[] = [
       terraform: "aws_keyspaces_table",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "cassandra:5",
+      defaultPorts: [9042],
     },
   },
   {
@@ -99,6 +106,7 @@ const DB_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "cockroachdb/cockroach:v24.3",
+      defaultPorts: [26257],
     },
   },
   {
@@ -108,6 +116,7 @@ const DB_ENTRIES: MappingEntry[] = [
       cfn: "AWS::RDS::DBInstance",
       terraform: "aws_db_instance",
       docker: "mcr.microsoft.com/mssql/server:2022-latest",
+      defaultPorts: [1433],
     },
   },
 ];
@@ -122,6 +131,7 @@ const CACHE_ENTRIES: MappingEntry[] = [
       terraform: "aws_elasticache_cluster",
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "redis:8-alpine",
+      defaultPorts: [6379],
       cdk: { module: "aws-cdk-lib/aws-elasticache", construct: "CfnCacheCluster" },
       pulumi: { module: "@pulumi/aws", resource: "elasticache.Cluster" },
     },
@@ -134,6 +144,7 @@ const CACHE_ENTRIES: MappingEntry[] = [
       terraform: "aws_elasticache_cluster",
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "memcached:1.6-alpine",
+      defaultPorts: [11211],
     },
   },
 ];
@@ -148,6 +159,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
       terraform: "aws_msk_cluster",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "confluentinc/cp-kafka:7.9.0",
+      defaultPorts: [9092],
       cdk: { module: "aws-cdk-lib/aws-msk", construct: "CfnCluster" },
       pulumi: { module: "@pulumi/aws", resource: "msk.Cluster" },
     },
@@ -159,6 +171,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
       cfn: "AWS::SQS::Queue",
       terraform: "aws_sqs_queue",
       docker: "softwaremill/elasticmq-native:latest",
+      defaultPorts: [9324],
       cdk: { module: "aws-cdk-lib/aws-sqs", construct: "Queue" },
       pulumi: { module: "@pulumi/aws", resource: "sqs.Queue" },
     },
@@ -171,6 +184,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
       terraform: "aws_mq_broker",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "rabbitmq:4-management-alpine",
+      defaultPorts: [5672, 15672],
     },
   },
   {
@@ -179,6 +193,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "redis:8-alpine",
+      defaultPorts: [6379],
     },
   },
   {
@@ -187,6 +202,7 @@ const QUEUE_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "nats:2.11-alpine",
+      defaultPorts: [4222],
     },
   },
   {
@@ -207,6 +223,7 @@ const STORAGE_ENTRIES: MappingEntry[] = [
       cfn: "AWS::S3::Bucket",
       terraform: "aws_s3_bucket",
       docker: "minio/minio:RELEASE.2025-04-22T22-12-26Z",
+      defaultPorts: [9000, 9001],
       cdk: { module: "aws-cdk-lib/aws-s3", construct: "Bucket" },
       pulumi: { module: "@pulumi/aws", resource: "s3.Bucket" },
     },
@@ -274,6 +291,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
       docker: "nginx:1.27-alpine",
+      defaultPorts: [80],
     },
   },
   {
@@ -282,6 +300,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
       docker: "kong:3.9",
+      defaultPorts: [8000, 8443],
     },
   },
   {
@@ -290,6 +309,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
       docker: "envoyproxy/envoy:v1.33-latest",
+      defaultPorts: [10000, 9901],
     },
   },
   {
@@ -312,6 +332,7 @@ const NETWORKING_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Ingress", apiVersion: "networking.k8s.io/v1" },
       docker: "nginx:1.27-alpine",
+      defaultPorts: [80],
     },
   },
   {
@@ -355,6 +376,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "node:22-alpine",
+      defaultPorts: [8080],
     },
   },
   {
@@ -363,6 +385,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "golang:1.24-alpine",
+      defaultPorts: [8080],
     },
   },
   {
@@ -371,6 +394,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "eclipse-temurin:21-jre-alpine",
+      defaultPorts: [8080],
     },
   },
   {
@@ -379,6 +403,7 @@ const COMPUTE_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "python:3.13-slim",
+      defaultPorts: [8000],
     },
   },
   {
@@ -413,6 +438,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
       terraform: "aws_elasticsearch_domain",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "elasticsearch:8.17.4",
+      defaultPorts: [9200],
       cdk: { module: "aws-cdk-lib/aws-elasticsearch", construct: "Domain" },
     },
   },
@@ -424,6 +450,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
       terraform: "aws_opensearch_domain",
       k8s: { kind: "StatefulSet", apiVersion: "apps/v1" },
       docker: "opensearchproject/opensearch:2.19",
+      defaultPorts: [9200],
     },
   },
   {
@@ -459,6 +486,7 @@ const OTHER_ENTRIES: MappingEntry[] = [
     mapping: {
       k8s: { kind: "Deployment", apiVersion: "apps/v1" },
       docker: "flink:1.20",
+      defaultPorts: [8081],
     },
   },
   {
@@ -535,6 +563,28 @@ export function getDefaultMapping(componentType: ComponentType): ResourceMapping
     if (entry.componentType === componentType) return entry.mapping;
   }
   return undefined;
+}
+
+/**
+ * Resolve the in-container ports a docker image listens on.
+ * Falls back to [8080] when no specific mapping is registered.
+ */
+export function getDefaultPorts(componentType: ComponentType, techNameOrId: string): number[] {
+  const mapping = getResourceMapping(componentType, techNameOrId);
+  if (mapping?.defaultPorts && mapping.defaultPorts.length > 0) return mapping.defaultPorts;
+  const fallback = getDefaultMapping(componentType);
+  return fallback?.defaultPorts ?? [8080];
+}
+
+/**
+ * Allocate a unique host port given a preferred in-container port.
+ * Increments past collisions in the supplied set.
+ */
+export function allocateHostPort(preferred: number, used: Set<number>): number {
+  let port = preferred;
+  while (used.has(port)) port++;
+  used.add(port);
+  return port;
 }
 
 /** Reverse lookup: find componentType from a CloudFormation resource type */
