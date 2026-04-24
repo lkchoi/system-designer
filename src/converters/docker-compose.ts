@@ -14,6 +14,7 @@ import { buildServiceEnv } from "./wiring";
 import { generateSecrets } from "./secrets";
 import { buildLifecycleScripts, urlsFor } from "./lifecycle";
 import { buildReadme } from "./readme";
+import { generateInitScripts } from "./init-scripts";
 
 /** Component types whose nodes are not deployed by the local-deploy bundle. */
 const EXCLUDED_TIER: ReadonlySet<ComponentType> = new Set([
@@ -92,6 +93,9 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
   // 2) Generate secrets / .env file + per-container auth env.
   const secrets = generateSecrets(design, serviceNameByNodeId);
 
+  // 2b) Generate init scripts (e.g. schema.sql per Postgres/MySQL DB).
+  const initScripts = generateInitScripts(design, serviceNameByNodeId);
+
   // 3) Build the compose `services` dictionary.
   const services: Record<string, unknown> = {};
   const volumes: Record<string, unknown> = {};
@@ -124,11 +128,17 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     if (Object.keys(merged).length > 0) entry.environment = merged;
 
     // Volumes for stateful services so data survives compose recreation.
+    const entryVolumes: string[] = [];
     if (needsDataVolume(dep.data.componentType, dep.techId)) {
       const volName = `${dep.name}-data`;
-      entry.volumes = [`${volName}:${dataDirFor(dep.data.componentType, dep.techId)}`];
+      entryVolumes.push(`${volName}:${dataDirFor(dep.data.componentType, dep.techId)}`);
       volumes[volName] = {};
     }
+    // Init-script bind mounts (schema.sql etc.) — read-only.
+    for (const mount of initScripts.mountsByNodeId.get(dep.nodeId) ?? []) {
+      entryVolumes.push(`${mount.host}:${mount.container}${mount.readOnly ? ":ro" : ""}`);
+    }
+    if (entryVolumes.length > 0) entry.volumes = entryVolumes;
 
     // Image-specific overrides (e.g. MinIO needs a custom command).
     const cmd = imageCommandFor(dep);
@@ -176,6 +186,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     { path: "start.sh", content: lifecycle.startSh, executable: true },
     { path: "stop.sh", content: lifecycle.stopSh, executable: true },
     { path: "reset.sh", content: lifecycle.resetSh, executable: true },
+    ...initScripts.files,
   ];
   return exportBundle(files, "local-stack");
 }

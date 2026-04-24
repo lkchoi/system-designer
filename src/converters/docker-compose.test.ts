@@ -6,11 +6,13 @@ import type { DesignJSON } from "../db/io";
 beforeEach(() => {
   // Stable secrets for snapshot-style assertions.
   let counter = 0;
-  vi.spyOn(crypto, "getRandomValues").mockImplementation(<T extends ArrayBufferView | null>(arr: T): T => {
-    const view = new Uint8Array(arr!.buffer, arr!.byteOffset, arr!.byteLength);
-    for (let i = 0; i < view.length; i++) view[i] = (counter++ + i) & 0xff;
-    return arr;
-  });
+  vi.spyOn(crypto, "getRandomValues").mockImplementation(
+    <T extends ArrayBufferView | null>(arr: T): T => {
+      const view = new Uint8Array(arr!.buffer, arr!.byteOffset, arr!.byteLength);
+      for (let i = 0; i < view.length; i++) view[i] = (counter++ + i) & 0xff;
+      return arr;
+    },
+  );
 });
 
 const SAMPLE_DESIGN: DesignJSON = {
@@ -37,7 +39,13 @@ const SAMPLE_DESIGN: DesignJSON = {
       data: {
         label: "OrdersDB",
         componentType: "database",
-        plan: { technology: "PostgreSQL", database: "orders" },
+        plan: {
+          technology: "PostgreSQL",
+          database: "orders",
+          tables: "users, orders, line_items",
+          primaryKey: "id (UUID)",
+          indexes: "users_email_idx",
+        },
         endpoints: [],
         links: [],
       },
@@ -94,16 +102,32 @@ async function unpackBundle(): Promise<Map<string, string>> {
 }
 
 describe("docker-compose bundle", () => {
-  it("packs the expected six top-level files", async () => {
+  it("packs the expected top-level files plus init scripts", async () => {
     const files = await unpackBundle();
     expect([...files.keys()].sort()).toEqual([
       ".env",
       "README.md",
       "docker-compose.yaml",
+      "init/ordersdb/schema.sql",
       "reset.sh",
       "start.sh",
       "stop.sh",
     ]);
+  });
+
+  it("generates a CREATE TABLE for each declared table", async () => {
+    const files = await unpackBundle();
+    const sql = files.get("init/ordersdb/schema.sql")!;
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS users");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS orders");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS line_items");
+    expect(sql).toContain("users_email_idx");
+  });
+
+  it("mounts init scripts into the postgres container", async () => {
+    const files = await unpackBundle();
+    const compose = files.get("docker-compose.yaml")!;
+    expect(compose).toContain("./init/ordersdb:/docker-entrypoint-initdb.d:ro");
   });
 
   it("excludes the load-balancer from compose services", async () => {
@@ -118,7 +142,9 @@ describe("docker-compose bundle", () => {
   it("wires DATABASE_URL and REDIS_URL into the api service", async () => {
     const files = await unpackBundle();
     const compose = files.get("docker-compose.yaml")!;
-    expect(compose).toContain("DATABASE_URL: postgres://admin:${ORDERSDB_PASSWORD}@ordersdb:5432/orders");
+    expect(compose).toContain(
+      "DATABASE_URL: postgres://admin:${ORDERSDB_PASSWORD}@ordersdb:5432/orders",
+    );
     expect(compose).toContain("REDIS_URL: redis://sessions:6379");
   });
 
