@@ -39,7 +39,7 @@ export function buildLifecycleScripts(
     const name = serviceNameByNodeId.get(node.id);
     if (!name) continue;
     const ports = hostPortByNodeId.get(node.id) ?? [];
-    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "", "docker");
 
     const check = healthCheckFor(data.componentType, techId, name);
     if (check) checks.push(check);

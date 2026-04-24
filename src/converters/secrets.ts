@@ -42,7 +42,7 @@ export function generateSecrets(
     if (!name) continue;
 
     const upper = name.replace(/-/g, "_").toUpperCase();
-    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "", "docker");
 
     if (data.componentType === "database" && isPostgresLike(techId)) {
       const password = randomSecret();
@@ -53,7 +53,12 @@ export function generateSecrets(
         POSTGRES_USER: "admin",
         POSTGRES_PASSWORD: `\${${varName}}`,
       });
-      credentials.push({ serviceName: name, kind: "postgres", user: "admin", passwordVar: varName });
+      credentials.push({
+        serviceName: name,
+        kind: "postgres",
+        user: "admin",
+        passwordVar: varName,
+      });
     } else if (data.componentType === "database" && isMysqlLike(techId)) {
       const password = randomSecret();
       const varName = `${upper}_PASSWORD`;
@@ -80,7 +85,12 @@ export function generateSecrets(
         MINIO_ROOT_USER: `\${${userVar}}`,
         MINIO_ROOT_PASSWORD: `\${${passVar}}`,
       });
-      credentials.push({ serviceName: name, kind: "minio", user: "<see .env>", passwordVar: passVar });
+      credentials.push({
+        serviceName: name,
+        kind: "minio",
+        user: "<see .env>",
+        passwordVar: passVar,
+      });
     }
   }
 
@@ -108,4 +118,3 @@ function randomSecret(byteLength = 16): string {
   for (const b of bytes) bin += String.fromCharCode(b);
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-

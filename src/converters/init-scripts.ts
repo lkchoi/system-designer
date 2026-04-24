@@ -51,7 +51,7 @@ export function generateInitScripts(
     const serviceName = serviceNameByNodeId.get(node.id);
     if (!serviceName) continue;
 
-    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "", "docker");
 
     if (data.componentType === "database" && isPostgresLike(techId)) {
       const sql = renderPostgresSchema(data);
@@ -73,10 +73,7 @@ export function generateInitScripts(
           readOnly: true,
         },
       ]);
-    } else if (
-      data.componentType === "storage" &&
-      (techId === "s3" || techId === "minio")
-    ) {
+    } else if (data.componentType === "storage" && (techId === "s3" || techId === "minio")) {
       const buckets = parseList(data.plan?.bucketName).map(stripBucketPath).filter(Boolean);
       if (buckets.length === 0) continue;
       const script = renderMinioBuckets(serviceName, buckets);
@@ -266,11 +263,7 @@ function minioSidecarCmd(serviceName: string, buckets: string[]): string {
   return `until mc ls local >/dev/null 2>&1; do echo "waiting for ${serviceName}…"; sleep 1; done; ${lines}`;
 }
 
-function renderKafkaTopics(
-  serviceName: string,
-  topics: string[],
-  partitions: number,
-): string {
+function renderKafkaTopics(serviceName: string, topics: string[], partitions: number): string {
   const lines = topics
     .map(
       (t) =>
@@ -285,11 +278,7 @@ ${lines}
 `;
 }
 
-function kafkaSidecarCmd(
-  serviceName: string,
-  topics: string[],
-  partitions: number,
-): string {
+function kafkaSidecarCmd(serviceName: string, topics: string[], partitions: number): string {
   const lines = topics
     .map(
       (t) =>

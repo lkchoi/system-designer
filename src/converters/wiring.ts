@@ -57,7 +57,7 @@ type WiringKind =
   | "warehouse";
 
 function wiringKindFor(componentType: ComponentType, technology: string): WiringKind | null {
-  const techId = resolveTechId(componentType, technology);
+  const techId = resolveTechId(componentType, technology, "docker");
   switch (componentType) {
     case "database":
       if (techId === "postgresql" || techId === "cockroachdb" || techId === "aurora")
@@ -93,7 +93,7 @@ function envVarsFor(
   targetName: string,
   data: SystemNodeData,
 ): Record<string, string> {
-  const techId = resolveTechId(data.componentType, data.plan?.technology ?? "");
+  const techId = resolveTechId(data.componentType, data.plan?.technology ?? "", "docker");
   const ports = getDefaultPorts(data.componentType, techId);
   const port = ports[0];
   const dbName = data.plan?.database || data.plan?.dbName || "app";

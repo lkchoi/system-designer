@@ -73,7 +73,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     const data = node.data as SystemNodeData;
     if (EXCLUDED_TIER.has(data.componentType)) continue;
 
-    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "");
+    const techId = resolveTechId(data.componentType, data.plan?.technology ?? "", "docker");
     const mapping =
       getResourceMapping(data.componentType, techId) ?? getDefaultMapping(data.componentType);
 

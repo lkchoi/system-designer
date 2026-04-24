@@ -35,7 +35,7 @@ export interface ScaffoldRequest {
  * Falls back to Node.js when the runtime is not yet supported by a template.
  */
 export function scaffoldService(req: ScaffoldRequest): ScaffoldResult {
-  const techId = resolveTechId(req.data.componentType, req.data.plan?.technology ?? "");
+  const techId = resolveTechId(req.data.componentType, req.data.plan?.technology ?? "", "docker");
   switch (techId) {
     case "python-fastapi":
       return scaffoldPythonService(req);

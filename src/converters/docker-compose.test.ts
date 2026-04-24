@@ -275,6 +275,38 @@ describe("docker-compose bundle", () => {
     expect(startSh).toContain("→ waiting for ordersdb");
   });
 
+  it("deploys a cron node with no tech selected as ofelia, not eventbridge", async () => {
+    const design: DesignJSON = {
+      version: 1,
+      name: "X",
+      nodes: [
+        {
+          id: "cron",
+          type: "system",
+          position: { x: 0, y: 0 },
+          data: {
+            label: "Notification CRON",
+            componentType: "cron",
+            plan: { schedule: "@hourly", command: "echo hi" }, // no technology
+            endpoints: [],
+            links: [],
+          },
+        },
+      ] as unknown as DesignJSON["nodes"],
+      edges: [] as unknown as DesignJSON["edges"],
+      viewport: { x: 0, y: 0, zoom: 1 },
+      flowPaths: [],
+    };
+    const result = await dockerComposeConverter.exportDesign(design);
+    const buf = await (result.content as Blob).arrayBuffer();
+    const zip = await JSZip.loadAsync(buf);
+    const compose = await zip.files["docker-compose.yaml"].async("string");
+    expect(compose).toContain("notification-cron:");
+    expect(compose).toContain("mcuadros/ofelia");
+    // The init/.../config.ini should also be in the bundle.
+    expect(zip.files["init/notification-cron/config.ini"]).toBeDefined();
+  });
+
   it("collapses runs and trims trailing dashes when sanitizing labels", async () => {
     const design: DesignJSON = {
       version: 1,

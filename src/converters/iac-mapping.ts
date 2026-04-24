@@ -592,17 +592,30 @@ for (const entry of ALL_ENTRIES) {
  * Resolve a technology display name (e.g. "PostgreSQL") to its ID (e.g. "postgresql").
  * Returns the input unchanged if already an ID or not found in the catalog.
  *
- * If the input is empty, falls back to the registry's default tech for the
- * component type — so a Database node with no tech selected still resolves
- * to "postgresql" instead of "" (which would silently disable health checks,
- * env wiring, and schema generation in downstream consumers).
+ * Empty input falls back to the registry's default tech for the component
+ * type so downstream consumers don't silently lose the node. The bundle
+ * exporter passes prefer="docker" so cron / webhook / serverless tiers
+ * default to the first entry that actually has a docker image (linux-cron
+ * → ofelia, custom-webhook, etc.) rather than the registry's first entry
+ * (eventbridge, sns, lambda — all AWS-only with no local backend).
  */
-export function resolveTechId(componentType: ComponentType, techNameOrId: string): string {
+export function resolveTechId(
+  componentType: ComponentType,
+  techNameOrId: string,
+  prefer?: "docker",
+): string {
   if (techNameOrId) {
     if (MAPPING_INDEX.has(`${componentType}:${techNameOrId}`)) return techNameOrId;
     const info = getTechnology(componentType, techNameOrId);
     if (info?.id) return info.id;
     return techNameOrId.toLowerCase().replace(/\s+/g, "-");
+  }
+  if (prefer === "docker") {
+    for (const entry of ALL_ENTRIES) {
+      if (entry.componentType === componentType && entry.mapping.docker) {
+        return entry.technologyId;
+      }
+    }
   }
   for (const entry of ALL_ENTRIES) {
     if (entry.componentType === componentType) return entry.technologyId;
