@@ -162,3 +162,24 @@ test("drop a pattern template", async ({ page }) => {
   await expect(page.getByText("4 nodes")).toBeVisible();
   await expect(page.getByText("2 connections")).toBeVisible();
 });
+
+test("mode switching", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Default mode is Plan — stress controls should not be visible
+  const stressMultiplier = page.getByRole("button", { name: "1x" });
+  await expect(stressMultiplier).not.toBeVisible();
+
+  // Switch to Stress mode
+  await page.getByRole("button", { name: "Stress" }).click();
+  await expect(stressMultiplier).toBeVisible();
+
+  // Switch to Monitor mode — stress controls disappear
+  await page.getByRole("button", { name: "Monitor" }).click();
+  await expect(stressMultiplier).not.toBeVisible();
+
+  // Switch back to Plan
+  await page.getByRole("button", { name: "Plan" }).click();
+  await expect(stressMultiplier).not.toBeVisible();
+});
