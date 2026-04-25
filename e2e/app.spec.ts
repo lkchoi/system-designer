@@ -392,3 +392,27 @@ test("inline label editing on double-click", async ({ page }) => {
   // Label should update
   await expect(node.getByText("my-custom-db")).toBeVisible();
 });
+
+test("panel dock position toggle", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "database");
+  await page.locator(".react-flow__node").click();
+
+  // Panel starts docked to the right — should have a "Dock to bottom" button
+  const panel = page.locator("aside").filter({ hasText: "Properties" });
+  await expect(panel.locator("[title='Dock to bottom']")).toBeVisible();
+
+  // Toggle to bottom
+  await panel.locator("[title='Dock to bottom']").click();
+  await expect(panel.locator("[title='Dock to right']")).toBeVisible();
+
+  // The panel should now have border-t (bottom dock) instead of border-l
+  await expect(panel).toHaveClass(/border-t/);
+
+  // Toggle back to right
+  await panel.locator("[title='Dock to right']").click();
+  await expect(panel.locator("[title='Dock to bottom']")).toBeVisible();
+  await expect(panel).toHaveClass(/border-l/);
+});
