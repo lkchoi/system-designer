@@ -98,12 +98,7 @@ function architectureSection(
   scaffoldedByNodeId: Map<string, ScaffoldedServiceMeta>,
 ): string {
   const lines: string[] = ["## Architecture"];
-  const services = servicesBlock(
-    design,
-    serviceNameByNodeId,
-    hostPortByNodeId,
-    scaffoldedByNodeId,
-  );
+  const services = servicesBlock(design, serviceNameByNodeId, hostPortByNodeId, scaffoldedByNodeId);
   if (services) lines.push("", services);
   const infra = infrastructureBlock(design, serviceNameByNodeId, hostPortByNodeId);
   if (infra) lines.push("", infra);

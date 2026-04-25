@@ -96,7 +96,9 @@ describe("buildClaudeMd", () => {
         ["b", { techId: "python-fastapi", testCommand: "pytest" }],
       ]),
     );
-    expect(md).toMatch(/### Services \((Node\.js|Python \(FastAPI\))(, (Node\.js|Python \(FastAPI\)))\)/);
+    expect(md).toMatch(
+      /### Services \((Node\.js|Python \(FastAPI\))(, (Node\.js|Python \(FastAPI\)))\)/,
+    );
   });
 
   it("lists outgoing connections per service", () => {

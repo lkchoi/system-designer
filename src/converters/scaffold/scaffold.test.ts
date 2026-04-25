@@ -46,9 +46,7 @@ describe("scaffoldService — node.js", () => {
 
   it("test file imports makeHandler from src/index.js", () => {
     const result = scaffoldService({ serviceName: "api", data: baseData, endpoints: [] });
-    const test = String(
-      result.files.find((f) => f.path.endsWith("health.test.js"))!.content,
-    );
+    const test = String(result.files.find((f) => f.path.endsWith("health.test.js"))!.content);
     expect(test).toContain('from "../src/index.js"');
     expect(test).toContain("makeHandler");
   });

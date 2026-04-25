@@ -7,11 +7,13 @@ import { generateSecrets } from "./secrets";
 beforeEach(() => {
   // Make randomSecret deterministic for assertions.
   let counter = 0;
-  vi.spyOn(crypto, "getRandomValues").mockImplementation(<T extends ArrayBufferView | null>(arr: T): T => {
-    const view = new Uint8Array(arr!.buffer, arr!.byteOffset, arr!.byteLength);
-    for (let i = 0; i < view.length; i++) view[i] = (counter++ + i) & 0xff;
-    return arr;
-  });
+  vi.spyOn(crypto, "getRandomValues").mockImplementation(
+    <T extends ArrayBufferView | null>(arr: T): T => {
+      const view = new Uint8Array(arr!.buffer, arr!.byteOffset, arr!.byteLength);
+      for (let i = 0; i < view.length; i++) view[i] = (counter++ + i) & 0xff;
+      return arr;
+    },
+  );
 });
 
 function makeNode(
@@ -56,7 +58,9 @@ function design(nodes: Node<SystemNodeData>[]): DesignJSON {
 
 describe("generateSecrets", () => {
   it("emits a password var per postgres node and sets POSTGRES_PASSWORD on its container", () => {
-    const db = makeNode("db1", "database", { plan: { technology: "PostgreSQL", database: "users" } });
+    const db = makeNode("db1", "database", {
+      plan: { technology: "PostgreSQL", database: "users" },
+    });
     const result = generateSecrets(design([db]), new Map([["db1", "orders-db"]]));
 
     expect(result.envFileContent).toContain("ORDERS_DB_PASSWORD=");

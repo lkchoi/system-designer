@@ -20,10 +20,7 @@ export interface BundleFile {
 /**
  * Pack a set of virtual files into a downloadable zip Blob.
  */
-export async function exportBundle(
-  files: BundleFile[],
-  bundleName: string,
-): Promise<ExportResult> {
+export async function exportBundle(files: BundleFile[], bundleName: string): Promise<ExportResult> {
   const zip = new JSZip();
   for (const file of files) {
     zip.file(file.path, file.content, {
