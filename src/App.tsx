@@ -249,6 +249,16 @@ function Canvas({
     setAwarenessSelectedNode(selectedNodeId);
   }, [selectedNodeId, setAwarenessSelectedNode]);
 
+  // Dismiss properties panel if the selected node was deleted by a remote peer
+  useEffect(() => {
+    if (selectedNodeId && !nodes.some((n) => n.id === selectedNodeId)) {
+      setSelectedNodeId(null);
+    }
+    if (selectedEdgeId && !edges.some((e) => e.id === selectedEdgeId)) {
+      setSelectedEdgeId(null);
+    }
+  }, [nodes, edges, selectedNodeId, selectedEdgeId]);
+
   // Auto-save nodes and edges
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {

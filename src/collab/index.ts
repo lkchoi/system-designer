@@ -1,6 +1,10 @@
 export { CollabProvider, useCollab } from "./provider";
+export type { CollabContextValue } from "./provider";
 export { useCollabState } from "./useCollabState";
 export { useYjsUndoRedo } from "./useYjsUndoRedo";
 export { LOCAL_ORIGIN } from "./sync";
 export { getRoomIdFromUrl, getShareUrl } from "./roomApi";
 export type { ConnectionStatus } from "./connection";
+export { useAwareness } from "./useAwareness";
+export type { UserPresence } from "./useAwareness";
+export { CursorOverlay } from "./CursorOverlay";
