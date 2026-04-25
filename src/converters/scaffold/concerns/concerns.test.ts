@@ -84,7 +84,7 @@ describe("resolveConcerns", () => {
       { targetName: "events", targetComponentType: "message-queue", targetTechId: "kafka" },
     ];
     const slots = resolveConcerns("go", connections);
-    expect(slots.deps).toHaveProperty("github.com/segmentio/kafka-go");
+    expect("github.com/segmentio/kafka-go" in slots.deps).toBe(true);
     expect(slots.imports.some((i) => i.includes("kafka-go"))).toBe(true);
   });
 
