@@ -2,6 +2,7 @@ import type { ComponentType } from "../types";
 import type { ToolDef } from "./types";
 import CapacityCalculator from "./capacity-calculator/CapacityCalculator";
 import CronTranslator from "./cron-translator/CronTranslator";
+import SlaCalculator from "./sla-calculator/SlaCalculator";
 
 const TOOLS: ToolDef[] = [
   {
@@ -25,6 +26,32 @@ const TOOLS: ToolDef[] = [
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2",
     component: CronTranslator,
     relevantTo: ["cron", "serverless"],
+  },
+  {
+    id: "sla-calculator",
+    label: "SLA Calculator",
+    icon: "M9 12l2 2 4-4M12 2a10 10 0 100 20 10 10 0 000-20z",
+    component: SlaCalculator,
+    relevantTo: [
+      "database",
+      "api-gateway",
+      "service",
+      "cache",
+      "message-queue",
+      "storage",
+      "cdn",
+      "load-balancer",
+      "firewall",
+      "webhook",
+      "cron",
+      "client",
+      "search-engine",
+      "dns",
+      "serverless",
+      "container-orchestration",
+      "stream-processor",
+      "data-warehouse",
+    ],
   },
 ];
 
