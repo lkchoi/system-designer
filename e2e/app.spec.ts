@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import fs from "node:fs";
 
 /** Drop a component onto the canvas at (clientX, clientY) via synthetic DragEvent. */
 async function dropOnCanvas(page: Page, type: string, clientX: number, clientY: number) {
@@ -202,4 +203,35 @@ test("stress testing toggles failure state", async ({ page }) => {
   // Click again: down → healthy (OFFLINE disappears)
   await node.click();
   await expect(node.getByText("OFFLINE")).not.toBeVisible();
+});
+
+test("export native JSON", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Build a small design
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+  await connectNodes(page, 0, 1);
+  await expect(page.getByText("1 connections")).toBeVisible();
+
+  // Wait for auto-save debounce (500ms) before exporting
+  await page.waitForTimeout(600);
+
+  // Open export dialog
+  await page.locator("[title='Export (⌘E)']").click();
+  await expect(page.getByText("Export Design")).toBeVisible();
+
+  // Click JSON format tile and capture download
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: /^JSON/ }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toMatch(/\.json$/);
+
+  // Verify the download contains our nodes and edges
+  const content = await download.path().then((p) => fs.readFileSync(p!, "utf-8"));
+  const data = JSON.parse(content);
+  expect(data.nodes).toHaveLength(2);
+  expect(data.edges).toHaveLength(1);
 });
