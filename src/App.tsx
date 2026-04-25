@@ -49,6 +49,8 @@ const ExportDialog = lazy(() => import("./components/ExportDialog"));
 const CompareView = lazy(() => import("./components/CompareView"));
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
+import { useStressRecording } from "./hooks/useStressRecording";
+import { useFlowPath } from "./hooks/useFlowPath";
 import { randomMetrics } from "./data";
 import { registry } from "./registry";
 import type {
@@ -61,8 +63,6 @@ import type {
   EffectiveStress,
   StressFailure,
   StressConfig,
-  SavedFlow,
-  StressMutation,
   StressScenario,
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
@@ -77,9 +77,7 @@ import {
   deleteDesign,
   loadDesignState,
   saveDesignState,
-  saveFlowPath,
   forkDesign,
-  deleteFlowPath,
 } from "./db";
 import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
@@ -172,30 +170,36 @@ function Canvas({
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [panelWidth, setPanelWidth] = useState(340);
   const [panelHeight, setPanelHeight] = useState(260);
-  const [flowPath, setFlowPath] = useState<string[]>([]);
-  const [isPathMode, setIsPathMode] = useState(false);
-  const [savedFlows, setSavedFlows] = useState<SavedFlow[]>(initialState.flowPaths);
-  const [showSaveForm, setShowSaveForm] = useState(false);
-  const [saveName, setSaveName] = useState("");
-  const [saveDesc, setSaveDesc] = useState("");
-  const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
+  const {
+    flowPath,
+    isPathMode,
+    savedFlows,
+    showSaveForm,
+    setShowSaveForm,
+    saveName,
+    setSaveName,
+    saveDesc,
+    setSaveDesc,
+    activeFlowId,
+    pathStepsRef,
+    saveNameRef,
+    togglePathMode,
+    clearPath,
+    saveFlow,
+    deleteFlow: deleteFlowHandler,
+    loadFlow,
+    appendToPath,
+    openSaveForm,
+  } = useFlowPath(designId, initialState.flowPaths);
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
   const [showCronTranslator, setShowCronTranslator] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
-  const [stressScenarios, setStressScenarios] = useState<StressScenario[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const recordBuffer = useRef<StressMutation[]>([]);
-  const recordStart = useRef(0);
-  const playbackTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [showDesignMenu, setShowDesignMenu] = useState(false);
   const [editingDesignName, setEditingDesignName] = useState(false);
   const [designNameDraft, setDesignNameDraft] = useState("");
   const canvasRef = useRef<HTMLDivElement>(null);
-  const pathStepsRef = useRef<HTMLDivElement>(null);
-  const saveNameRef = useRef<HTMLInputElement>(null);
   const filterInputRef = useRef<HTMLInputElement>(null);
   const clearFilterRef = useRef<(() => void) | null>(null);
   const designNameRef = useRef<HTMLInputElement>(null);
@@ -602,118 +606,25 @@ function Canvas({
 
   // --- Stress recording ---
 
-  const recordMutation = useCallback(
-    (mutation: Omit<StressMutation, "timestamp">) => {
-      if (!isRecording) return;
-      recordBuffer.current.push({
-        ...mutation,
-        timestamp: Date.now() - recordStart.current,
-      });
-    },
-    [isRecording],
-  );
-
-  const onUpdateNodeDataR = useCallback(
-    (id: string, partial: Partial<SystemNodeData>) => {
-      recordMutation({ type: "node", targetId: id, data: partial as Record<string, unknown> });
-      onUpdateNodeData(id, partial);
-    },
-    [onUpdateNodeData, recordMutation],
-  );
-
-  const onUpdateEdgeDataR = useCallback(
-    (id: string, partial: Partial<EdgeData>) => {
-      recordMutation({ type: "edge", targetId: id, data: partial as Record<string, unknown> });
-      onUpdateEdgeData(id, partial);
-    },
-    [onUpdateEdgeData, recordMutation],
-  );
-
-  const setStressConfigR = useCallback(
-    (updater: (prev: StressConfig) => StressConfig) => {
-      setStressConfig((prev) => {
-        const next = updater(prev);
-        recordMutation({ type: "config", data: next as unknown as Record<string, unknown> });
-        return next;
-      });
-    },
-    [recordMutation],
-  );
-
-  const resetStressR = useCallback(() => {
-    recordMutation({ type: "reset", data: {} });
-    resetStress();
-  }, [resetStress, recordMutation]);
-
-  const startRecording = useCallback(() => {
-    resetStress();
-    recordBuffer.current = [];
-    recordStart.current = Date.now();
-    setIsRecording(true);
-  }, [resetStress]);
-
-  const stopRecording = useCallback((name: string) => {
-    setIsRecording(false);
-    if (recordBuffer.current.length === 0) return;
-    const scenario: StressScenario = {
-      id: ulid(),
-      name,
-      mutations: recordBuffer.current,
-      duration: Date.now() - recordStart.current,
-    };
-    setStressScenarios((prev) => [...prev, scenario]);
-    recordBuffer.current = [];
-  }, []);
-
-  const playScenario = useCallback(
-    (scenario: StressScenario) => {
-      resetStress();
-      setIsPlaying(true);
-      const timers: ReturnType<typeof setTimeout>[] = [];
-      for (const mutation of scenario.mutations) {
-        timers.push(
-          setTimeout(() => {
-            if (mutation.type === "node" && mutation.targetId) {
-              onUpdateNodeData(mutation.targetId, mutation.data as Partial<SystemNodeData>);
-            } else if (mutation.type === "edge" && mutation.targetId) {
-              onUpdateEdgeData(mutation.targetId, mutation.data as Partial<EdgeData>);
-            } else if (mutation.type === "config") {
-              setStressConfig(mutation.data as unknown as StressConfig);
-            } else if (mutation.type === "reset") {
-              resetStress();
-            }
-          }, mutation.timestamp),
-        );
-      }
-      timers.push(
-        setTimeout(() => {
-          setIsPlaying(false);
-        }, scenario.duration + 100),
-      );
-      playbackTimers.current = timers;
-    },
-    [resetStress, onUpdateNodeData, onUpdateEdgeData],
-  );
-
-  const stopPlayback = useCallback(() => {
-    for (const t of playbackTimers.current) clearTimeout(t);
-    playbackTimers.current = [];
-    setIsPlaying(false);
-  }, []);
-
-  const deleteScenario = useCallback((id: string) => {
-    setStressScenarios((prev) => prev.filter((s) => s.id !== id));
-  }, []);
+  const {
+    isRecording,
+    isPlaying,
+    stressScenarios,
+    onUpdateNodeDataR,
+    onUpdateEdgeDataR,
+    setStressConfigR,
+    resetStressR,
+    startRecording,
+    stopRecording,
+    playScenario,
+    stopPlayback,
+    deleteScenario,
+  } = useStressRecording(onUpdateNodeData, onUpdateEdgeData, resetStress, setStressConfig);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: AppNode) => {
       if (isPathMode && node.type === "system") {
-        setFlowPath((prev) => {
-          if (prev.length > 0 && prev[prev.length - 1] === node.id) {
-            return prev.slice(0, -1);
-          }
-          return [...prev, node.id];
-        });
+        appendToPath(node.id);
         return;
       }
       if (mode === "stress" && node.type === "system") {
@@ -796,17 +707,6 @@ function Canvas({
     [stressEffects, partitionedEdges, slowEdges, stressConfig],
   );
 
-  const togglePathMode = useCallback(() => {
-    setIsPathMode((prev) => {
-      if (!prev) setFlowPath([]);
-      return !prev;
-    });
-  }, []);
-
-  const clearPath = useCallback(() => {
-    setFlowPath([]);
-    setActiveFlowId(null);
-  }, []);
 
   const hotkeyActions = useMemo<Record<string, () => void>>(
     () => ({
@@ -826,8 +726,7 @@ function Canvas({
       "toggle-path": () => togglePathMode(),
       "save-path": () => {
         if (isPathMode && flowPath.length > 0) {
-          setShowSaveForm(true);
-          setTimeout(() => saveNameRef.current?.focus(), 0);
+          openSaveForm();
         }
       },
       "clear-path": () => {
@@ -947,42 +846,6 @@ function Canvas({
     [nodes],
   );
 
-  const saveFlow = useCallback(() => {
-    if (!saveName.trim() || flowPath.length === 0) return;
-    const flow: SavedFlow = {
-      id: ulid(),
-      name: saveName.trim(),
-      description: saveDesc.trim(),
-      steps: [...flowPath],
-    };
-    saveFlowPath(designId, flow);
-    setSavedFlows((prev) => [...prev, flow]);
-    setShowSaveForm(false);
-    setSaveName("");
-    setSaveDesc("");
-    setActiveFlowId(flow.id);
-  }, [saveName, saveDesc, flowPath, designId]);
-
-  const deleteFlow = useCallback(
-    (id: string) => {
-      deleteFlowPath(id);
-      setSavedFlows((prev) => prev.filter((f) => f.id !== id));
-      if (activeFlowId === id) setActiveFlowId(null);
-    },
-    [activeFlowId],
-  );
-
-  const loadFlow = useCallback((flow: SavedFlow) => {
-    setFlowPath(flow.steps);
-    setActiveFlowId(flow.id);
-    setIsPathMode(true);
-  }, []);
-
-  useEffect(() => {
-    if (pathStepsRef.current) {
-      pathStepsRef.current.scrollLeft = pathStepsRef.current.scrollWidth;
-    }
-  }, [flowPath]);
 
   const startResize = useCallback(
     (e: React.PointerEvent, axis: "x" | "y", onMove: (delta: number) => void) => {
@@ -1057,7 +920,7 @@ function Canvas({
             savedFlows={savedFlows}
             activeFlowId={activeFlowId}
             onLoadFlow={loadFlow}
-            onDeleteFlow={deleteFlow}
+            onDeleteFlow={deleteFlowHandler}
             getNodeLabel={getNodeLabel}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
@@ -1710,10 +1573,7 @@ function Canvas({
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           className="flex items-center gap-[5px] px-2.5 py-[3px] rounded text-xs font-medium text-accent bg-transparent transition-all duration-150 whitespace-nowrap hover:bg-accent-bg"
-                          onClick={() => {
-                            setShowSaveForm(true);
-                            setTimeout(() => saveNameRef.current?.focus(), 0);
-                          }}
+                          onClick={openSaveForm}
                           title="Save flow"
                         >
                           <svg
