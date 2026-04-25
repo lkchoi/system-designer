@@ -85,6 +85,7 @@ import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
 import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl } from "./collab";
+import { CursorOverlay, useAwareness } from "./collab/CursorOverlay";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
 type StickyFlowNode = Node<StickyNoteData, "sticky">;
@@ -166,6 +167,7 @@ function Canvas({
     initialState.edges,
   );
   const collab = useCollab();
+  const { remoteUsers, setSelectedNode: setAwarenessSelectedNode } = useAwareness();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("plan");
@@ -241,6 +243,11 @@ function Canvas({
       collab.joinRoom(roomId);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Broadcast selection to awareness
+  useEffect(() => {
+    setAwarenessSelectedNode(selectedNodeId);
+  }, [selectedNodeId, setAwarenessSelectedNode]);
 
   // Auto-save nodes and edges
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1691,6 +1698,7 @@ function Canvas({
                   pannable
                   zoomable
                 />
+                {collab.roomId && <CursorOverlay />}
               </ReactFlow>
             </div>
             {showPanel && (
