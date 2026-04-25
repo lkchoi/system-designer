@@ -151,3 +151,14 @@ test("undo and redo", async ({ page }) => {
   await page.locator("[title='Redo (⌘⇧Z)']").click();
   await expect(page.getByText("0 nodes")).toBeVisible();
 });
+
+test("drop a pattern template", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Drop Cache-Aside pattern — creates a container + 3 system nodes + 2 edges
+  await addNode(page, "pattern:cache-aside", 0.4, 0.5);
+
+  await expect(page.getByText("4 nodes")).toBeVisible();
+  await expect(page.getByText("2 connections")).toBeVisible();
+});
