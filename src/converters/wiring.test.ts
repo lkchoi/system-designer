@@ -186,6 +186,138 @@ describe("buildServiceEnv", () => {
     expect(env.DB_HOST).toBe("primary");
   });
 
+  it("wires mysql into DB_* and DATABASE_URL with mysql:// prefix", () => {
+    const svc = makeNode("svc", "service");
+    const db = makeNode("db", "database", {
+      plan: { technology: "MySQL", database: "orders" },
+    });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, db], [{ source: "svc", target: "db" }]),
+      new Map([
+        ["svc", "svc"],
+        ["db", "mysql-db"],
+      ]),
+    );
+    expect(env.DB_HOST).toBe("mysql-db");
+    expect(env.DB_PORT).toBe("3306");
+    expect(env.DB_USER).toBe("admin");
+    expect(env.DB_PASSWORD).toBe("${MYSQL_DB_PASSWORD}");
+    expect(env.DB_NAME).toBe("orders");
+    expect(env.DATABASE_URL).toBe("mysql://admin:${MYSQL_DB_PASSWORD}@mysql-db:3306/orders");
+  });
+
+  it("wires mongo into MONGO_* vars", () => {
+    const svc = makeNode("svc", "service");
+    const db = makeNode("db", "database", {
+      plan: { technology: "MongoDB", database: "analytics" },
+    });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, db], [{ source: "svc", target: "db" }]),
+      new Map([
+        ["svc", "svc"],
+        ["db", "docs-db"],
+      ]),
+    );
+    expect(env.MONGO_HOST).toBe("docs-db");
+    expect(env.MONGO_PORT).toBe("27017");
+    expect(env.MONGO_DB).toBe("analytics");
+    expect(env.MONGO_URL).toBe("mongodb://docs-db:27017/analytics");
+  });
+
+  it("wires rabbitmq into RABBITMQ_URL with amqp://", () => {
+    const svc = makeNode("svc", "service");
+    const mq = makeNode("mq", "message-queue", { plan: { technology: "RabbitMQ" } });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, mq], [{ source: "svc", target: "mq" }]),
+      new Map([
+        ["svc", "svc"],
+        ["mq", "broker"],
+      ]),
+    );
+    expect(env.RABBITMQ_URL).toBe("amqp://guest:guest@broker:5672");
+  });
+
+  it("wires nats into NATS_URL with nats://", () => {
+    const svc = makeNode("svc", "service");
+    const mq = makeNode("mq", "message-queue", { plan: { technology: "NATS" } });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, mq], [{ source: "svc", target: "mq" }]),
+      new Map([
+        ["svc", "svc"],
+        ["mq", "bus"],
+      ]),
+    );
+    expect(env.NATS_URL).toBe("nats://bus:4222");
+  });
+
+  it("wires redis as message-queue into REDIS_URL", () => {
+    const svc = makeNode("svc", "service");
+    const mq = makeNode("mq", "message-queue", { plan: { technology: "Redis" } });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, mq], [{ source: "svc", target: "mq" }]),
+      new Map([
+        ["svc", "svc"],
+        ["mq", "redis-mq"],
+      ]),
+    );
+    expect(env.REDIS_URL).toBe("redis://redis-mq:6379");
+  });
+
+  it("wires elasticsearch into ES_URL with http://", () => {
+    const svc = makeNode("svc", "service");
+    const se = makeNode("se", "search-engine", { plan: { technology: "Elasticsearch" } });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, se], [{ source: "svc", target: "se" }]),
+      new Map([
+        ["svc", "svc"],
+        ["se", "search"],
+      ]),
+    );
+    expect(env.ES_URL).toBe("http://search:9200");
+  });
+
+  it("wires clickhouse (data-warehouse) into WAREHOUSE_URL", () => {
+    const svc = makeNode("svc", "service");
+    const wh = makeNode("wh", "data-warehouse", { plan: { technology: "ClickHouse" } });
+    const env = buildServiceEnv(
+      svc,
+      designWith([svc, wh], [{ source: "svc", target: "wh" }]),
+      new Map([
+        ["svc", "svc"],
+        ["wh", "analytics-wh"],
+      ]),
+    );
+    expect(env.WAREHOUSE_URL).toBe("http://analytics-wh:8123");
+  });
+
+  it("returns empty env for unsupported component types", () => {
+    const svc = makeNode("svc", "service");
+    const dns = makeNode("dns", "dns" as SystemNodeData["componentType"]);
+    const client = makeNode("client", "client" as SystemNodeData["componentType"]);
+    const env = buildServiceEnv(
+      svc,
+      designWith(
+        [svc, dns, client],
+        [
+          { source: "svc", target: "dns" },
+          { source: "svc", target: "client" },
+        ],
+      ),
+      new Map([
+        ["svc", "svc"],
+        ["dns", "route53"],
+        ["client", "browser"],
+      ]),
+    );
+    expect(env).toEqual({});
+  });
+
   it("explicit node env overrides auto-wired values", () => {
     const svc = makeNode("svc", "service", {
       env: { DB_HOST: "custom-host", EXTRA: "1" },
