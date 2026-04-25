@@ -7,6 +7,9 @@ import CacheSizer from "./cache-sizer/CacheSizer";
 import JwtInspector from "./jwt-inspector/JwtInspector";
 import PartitionCalculator from "./partition-calculator/PartitionCalculator";
 import ConnectionPoolSizer from "./connection-pool-sizer/ConnectionPoolSizer";
+import ServerlessCostEstimator from "./serverless-cost-estimator/ServerlessCostEstimator";
+import StorageGrowthProjector from "./storage-growth-projector/StorageGrowthProjector";
+import ReplicationPlanner from "./replication-planner/ReplicationPlanner";
 
 const TOOLS: ToolDef[] = [
   {
@@ -84,6 +87,27 @@ const TOOLS: ToolDef[] = [
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z",
     component: ConnectionPoolSizer,
     relevantTo: ["database", "cache"],
+  },
+  {
+    id: "serverless-cost-estimator",
+    label: "Serverless Cost Estimator",
+    icon: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
+    component: ServerlessCostEstimator,
+    relevantTo: ["serverless"],
+  },
+  {
+    id: "storage-growth-projector",
+    label: "Storage Growth Projector",
+    icon: "M3 3v18h18M7 16l4-8 4 4 4-8",
+    component: StorageGrowthProjector,
+    relevantTo: ["storage", "data-warehouse"],
+  },
+  {
+    id: "replication-planner",
+    label: "Replication Planner",
+    icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM8 12h8M12 8v8",
+    component: ReplicationPlanner,
+    relevantTo: ["database", "cache", "message-queue"],
   },
 ];
 
