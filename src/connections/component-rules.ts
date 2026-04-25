@@ -1,0 +1,108 @@
+import type { ComponentConnectionRule } from "../connections";
+
+/**
+ * Layer 1: Component-to-component connection defaults.
+ *
+ * Each entry defines the default protocol, format, edge label, and
+ * commonality score for a directional component type pair.
+ *
+ * Commonality (0–1) reflects how frequently this pairing appears in
+ * real-world architectures. Used for ranking connection recommendations.
+ */
+export const COMPONENT_RULES: readonly ComponentConnectionRule[] = [
+  // ─── service → * ──────────────────────────────────────────────────────
+  { source: "service", target: "database", protocol: "TCP", format: "JSON", label: "queries", commonality: 0.95 },
+  { source: "service", target: "cache", protocol: "TCP", format: "Binary", label: "caches", commonality: 0.9 },
+  { source: "service", target: "message-queue", protocol: "TCP", format: "JSON", label: "publishes", commonality: 0.85 },
+  { source: "service", target: "storage", protocol: "HTTPS", format: "Binary", label: "stores", commonality: 0.8 },
+  { source: "service", target: "search-engine", protocol: "HTTP", format: "JSON", label: "searches", commonality: 0.75 },
+  { source: "service", target: "service", protocol: "HTTP", format: "JSON", label: "calls", commonality: 0.7 },
+  { source: "service", target: "stream-processor", protocol: "TCP", format: "Binary", label: "feeds", commonality: 0.55 },
+  { source: "service", target: "data-warehouse", protocol: "TCP", format: "Binary", label: "loads", commonality: 0.5 },
+  { source: "service", target: "webhook", protocol: "HTTPS", format: "JSON", label: "notifies", commonality: 0.5 },
+
+  // ─── serverless → * ──────────────────────────────────────────────────
+  { source: "serverless", target: "database", protocol: "HTTPS", format: "JSON", label: "queries", commonality: 0.9 },
+  { source: "serverless", target: "storage", protocol: "HTTPS", format: "JSON", label: "reads/writes", commonality: 0.85 },
+  { source: "serverless", target: "message-queue", protocol: "HTTPS", format: "JSON", label: "publishes", commonality: 0.75 },
+  { source: "serverless", target: "cache", protocol: "TCP", format: "Binary", label: "caches", commonality: 0.7 },
+  { source: "serverless", target: "search-engine", protocol: "HTTPS", format: "JSON", label: "searches", commonality: 0.55 },
+  { source: "serverless", target: "webhook", protocol: "HTTPS", format: "JSON", label: "notifies", commonality: 0.5 },
+  { source: "serverless", target: "data-warehouse", protocol: "HTTPS", format: "JSON", label: "loads", commonality: 0.45 },
+  { source: "serverless", target: "serverless", protocol: "HTTPS", format: "JSON", label: "invokes", commonality: 0.4 },
+
+  // ─── api-gateway → * ─────────────────────────────────────────────────
+  { source: "api-gateway", target: "service", protocol: "HTTP", format: "JSON", label: "routes", commonality: 0.95 },
+  { source: "api-gateway", target: "serverless", protocol: "HTTPS", format: "JSON", label: "invokes", commonality: 0.9 },
+  { source: "api-gateway", target: "container-orchestration", protocol: "HTTP", format: "JSON", label: "routes", commonality: 0.5 },
+  { source: "api-gateway", target: "api-gateway", protocol: "HTTPS", format: "JSON", label: "chains", commonality: 0.3 },
+
+  // ─── load-balancer → * ───────────────────────────────────────────────
+  { source: "load-balancer", target: "service", protocol: "HTTP", format: "JSON", label: "balances", commonality: 0.95 },
+  { source: "load-balancer", target: "api-gateway", protocol: "HTTP", format: "JSON", label: "forwards", commonality: 0.8 },
+  { source: "load-balancer", target: "container-orchestration", protocol: "HTTP", format: "JSON", label: "balances", commonality: 0.7 },
+  { source: "load-balancer", target: "serverless", protocol: "HTTP", format: "JSON", label: "balances", commonality: 0.6 },
+  { source: "load-balancer", target: "load-balancer", protocol: "HTTP", format: "JSON", label: "chains", commonality: 0.3 },
+
+  // ─── cdn → * ─────────────────────────────────────────────────────────
+  { source: "cdn", target: "storage", protocol: "HTTPS", format: "Binary", label: "origin", commonality: 0.9 },
+  { source: "cdn", target: "load-balancer", protocol: "HTTPS", format: "JSON", label: "origin", commonality: 0.85 },
+  { source: "cdn", target: "api-gateway", protocol: "HTTPS", format: "JSON", label: "origin", commonality: 0.6 },
+
+  // ─── client → * ──────────────────────────────────────────────────────
+  { source: "client", target: "api-gateway", protocol: "HTTPS", format: "JSON", label: "requests", commonality: 0.95 },
+  { source: "client", target: "cdn", protocol: "HTTPS", format: "Binary", label: "fetches", commonality: 0.9 },
+  { source: "client", target: "dns", protocol: "", format: "", label: "resolves", commonality: 0.85 },
+  { source: "client", target: "load-balancer", protocol: "HTTPS", format: "JSON", label: "requests", commonality: 0.7 },
+  { source: "client", target: "firewall", protocol: "HTTPS", format: "JSON", label: "requests", commonality: 0.5 },
+
+  // ─── dns → * ─────────────────────────────────────────────────────────
+  { source: "dns", target: "cdn", protocol: "", format: "", label: "resolves", commonality: 0.9 },
+  { source: "dns", target: "load-balancer", protocol: "", format: "", label: "resolves", commonality: 0.9 },
+  { source: "dns", target: "api-gateway", protocol: "", format: "", label: "resolves", commonality: 0.7 },
+  { source: "dns", target: "firewall", protocol: "", format: "", label: "resolves", commonality: 0.6 },
+  { source: "dns", target: "storage", protocol: "", format: "", label: "resolves", commonality: 0.4 },
+
+  // ─── firewall → * ────────────────────────────────────────────────────
+  { source: "firewall", target: "load-balancer", protocol: "TCP", format: "Binary", label: "filters", commonality: 0.85 },
+  { source: "firewall", target: "api-gateway", protocol: "TCP", format: "Binary", label: "filters", commonality: 0.7 },
+  { source: "firewall", target: "service", protocol: "TCP", format: "Binary", label: "filters", commonality: 0.5 },
+  { source: "firewall", target: "serverless", protocol: "TCP", format: "Binary", label: "filters", commonality: 0.4 },
+
+  // ─── cron → * ────────────────────────────────────────────────────────
+  { source: "cron", target: "serverless", protocol: "HTTP", format: "JSON", label: "triggers", commonality: 0.85 },
+  { source: "cron", target: "service", protocol: "HTTP", format: "JSON", label: "triggers", commonality: 0.8 },
+  { source: "cron", target: "message-queue", protocol: "TCP", format: "JSON", label: "enqueues", commonality: 0.6 },
+  { source: "cron", target: "webhook", protocol: "HTTPS", format: "JSON", label: "triggers", commonality: 0.55 },
+  { source: "cron", target: "database", protocol: "TCP", format: "JSON", label: "queries", commonality: 0.4 },
+
+  // ─── message-queue → * ───────────────────────────────────────────────
+  { source: "message-queue", target: "stream-processor", protocol: "TCP", format: "Binary", label: "feeds", commonality: 0.85 },
+  { source: "message-queue", target: "service", protocol: "TCP", format: "JSON", label: "delivers", commonality: 0.8 },
+  { source: "message-queue", target: "serverless", protocol: "TCP", format: "JSON", label: "triggers", commonality: 0.75 },
+  { source: "message-queue", target: "webhook", protocol: "HTTPS", format: "JSON", label: "delivers", commonality: 0.45 },
+
+  // ─── storage → * ─────────────────────────────────────────────────────
+  { source: "storage", target: "serverless", protocol: "HTTPS", format: "JSON", label: "triggers", commonality: 0.7 },
+  { source: "storage", target: "stream-processor", protocol: "HTTPS", format: "Binary", label: "feeds", commonality: 0.5 },
+
+  // ─── stream-processor → * ────────────────────────────────────────────
+  { source: "stream-processor", target: "data-warehouse", protocol: "TCP", format: "Binary", label: "sinks", commonality: 0.8 },
+  { source: "stream-processor", target: "database", protocol: "TCP", format: "Binary", label: "sinks", commonality: 0.75 },
+  { source: "stream-processor", target: "storage", protocol: "HTTPS", format: "Binary", label: "sinks", commonality: 0.6 },
+  { source: "stream-processor", target: "message-queue", protocol: "TCP", format: "Binary", label: "produces", commonality: 0.55 },
+  { source: "stream-processor", target: "service", protocol: "HTTP", format: "JSON", label: "calls", commonality: 0.4 },
+  { source: "stream-processor", target: "serverless", protocol: "HTTP", format: "JSON", label: "invokes", commonality: 0.35 },
+
+  // ─── container-orchestration → * ─────────────────────────────────────
+  { source: "container-orchestration", target: "service", protocol: "", format: "", label: "orchestrates", commonality: 0.7 },
+  { source: "container-orchestration", target: "database", protocol: "TCP", format: "Binary", label: "manages", commonality: 0.6 },
+  { source: "container-orchestration", target: "cache", protocol: "TCP", format: "Binary", label: "manages", commonality: 0.55 },
+  { source: "container-orchestration", target: "message-queue", protocol: "TCP", format: "Binary", label: "manages", commonality: 0.5 },
+  { source: "container-orchestration", target: "storage", protocol: "HTTPS", format: "Binary", label: "manages", commonality: 0.45 },
+  { source: "container-orchestration", target: "serverless", protocol: "", format: "", label: "manages", commonality: 0.35 },
+
+  // ─── database → * (CDC / replication) ────────────────────────────────
+  { source: "database", target: "message-queue", protocol: "TCP", format: "Binary", label: "CDC", commonality: 0.4 },
+  { source: "database", target: "stream-processor", protocol: "TCP", format: "Binary", label: "CDC", commonality: 0.35 },
+];
