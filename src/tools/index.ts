@@ -128,6 +128,20 @@ const TOOLS: ToolDef[] = [
     component: lazy(() => import("./regex-tester/RegexTester")),
     relevantTo: ["api-gateway", "firewall"],
   },
+  {
+    id: "consistent-hashing-visualizer",
+    label: "Consistent Hashing",
+    icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM12 8a4 4 0 100 8 4 4 0 000-8z",
+    component: lazy(() => import("./consistent-hashing-visualizer/ConsistentHashingVisualizer")),
+    relevantTo: ["database", "cache", "load-balancer"],
+  },
+  {
+    id: "shard-key-analyzer",
+    label: "Shard Key Analyzer",
+    icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7zM7 7l10 10",
+    component: lazy(() => import("./shard-key-analyzer/ShardKeyAnalyzer")),
+    relevantTo: ["database", "data-warehouse"],
+  },
 ];
 
 export function getToolsForType(type: ComponentType): ToolDef[] {
