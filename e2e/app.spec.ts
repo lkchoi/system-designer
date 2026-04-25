@@ -130,3 +130,24 @@ test("delete a node", async ({ page }) => {
   await expect(page.getByText("1 nodes")).toBeVisible();
   await expect(page.getByText("0 connections")).toBeVisible();
 });
+
+test("undo and redo", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Add a node then delete it
+  await addNode(page, "database");
+  await expect(page.getByText("1 nodes")).toBeVisible();
+
+  await page.locator(".react-flow__node").click();
+  await page.keyboard.press("Delete");
+  await expect(page.getByText("0 nodes")).toBeVisible();
+
+  // Click the Undo button
+  await page.locator("[title='Undo (⌘Z)']").click();
+  await expect(page.getByText("1 nodes")).toBeVisible();
+
+  // Click the Redo button
+  await page.locator("[title='Redo (⌘⇧Z)']").click();
+  await expect(page.getByText("0 nodes")).toBeVisible();
+});
