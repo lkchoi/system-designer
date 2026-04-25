@@ -4,6 +4,7 @@ import type {
   SystemNodeData,
   NodeStatus,
   Endpoint,
+  QueryParam,
   ResourceLink,
   CAPClassification,
   EffectiveStress,
@@ -12,6 +13,7 @@ import type { Mode, PanelPosition } from "../App";
 import { displayType } from "../data";
 import { registry, PRICING } from "../registry";
 import { ulid } from "ulid";
+import ToolLauncher from "../tools/ToolLauncher";
 
 const STATUSES: NodeStatus[] = ["healthy", "warning", "error", "idle"];
 
@@ -43,6 +45,16 @@ const METHOD_COLORS: Record<string, string> = {
   delete: "text-[#ef4444] bg-[rgba(239,68,68,0.12)]",
 };
 
+const ALL_RESPONSE_CODES = [200, 201, 204, 400, 401, 403, 404, 409, 422, 500, 503];
+
+function defaultResponseCodes(method: string): number[] {
+  const base = [200, 400, 401, 403, 404, 500];
+  const m = method.toLowerCase();
+  if (m === "post" || m === "put") return [...base, 409, 422];
+  if (m === "delete") return [...base, 204];
+  return base;
+}
+
 const STRESS_STATE_COLORS: Record<string, string> = {
   none: "bg-[rgba(34,197,94,0.12)] text-[#22c55e]",
   overloaded: "bg-[rgba(234,179,8,0.12)] text-[#eab308]",
@@ -69,7 +81,13 @@ export default function PropertiesPanel({
   }
 
   function addEndpoint() {
-    const ep: Endpoint = { id: ulid(), method: "GET", path: "" };
+    const ep: Endpoint = {
+      id: ulid(),
+      method: "GET",
+      path: "",
+      queryParams: [],
+      responseCodes: defaultResponseCodes("GET"),
+    };
     onUpdate(node.id, { endpoints: [...(data.endpoints ?? []), ep] });
     setEditingEndpointId(ep.id);
   }
@@ -382,6 +400,8 @@ export default function PropertiesPanel({
           </>
         )}
 
+        {mode === "plan" && <ToolLauncher componentType={data.componentType} />}
+
         {mode === "plan" && data.componentType === "api-gateway" && (
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
@@ -436,67 +456,183 @@ export default function PropertiesPanel({
                   editingEndpointId === ep.id ? (
                     <div
                       key={ep.id}
-                      className="group flex items-center gap-2 px-2.5 py-1.5 bg-surface border-accent rounded-lg transition-[border-color] duration-150 border"
+                      className="flex flex-col gap-2 px-2.5 py-2 bg-surface border-accent rounded-lg transition-[border-color] duration-150 border"
                     >
-                      <select
-                        className="text-[11px] font-bold px-1 py-[3px] rounded bg-surface-2 border border-border text-text-bright outline-none cursor-pointer shrink-0"
-                        value={ep.method}
-                        onChange={(e) => updateEndpoint(ep.id, { method: e.target.value })}
-                      >
-                        {HTTP_METHODS.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        className="flex-1 text-[13px] font-mono px-1.5 py-0.5 rounded bg-surface-2 border border-border text-text-bright outline-none min-w-0 focus:border-accent"
-                        value={ep.path}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const match = val.match(/^(GET|POST|PUT|PATCH|DELETE)\s+/i);
-                          if (match) {
-                            updateEndpoint(ep.id, {
-                              method: match[1].toUpperCase(),
-                              path: val.slice(match[0].length),
-                            });
-                          } else {
-                            updateEndpoint(ep.id, { path: val });
-                          }
-                        }}
-                        placeholder="/api/v1/resource"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            addEndpoint();
-                          } else if (e.key === "Escape") {
-                            if (!ep.path.trim()) {
-                              deleteEndpoint(ep.id);
-                            } else {
-                              setEditingEndpointId(null);
+                      {/* Method + Path row */}
+                      <div className="flex items-center gap-2">
+                        <select
+                          className="text-[11px] font-bold px-1 py-[3px] rounded bg-surface-2 border border-border text-text-bright outline-none cursor-pointer shrink-0"
+                          value={ep.method}
+                          onChange={(e) => {
+                            const method = e.target.value;
+                            const update: Partial<Endpoint> = { method };
+                            if (!ep.responseCodes || ep.responseCodes.length === 0) {
+                              update.responseCodes = defaultResponseCodes(method);
                             }
-                          }
-                        }}
-                      />
-                      <button
-                        className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
-                        onClick={() => setEditingEndpointId(null)}
-                        title="Done"
-                      >
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                            updateEndpoint(ep.id, update);
+                          }}
                         >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </button>
+                          {HTTP_METHODS.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="flex-1 text-[13px] font-mono px-1.5 py-0.5 rounded bg-surface-2 border border-border text-text-bright outline-none min-w-0 focus:border-accent"
+                          value={ep.path}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const match = val.match(/^(GET|POST|PUT|PATCH|DELETE)\s+/i);
+                            if (match) {
+                              updateEndpoint(ep.id, {
+                                method: match[1].toUpperCase(),
+                                path: val.slice(match[0].length),
+                              });
+                            } else {
+                              updateEndpoint(ep.id, { path: val });
+                            }
+                          }}
+                          placeholder="/api/v1/resource"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addEndpoint();
+                            } else if (e.key === "Escape") {
+                              if (!ep.path.trim()) {
+                                deleteEndpoint(ep.id);
+                              } else {
+                                setEditingEndpointId(null);
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          className="flex items-center justify-center w-[22px] h-[22px] rounded text-text-dim transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
+                          onClick={() => setEditingEndpointId(null)}
+                          title="Done"
+                        >
+                          <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </button>
+                      </div>
+
+                      {/* Query Params */}
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wide">
+                            Query Params
+                          </span>
+                          <button
+                            className="text-[10px] text-accent hover:text-text-bright transition-colors duration-150"
+                            onClick={() => {
+                              const params = [...(ep.queryParams ?? []), { name: "", required: false }];
+                              updateEndpoint(ep.id, { queryParams: params });
+                            }}
+                          >
+                            + Param
+                          </button>
+                        </div>
+                        {(ep.queryParams ?? []).map((qp, qi) => (
+                          <div key={qi} className="flex items-center gap-1.5">
+                            <input
+                              className="flex-1 text-[12px] font-mono px-1.5 py-0.5 rounded bg-surface-2 border border-border text-text-bright outline-none min-w-0 focus:border-accent"
+                              value={qp.name}
+                              placeholder="param"
+                              onChange={(e) => {
+                                const params = [...(ep.queryParams ?? [])];
+                                params[qi] = { ...params[qi], name: e.target.value };
+                                updateEndpoint(ep.id, { queryParams: params });
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  const params = [
+                                    ...(ep.queryParams ?? []),
+                                    { name: "", required: false },
+                                  ];
+                                  updateEndpoint(ep.id, { queryParams: params });
+                                } else if (e.key === "Escape" && !qp.name.trim()) {
+                                  const params = (ep.queryParams ?? []).filter((_, i) => i !== qi);
+                                  updateEndpoint(ep.id, { queryParams: params });
+                                }
+                              }}
+                            />
+                            <label className="flex items-center gap-1 shrink-0 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                className="cursor-pointer"
+                                checked={qp.required}
+                                onChange={(e) => {
+                                  const params = [...(ep.queryParams ?? [])];
+                                  params[qi] = { ...params[qi], required: e.target.checked };
+                                  updateEndpoint(ep.id, { queryParams: params });
+                                }}
+                              />
+                              <span className="text-[10px] text-text-dim">req</span>
+                            </label>
+                            <button
+                              className="flex items-center justify-center w-[18px] h-[18px] rounded text-text-dim transition-all duration-150 hover:bg-[rgba(239,68,68,0.15)] hover:text-[#ef4444] shrink-0"
+                              onClick={() => {
+                                const params = (ep.queryParams ?? []).filter((_, i) => i !== qi);
+                                updateEndpoint(ep.id, { queryParams: params });
+                              }}
+                            >
+                              <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M18 6L6 18M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Response Codes */}
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-semibold text-text-dim uppercase tracking-wide">
+                          Response Codes
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {ALL_RESPONSE_CODES.map((code) => {
+                            const codes = ep.responseCodes ?? defaultResponseCodes(ep.method);
+                            const active = codes.includes(code);
+                            return (
+                              <button
+                                key={code}
+                                className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-all duration-150 border ${active ? "bg-accent/20 border-accent text-accent" : "bg-surface-2 border-border text-text-dim hover:text-text"}`}
+                                onClick={() => {
+                                  const current = ep.responseCodes ?? defaultResponseCodes(ep.method);
+                                  const next = active
+                                    ? current.filter((c) => c !== code)
+                                    : [...current, code].sort((a, b) => a - b);
+                                  updateEndpoint(ep.id, { responseCodes: next });
+                                }}
+                              >
+                                {code}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div
@@ -508,8 +644,15 @@ export default function PropertiesPanel({
                       >
                         {ep.method}
                       </span>
-                      <span className="flex-1 text-[13px] text-text-bright font-mono whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
-                        {ep.path || "/..."}
+                      <span className="flex-1 flex items-center gap-1 min-w-0">
+                        <span className="text-[13px] text-text-bright font-mono whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
+                          {ep.path || "/..."}
+                        </span>
+                        {(ep.queryParams?.filter((q) => q.name.trim()).length ?? 0) > 0 && (
+                          <span className="text-[10px] text-text-dim font-mono shrink-0">
+                            ?{ep.queryParams!.filter((q) => q.name.trim()).length}
+                          </span>
+                        )}
                       </span>
                       <div className="flex gap-0.5 opacity-0 transition-opacity duration-150 shrink-0 group-hover:opacity-100">
                         <button

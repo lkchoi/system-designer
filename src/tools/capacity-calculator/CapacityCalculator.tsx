@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { TECHNOLOGY_CATALOG } from "../technologies";
-import type { ComponentType, TechnologyInfo } from "../types";
+import { TECHNOLOGY_CATALOG } from "../../technologies";
+import type { ComponentType, TechnologyInfo } from "../../types";
 import {
   computeCapacity,
   formatDataSize,
@@ -8,8 +8,8 @@ import {
   formatBandwidth,
   formatNumber,
   formatBytes,
-} from "../utils/capacity";
-import type { SizeUnit } from "../utils/capacity";
+} from "./capacity";
+import type { SizeUnit } from "./capacity";
 
 interface Props {
   open: boolean;

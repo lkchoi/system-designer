@@ -91,10 +91,17 @@ export interface TechnologyInfo {
   pricing?: TechnologyPricing;
 }
 
+export interface QueryParam {
+  name: string;
+  required: boolean;
+}
+
 export interface Endpoint {
   id: string;
   method: string;
   path: string;
+  queryParams?: QueryParam[];
+  responseCodes?: number[];
 }
 
 export interface ResourceLink {

@@ -11,10 +11,21 @@ export function buildOpenApiYaml(design: DesignJSON): string | null {
     (n) => (n.data as SystemNodeData).componentType === "api-gateway",
   );
 
-  const paths: Record<
-    string,
-    Record<string, { summary: string; responses: Record<string, { description: string }> }>
-  > = {};
+  const RESPONSE_DESCRIPTIONS: Record<number, string> = {
+    200: "OK",
+    201: "Created",
+    204: "No Content",
+    400: "Bad Request",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "Not Found",
+    409: "Conflict",
+    422: "Unprocessable Entity",
+    500: "Internal Server Error",
+    503: "Service Unavailable",
+  };
+
+  const paths: Record<string, Record<string, unknown>> = {};
 
   for (const gw of gateways) {
     const data = gw.data as SystemNodeData;
@@ -26,25 +37,38 @@ export function buildOpenApiYaml(design: DesignJSON): string | null {
       const method = ep.method.toLowerCase();
       const path = ep.path.startsWith("/") ? ep.path : `/${ep.path}`;
       if (!paths[path]) paths[path] = {};
-      const responses: Record<string, { description: string }> = {
-        "200": { description: "OK" },
-        "400": { description: "Bad Request" },
-        "401": { description: "Unauthorized" },
-        "403": { description: "Forbidden" },
-        "404": { description: "Not Found" },
-        "500": { description: "Internal Server Error" },
-      };
-      if (method === "post" || method === "put") {
-        responses["409"] = { description: "Conflict" };
-        responses["422"] = { description: "Unprocessable Entity" };
+
+      // Response codes: use endpoint-level selection, or fall back to defaults
+      let codes: number[];
+      if (ep.responseCodes && ep.responseCodes.length > 0) {
+        codes = ep.responseCodes;
+      } else {
+        codes = [200, 400, 401, 403, 404, 500];
+        if (method === "post" || method === "put") codes.push(409, 422);
+        if (method === "delete") codes.push(204);
       }
-      if (method === "delete") {
-        responses["204"] = { description: "No Content" };
+      const responses: Record<string, { description: string }> = {};
+      for (const code of codes.sort((a, b) => a - b)) {
+        responses[String(code)] = { description: RESPONSE_DESCRIPTIONS[code] ?? "Response" };
       }
-      paths[path][method] = {
+
+      const operation: Record<string, unknown> = {
         summary: `${ep.method} ${path} (${gwLabel})`,
         responses,
       };
+
+      // Query parameters
+      const queryParams = (ep.queryParams ?? []).filter((q) => q.name.trim());
+      if (queryParams.length > 0) {
+        operation.parameters = queryParams.map((q) => ({
+          name: q.name,
+          in: "query",
+          required: q.required,
+          schema: { type: "string" },
+        }));
+      }
+
+      paths[path][method] = operation;
     }
   }
 
