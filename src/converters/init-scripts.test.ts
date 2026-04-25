@@ -147,6 +147,154 @@ describe("generateInitScripts — elasticsearch", () => {
   });
 });
 
+describe("generateInitScripts — postgres", () => {
+  it("emits schema.sql with CREATE TABLE when tables are declared", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "PostgreSQL", tables: "users, orders" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "pg"]]));
+
+    const file = result.files.find((f) => f.path === "init/pg/schema.sql");
+    expect(file).toBeDefined();
+    const sql = String(file!.content);
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS users (");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS orders (");
+  });
+
+  it("uses gen_random_uuid() for primary key", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "PostgreSQL", tables: "users" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "pg"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("gen_random_uuid()");
+  });
+
+  it("includes stub index comments when indexes declared", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "PostgreSQL", tables: "users", indexes: "idx_email, idx_name" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "pg"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("-- CREATE INDEX IF NOT EXISTS idx_email ON <table> (<column>);");
+    expect(sql).toContain("-- CREATE INDEX IF NOT EXISTS idx_name ON <table> (<column>);");
+  });
+
+  it("emits a comment about no tables when tables field is empty", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "PostgreSQL" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "pg"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("No tables declared on this Database node");
+  });
+
+  it("sets up docker-entrypoint-initdb.d volume mount", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "PostgreSQL", tables: "users" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "pg"]]));
+    const mounts = result.mountsByNodeId.get("db") ?? [];
+    expect(mounts).toContainEqual({
+      host: "./init/pg",
+      container: "/docker-entrypoint-initdb.d",
+      readOnly: true,
+    });
+  });
+
+  it("works with CockroachDB tech alias too", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "CockroachDB", tables: "accounts" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "crdb"]]));
+
+    const file = result.files.find((f) => f.path === "init/crdb/schema.sql");
+    expect(file).toBeDefined();
+    const sql = String(file!.content);
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS accounts (");
+    expect(sql).toContain("gen_random_uuid()");
+  });
+});
+
+describe("generateInitScripts — mysql", () => {
+  it("emits schema.sql with CREATE TABLE when tables declared", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MySQL", tables: "users, orders" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "mydb"]]));
+
+    const file = result.files.find((f) => f.path === "init/mydb/schema.sql");
+    expect(file).toBeDefined();
+    const sql = String(file!.content);
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS `users` (");
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS `orders` (");
+  });
+
+  it("uses CHAR(36) PRIMARY KEY for mysql (not uuid)", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MySQL", tables: "users" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "mydb"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("CHAR(36) PRIMARY KEY");
+    expect(sql).not.toContain("gen_random_uuid()");
+  });
+
+  it("uses backtick quoting for table names", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MySQL", tables: "user-data" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "mydb"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS `user-data` (");
+  });
+
+  it("includes stub index comments when indexes declared", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MySQL", tables: "users", indexes: "idx_email, idx_name" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "mydb"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("-- CREATE INDEX `idx_email` ON <table> (<column>);");
+    expect(sql).toContain("-- CREATE INDEX `idx_name` ON <table> (<column>);");
+  });
+
+  it("emits a comment about no tables when tables field is empty", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MySQL" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "mydb"]]));
+    const sql = String(result.files[0].content);
+    expect(sql).toContain("No tables declared on this Database node");
+  });
+
+  it("sets up docker-entrypoint-initdb.d volume mount", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MySQL", tables: "users" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "mydb"]]));
+    const mounts = result.mountsByNodeId.get("db") ?? [];
+    expect(mounts).toContainEqual({
+      host: "./init/mydb",
+      container: "/docker-entrypoint-initdb.d",
+      readOnly: true,
+    });
+  });
+
+  it("works with MariaDB tech alias too", () => {
+    const node = makeNode("db", "database", {
+      plan: { technology: "MariaDB", tables: "sessions" },
+    });
+    const result = generateInitScripts(design([node]), new Map([["db", "maria"]]));
+
+    const file = result.files.find((f) => f.path === "init/maria/schema.sql");
+    expect(file).toBeDefined();
+    const sql = String(file!.content);
+    expect(sql).toContain("CREATE TABLE IF NOT EXISTS `sessions` (");
+    expect(sql).toContain("CHAR(36) PRIMARY KEY");
+  });
+});
+
 describe("generateInitScripts — ofelia cron", () => {
   it("emits config.ini with a job-exec when the cron node connects to a service", () => {
     const cron = makeNode("c", "cron", {
