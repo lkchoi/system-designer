@@ -236,4 +236,30 @@ test.describe("tool screenshots", () => {
     await screenshotModal(page, "tool-regex-tester.png", "Regex Tester");
     await page.keyboard.press("Escape");
   });
+
+  test("consistent hashing visualizer", async ({ page }) => {
+    await page.goto("/");
+    await page.locator(".react-flow__viewport").waitFor();
+    await addNode(page, "database");
+    await selectNode(page);
+    await openToolFromPanel(page, "Consistent Hashing");
+    // Click "Add node" to show redistribution preview
+    await page.locator("button:has-text('+ Add node')").click();
+    await page.waitForTimeout(300);
+    await screenshotModal(page, "tool-consistent-hashing-visualizer.png", "Consistent Hashing Visualizer");
+    await page.keyboard.press("Escape");
+  });
+
+  test("shard key analyzer", async ({ page }) => {
+    await page.goto("/");
+    await page.locator(".react-flow__viewport").waitFor();
+    await addNode(page, "database");
+    await selectNode(page);
+    await openToolFromPanel(page, "Shard Key Analyzer");
+    // Load the timestamp example to show warnings
+    await page.locator("button:has-text('created_at')").click();
+    await page.waitForTimeout(300);
+    await screenshotModal(page, "tool-shard-key-analyzer.png", "Shard Key Analyzer");
+    await page.keyboard.press("Escape");
+  });
 });

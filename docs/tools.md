@@ -1,6 +1,6 @@
 # Tools Reference
 
-14 context-aware tools accessible from the properties panel or via keyboard shortcuts. The properties panel shows only tools relevant to the selected component type.
+16 context-aware tools accessible from the properties panel or via keyboard shortcuts. The properties panel shows only tools relevant to the selected component type.
 
 ## Capacity Calculator
 
@@ -124,3 +124,19 @@ Wire size comparison across serialization formats. Define fields with types (str
 Live regex pattern testing with flag toggles (global, case-insensitive, multiline, dotAll). Enter a pattern and test string to see match count, matched text with index positions, and capture groups. Includes a library of common patterns (email, IPv4, UUID, URL path, ISO date, semver).
 
 ![Regex Tester](images/tool-regex-tester.png)
+
+## Consistent Hashing Visualizer
+
+**Applies to:** Database, Cache, Load Balancer
+
+Interactive hash ring simulation. Configure the number of physical nodes, virtual nodes per physical node, and total keys. The ring visualization shows virtual node placement with color-coded ownership arcs, while the distribution panel shows per-node key counts with bar charts and standard deviation. Use the redistribution preview to see how many keys would move when adding or removing a node — demonstrating why consistent hashing minimizes data movement (ideally K/N keys).
+
+![Consistent Hashing Visualizer](images/tool-consistent-hashing-visualizer.png)
+
+## Shard Key Analyzer
+
+**Applies to:** Database, Data Warehouse
+
+Evaluates shard key candidates across four dimensions: cardinality, value distribution, query pattern, and growth pattern. Scores each candidate on hot spot risk, cross-shard query cost, and scalability, with an overall rating. Flags specific anti-patterns (monotonic keys, temporal distribution, low cardinality, scatter-gather queries) and suggests compound key strategies to mitigate weaknesses. Includes preset examples (user_id UUID, created_at timestamp, country_code, auto-increment ID).
+
+![Shard Key Analyzer](images/tool-shard-key-analyzer.png)
