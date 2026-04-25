@@ -84,6 +84,7 @@ import {
 import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
+import { CollabProvider, useCollabState } from "./collab";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
 type StickyFlowNode = Node<StickyNoteData, "sticky">;
@@ -160,8 +161,10 @@ function Canvas({
   const initialState = useMemo(() => loadDesignState(designId), [designId]);
   const currentDesign = useMemo(() => designs.find((d) => d.id === designId), [designs, designId]);
 
-  const [nodes, setNodes] = useState<AppNode[]>(initialState.nodes as AppNode[]);
-  const [edges, setEdges] = useState<Edge[]>(initialState.edges);
+  const [nodes, setNodes, edges, setEdges] = useCollabState<AppNode>(
+    initialState.nodes as AppNode[],
+    initialState.edges,
+  );
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("plan");
@@ -1937,18 +1940,20 @@ export default function App() {
 
   return (
     <ReactFlowProvider>
-      <Canvas
-        key={designId}
-        designId={designId}
-        designs={designs}
-        onSwitchDesign={setDesignId}
-        onCreateDesign={handleCreate}
-        onRenameDesign={handleRename}
-        onDeleteDesign={handleDelete}
-        onForkDesign={handleFork}
-        onImportDesign={handleImport}
-        onStartCompare={handleStartCompare}
-      />
+      <CollabProvider>
+        <Canvas
+          key={designId}
+          designId={designId}
+          designs={designs}
+          onSwitchDesign={setDesignId}
+          onCreateDesign={handleCreate}
+          onRenameDesign={handleRename}
+          onDeleteDesign={handleDelete}
+          onForkDesign={handleFork}
+          onImportDesign={handleImport}
+          onStartCompare={handleStartCompare}
+        />
+      </CollabProvider>
     </ReactFlowProvider>
   );
 }

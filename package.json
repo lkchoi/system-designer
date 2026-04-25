@@ -23,10 +23,13 @@
     "@xyflow/react": "^12.10.2",
     "js-yaml": "^4.1.1",
     "jszip": "^3.10.1",
+    "lib0": "^0.2.117",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sql.js": "^1.14.1",
-    "tailwindcss": "^4.2.2"
+    "tailwindcss": "^4.2.2",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
