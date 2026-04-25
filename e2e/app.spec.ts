@@ -365,3 +365,30 @@ test("sidebar search filters components", async ({ page }) => {
   await filterInput.clear();
   await expect(allItems).toHaveCount(initialCount);
 });
+
+test("inline label editing on double-click", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "database");
+  const node = page.locator(".react-flow__node");
+
+  // Get the auto-generated label text
+  const label = node.locator("span.font-semibold");
+  const originalText = await label.textContent();
+  expect(originalText).toBeTruthy();
+
+  // Double-click the label to enter edit mode
+  await label.dblclick();
+
+  // An input should appear
+  const input = node.locator("input.font-semibold");
+  await expect(input).toBeVisible();
+
+  // Clear and type new name, then press Enter
+  await input.fill("my-custom-db");
+  await input.press("Enter");
+
+  // Label should update
+  await expect(node.getByText("my-custom-db")).toBeVisible();
+});
