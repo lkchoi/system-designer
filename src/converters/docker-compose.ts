@@ -18,6 +18,7 @@ import { buildReadme } from "./readme";
 import { buildClaudeMd, type ScaffoldedServiceMeta } from "./claude-md";
 import { generateInitScripts } from "./init-scripts";
 import { scaffoldService } from "./scaffold";
+import { buildOpenApiYaml } from "./openapi";
 
 /** Component types whose nodes are not deployed by the local-deploy bundle. */
 const EXCLUDED_TIER: ReadonlySet<ComponentType> = new Set([
@@ -284,6 +285,10 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
     ...initScripts.files,
     ...scaffoldFiles,
   ];
+  const openapiYaml = buildOpenApiYaml(design);
+  if (openapiYaml) {
+    files.push({ path: "openapi.yaml", content: openapiYaml });
+  }
   if (options?.includeClaudeMd) {
     files.push({
       path: "CLAUDE.md",

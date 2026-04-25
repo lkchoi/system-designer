@@ -32,6 +32,7 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
 
   const diagramFormats = CONVERTERS.filter((c) => c.category === "diagram");
   const iacFormats = CONVERTERS.filter((c) => c.category === "iac");
+  const apiFormats = CONVERTERS.filter((c) => c.category === "api");
 
   return (
     <div
@@ -108,12 +109,25 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
         )}
 
         {iacFormats.length > 0 && (
-          <div>
+          <div className="mb-5">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-2">
               Infrastructure as Code
             </div>
             <div className="grid grid-cols-3 gap-2">
               {iacFormats.map((c) => (
+                <FormatTile key={c.id} converter={c} onClick={handleExport} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {apiFormats.length > 0 && (
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-text-dim mb-2">
+              API
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {apiFormats.map((c) => (
                 <FormatTile key={c.id} converter={c} onClick={handleExport} />
               ))}
             </div>

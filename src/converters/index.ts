@@ -9,6 +9,7 @@ import { pulumiConverter } from "./pulumi";
 import { dockerComposeConverter } from "./docker-compose";
 import { nomadConverter } from "./nomad";
 import { localstackConverter } from "./localstack";
+import { openapiConverter } from "./openapi";
 
 export const CONVERTERS: ConverterModule[] = [
   nativeJsonConverter,
@@ -21,6 +22,7 @@ export const CONVERTERS: ConverterModule[] = [
   dockerComposeConverter,
   nomadConverter,
   localstackConverter,
+  openapiConverter,
 ];
 
 export function getConverter(id: FormatId): ConverterModule {

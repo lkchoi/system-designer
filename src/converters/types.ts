@@ -10,9 +10,10 @@ export type FormatId =
   | "docker-compose"
   | "nomad"
   | "pulumi"
-  | "localstack";
+  | "localstack"
+  | "openapi";
 
-export type FormatCategory = "diagram" | "iac";
+export type FormatCategory = "diagram" | "iac" | "api";
 
 export interface ExportResult {
   content: string | Blob;
