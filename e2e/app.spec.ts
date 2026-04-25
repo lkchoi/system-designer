@@ -88,3 +88,24 @@ test("connection validation rejects incompatible nodes", async ({ page }) => {
   // Connection should be rejected — still 0
   await expect(page.getByText("0 connections")).toBeVisible();
 });
+
+test("edit node properties via panel", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "database");
+
+  // Click the node to select it and open the properties panel
+  await page.locator(".react-flow__node").click();
+  await expect(page.getByText("Properties")).toBeVisible();
+
+  // Change the label in the properties panel — the input follows the "Label" text
+  const panel = page.locator("aside").filter({ hasText: "Properties" });
+  const labelInput = panel.locator("input").first();
+  await expect(labelInput).toBeVisible();
+  await labelInput.clear();
+  await labelInput.fill("users-db");
+
+  // Verify the node label updated on the canvas
+  await expect(page.locator(".react-flow__node").getByText("users-db")).toBeVisible();
+});
