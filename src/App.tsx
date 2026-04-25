@@ -60,6 +60,8 @@ import type {
   ContainerNodeData,
   ComponentType,
   EdgeData,
+  EdgeProtocol,
+  EdgeFormat,
   EffectiveStress,
   StressFailure,
   StressConfig,
@@ -67,6 +69,7 @@ import type {
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
 import { instantiatePattern } from "./patterns";
+import { resolveConnection } from "./connections";
 import { ulid } from "ulid";
 import {
   initDB,
@@ -331,19 +334,42 @@ function Canvas({
   const onConnect: OnConnect = useCallback(
     (params) => {
       takeSnapshot();
+
+      // Auto-suggest edge properties from the connection mapping.
+      let label = "";
+      let protocol: EdgeProtocol = "";
+      let format: EdgeFormat = "";
+      const sourceNode = nodes.find((n) => n.id === params.source);
+      const targetNode = nodes.find((n) => n.id === params.target);
+      if (sourceNode?.type === "system" && targetNode?.type === "system") {
+        const sourceData = sourceNode.data as SystemNodeData;
+        const targetData = targetNode.data as SystemNodeData;
+        const resolved = resolveConnection(
+          sourceData.componentType,
+          sourceData.plan?.technology ?? "",
+          targetData.componentType,
+          targetData.plan?.technology ?? "",
+        );
+        if (resolved) {
+          label = resolved.label;
+          protocol = resolved.protocol;
+          format = resolved.format;
+        }
+      }
+
       setEdges((eds) =>
         addEdge(
           {
             ...params,
             id: ulid(),
             type: "labeled",
-            data: { label: "", protocol: "", format: "", partitioned: false, simulatedLatency: 0 },
+            data: { label, protocol, format, partitioned: false, simulatedLatency: 0 },
           },
           eds,
         ),
       );
     },
-    [takeSnapshot],
+    [takeSnapshot, nodes],
   );
 
   useEffect(() => {
