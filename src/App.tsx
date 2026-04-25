@@ -84,7 +84,7 @@ import {
 import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
-import { CollabProvider, useCollabState } from "./collab";
+import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl } from "./collab";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
 type StickyFlowNode = Node<StickyNoteData, "sticky">;
@@ -165,6 +165,7 @@ function Canvas({
     initialState.nodes as AppNode[],
     initialState.edges,
   );
+  const collab = useCollab();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("plan");
@@ -232,6 +233,14 @@ function Canvas({
   useEffect(() => {
     setViewport(initialState.viewport);
   }, [initialState.viewport, setViewport]);
+
+  // Auto-join room if ?room= param is present in URL
+  useEffect(() => {
+    const roomId = getRoomIdFromUrl();
+    if (roomId && !collab.roomId) {
+      collab.joinRoom(roomId);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save nodes and edges
   const autoSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1502,6 +1511,54 @@ function Canvas({
                     </svg>
                     {connectionCount} connections
                   </span>
+                  {collab.roomId ? (
+                    <>
+                      <span className={`flex items-center gap-1.5 text-[13px] ${collab.status === "connected" ? "text-green-400" : collab.status === "connecting" ? "text-yellow-400" : "text-red-400"}`}>
+                        <span className={`w-2 h-2 rounded-full ${collab.status === "connected" ? "bg-green-400" : collab.status === "connecting" ? "bg-yellow-400 animate-pulse" : "bg-red-400"}`} />
+                        {collab.status === "connected" ? "Live" : collab.status === "connecting" ? "Connecting..." : "Disconnected"}
+                      </span>
+                      <button
+                        className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-surface-2 border border-border text-text text-[13px] font-medium transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
+                        onClick={() => {
+                          const url = getShareUrl(collab.roomId!);
+                          navigator.clipboard.writeText(url);
+                        }}
+                        title="Copy share link"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                        </svg>
+                        Copy Link
+                      </button>
+                      <button
+                        className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-[13px] font-medium transition-all duration-150 hover:bg-red-500/20"
+                        onClick={collab.disconnect}
+                      >
+                        Stop Sharing
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-accent/10 border border-accent/30 text-accent text-[13px] font-medium transition-all duration-150 hover:bg-accent/20"
+                      onClick={async () => {
+                        const roomId = await collab.shareDesign(currentDesign?.name ?? "Untitled");
+                        const url = getShareUrl(roomId);
+                        navigator.clipboard.writeText(url);
+                        // Update URL without reload
+                        const newUrl = new URL(window.location.href);
+                        newUrl.searchParams.set("room", roomId);
+                        window.history.replaceState({}, "", newUrl.toString());
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                        <polyline points="16 6 12 2 8 6" />
+                        <line x1="12" y1="2" x2="12" y2="15" />
+                      </svg>
+                      Share
+                    </button>
+                  )}
                   <button
                     className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-surface-2 border border-border text-text text-[13px] font-medium transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
                     onClick={clearCanvas}
