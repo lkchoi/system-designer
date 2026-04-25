@@ -2,11 +2,11 @@
 # Print test pyramid breakdown
 #
 # Convention:
-#   Unit:        src/**/*.test.ts        (excludes *.integration.test.ts)
-#   Integration: src/**/*.integration.test.ts
+#   Unit:        src/**/*.test.ts        (excludes *.integ.test.ts)
+#   Integration: src/**/*.integ.test.ts
 #   E2E:         e2e/**/*.spec.ts
 
-integration=$(grep -r 'it(\|test(' --include='*.integration.test.ts' src 2>/dev/null | wc -l | tr -d ' ')
+integration=$(grep -r 'it(\|test(' --include='*.integ.test.ts' src 2>/dev/null | wc -l | tr -d ' ')
 unit=$(grep -r 'it(\|test(' --include='*.test.ts' src | grep -v '\.integration\.test\.ts' | wc -l | tr -d ' ')
 e2e=$(grep -r 'test(' --include='*.spec.ts' e2e 2>/dev/null | grep -v 'test.describe' | wc -l | tr -d ' ')
 total=$((unit + integration + e2e))

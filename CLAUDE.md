@@ -10,7 +10,7 @@ React + TypeScript system architecture designer built on ReactFlow.
 ## Testing conventions
 
 - `src/**/*.test.ts` — unit tests (vitest)
-- `src/**/*.integration.test.ts` — integration tests (vitest, multiple modules wired together)
+- `src/**/*.integ.test.ts` — integration tests (vitest, multiple modules wired together)
 - `e2e/**/*.spec.ts` — end-to-end tests (Playwright)
 - Run `./scripts/test-pyramid.sh` to see the test pyramid breakdown.
 
