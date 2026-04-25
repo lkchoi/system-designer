@@ -11,7 +11,7 @@ interface Props {
 
 export default function ExportDialog({ open, onClose, designId, designName }: Props) {
   const [preferLocalStack, setPreferLocalStack] = useState(false);
-  const [includeClaudeMd, setIncludeClaudeMd] = useState(false);
+  const [includeClaudeMd, setIncludeClaudeMd] = useState(true);
 
   const handleExport = useCallback(
     async (converter: ConverterModule) => {
@@ -88,8 +88,8 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
           <div className="flex flex-col">
             <span className="text-[13px] text-text-bright">Include CLAUDE.md</span>
             <span className="text-[11px] text-text-dim leading-tight">
-              Drop a CLAUDE.md into the bundle so Claude Code starts with a service map and
-              command reference. Docker Compose only.
+              Drop a CLAUDE.md into the bundle so Claude Code starts with a service map and command
+              reference. Docker Compose only.
             </span>
           </div>
         </label>
