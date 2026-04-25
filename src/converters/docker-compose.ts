@@ -17,7 +17,7 @@ import { buildLifecycleScripts, urlsFor } from "./lifecycle";
 import { buildReadme } from "./readme";
 import { buildClaudeMd, type ScaffoldedServiceMeta } from "./claude-md";
 import { generateInitScripts } from "./init-scripts";
-import { scaffoldService } from "./scaffold";
+import { scaffoldService, type ConnectionInfo } from "./scaffold";
 import { buildOpenApiYaml } from "./openapi";
 
 /** Component types whose nodes are not deployed by the local-deploy bundle. */
@@ -104,8 +104,6 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
 
     let image: string | undefined;
     let buildContext = data.buildContext;
-    let scaffolded = false;
-    let containerPortOverride: number | undefined;
     let testCommand: string | undefined;
 
     if (data.image) {
@@ -122,27 +120,15 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
     const name = uniqueName(data.label, usedNames);
     usedNames.add(name);
 
-    if (isServiceTier && !vendorLocked && !image && !buildContext) {
-      const scaffold = scaffoldService({
-        serviceName: name,
-        data,
-        endpoints: data.endpoints ?? [],
-      });
-      scaffoldFiles.push(...scaffold.files);
-      buildContext = scaffold.buildContext;
-      containerPortOverride = scaffold.containerPort;
-      testCommand = scaffold.testCommand;
-      scaffolded = true;
-      scaffoldedByNodeId.set(node.id, { techId, testCommand: scaffold.testCommand });
-    }
+    const needsScaffold = isServiceTier && !vendorLocked && !image && !buildContext;
 
     serviceNameByNodeId.set(node.id, name);
 
+    // Scaffold nodes get ports assigned in the scaffold pass (1b) below.
     const baseContainerPorts = getDefaultPorts(data.componentType, techId);
-    const containerPorts =
-      containerPortOverride != null ? [containerPortOverride] : baseContainerPorts;
+    const containerPorts = needsScaffold ? [] : baseContainerPorts;
     const hostPorts = containerPorts.map((p) => allocateHostPort(p, usedHostPorts));
-    hostPortByNodeId.set(node.id, hostPorts);
+    if (!needsScaffold) hostPortByNodeId.set(node.id, hostPorts);
 
     deployables.push({
       nodeId: node.id,
@@ -153,9 +139,48 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
       buildContext,
       containerPorts,
       hostPorts,
-      scaffolded,
+      scaffolded: needsScaffold,
       testCommand,
     });
+  }
+
+  // 1b) Scaffold pass — runs after all names are assigned so connections can
+  //     reference target service names.
+  for (const dep of deployables) {
+    if (!dep.scaffolded) continue;
+
+    const connections: ConnectionInfo[] = [];
+    for (const edge of design.edges) {
+      if (edge.source !== dep.nodeId) continue;
+      const targetNode = design.nodes.find((n) => n.id === edge.target);
+      if (!targetNode || targetNode.type !== "system") continue;
+      const targetData = targetNode.data as SystemNodeData;
+      const targetName = serviceNameByNodeId.get(targetNode.id);
+      if (!targetName) continue;
+      connections.push({
+        targetName,
+        targetComponentType: targetData.componentType,
+        targetTechId: resolveTechId(
+          targetData.componentType,
+          targetData.plan?.technology ?? "",
+          "docker",
+        ),
+      });
+    }
+
+    const scaffold = scaffoldService({
+      serviceName: dep.name,
+      data: dep.data,
+      endpoints: dep.data.endpoints ?? [],
+      connections,
+    });
+    scaffoldFiles.push(...scaffold.files);
+    dep.buildContext = scaffold.buildContext;
+    dep.containerPorts = [scaffold.containerPort];
+    dep.hostPorts = dep.containerPorts.map((p) => allocateHostPort(p, usedHostPorts));
+    hostPortByNodeId.set(dep.nodeId, dep.hostPorts);
+    dep.testCommand = scaffold.testCommand;
+    scaffoldedByNodeId.set(dep.nodeId, { techId: dep.techId, testCommand: scaffold.testCommand });
   }
 
   // 2) Generate secrets / .env file + per-container auth env.

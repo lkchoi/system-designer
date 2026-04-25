@@ -1,16 +1,18 @@
 import type { Endpoint } from "../../types";
 import type { BundleFile } from "../bundle";
 import type { ScaffoldRequest, ScaffoldResult } from "./index";
+import type { MergedSlots } from "./concerns/types";
+import { EMPTY_SLOTS } from "./concerns/types";
 
 const PORT = 8080;
 
-export function scaffoldGoService(req: ScaffoldRequest): ScaffoldResult {
+export function scaffoldGoService(req: ScaffoldRequest, slots: MergedSlots = EMPTY_SLOTS): ScaffoldResult {
   const dir = `services/${req.serviceName}`;
   const mod = goModuleName(req.serviceName);
   const files: BundleFile[] = [
     { path: `${dir}/Dockerfile`, content: dockerfile() },
-    { path: `${dir}/go.mod`, content: goMod(mod) },
-    { path: `${dir}/main.go`, content: mainGo(req.serviceName, req.endpoints) },
+    { path: `${dir}/go.mod`, content: goMod(mod, slots) },
+    { path: `${dir}/main.go`, content: mainGo(req.serviceName, req.endpoints, slots) },
     { path: `${dir}/main_test.go`, content: mainTestGo() },
     { path: `${dir}/.dockerignore`, content: ".git\n*.test\n*.out\n" },
   ];
@@ -36,14 +38,18 @@ CMD ["/usr/local/bin/app"]
 `;
 }
 
-function goMod(module: string): string {
+function goMod(module: string, slots: MergedSlots): string {
+  const requires = Object.entries(slots.deps);
+  const requireBlock =
+    requires.length > 0
+      ? "\n\nrequire (\n" + requires.map(([mod, ver]) => `\t${mod} ${ver}`).join("\n") + "\n)\n"
+      : "\n";
   return `module ${module}
 
-go 1.24
-`;
+go 1.24${requireBlock}`;
 }
 
-function mainGo(serviceName: string, endpoints: Endpoint[]): string {
+function mainGo(serviceName: string, endpoints: Endpoint[], slots: MergedSlots): string {
   const handlers = endpoints
     .filter((ep) => ep.path && ep.method)
     .map(
@@ -60,6 +66,47 @@ function mainGo(serviceName: string, endpoints: Endpoint[]): string {
     )
     .join("\n\n");
 
+  // Build import list: stdlib + concern imports.
+  const stdImports = [
+    '"encoding/json"',
+    '"log"',
+    '"net/http"',
+    '"os"',
+    '"sort"',
+    '"strings"',
+    '"time"',
+  ];
+  const allImports = [...new Set([...stdImports, ...slots.imports])];
+
+  const concernGlobals = slots.globals.length > 0 ? "\n" + slots.globals.join("\n") + "\n" : "";
+
+  const concernInit = slots.init.length > 0
+    ? "\n\t// Initialize connections\n\t" + slots.init.join("\n\t") + "\n"
+    : "";
+
+  const concernShutdown = slots.shutdown.length > 0
+    ? `\n\t// Graceful shutdown\n\tgo func() {\n\t\tsigCh := make(chan os.Signal, 1)\n\t\tsignal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)\n\t\t<-sigCh\n\t\tlog.Println("shutting down...")\n\t\t${slots.shutdown.join("\n\t\t")}\n\t\tos.Exit(0)\n\t}()\n`
+    : "";
+
+  // Add signal imports if shutdown concerns exist.
+  if (slots.shutdown.length > 0) {
+    if (!allImports.includes('"os/signal"')) allImports.push('"os/signal"');
+    if (!allImports.includes('"syscall"')) allImports.push('"syscall"');
+  }
+
+  const healthBody = slots.healthChecks.length > 0
+    ? `errs := []error{}
+		${slots.healthChecks.map((hc) => `if err := ${hc}; err != nil { errs = append(errs, err) }`).join("\n\t\t")}
+		if len(errs) > 0 {
+			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"ok": false, "errors": len(errs)})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "uptime_sec": time.Since(startedAt).Seconds()})`
+    : `writeJSON(w, http.StatusOK, map[string]any{
+			"ok":         true,
+			"uptime_sec": time.Since(startedAt).Seconds(),
+		})`;
+
   return `// Auto-scaffolded service. Implement business logic in this file (or split it).
 // The container's env vars are wired up automatically by the bundle generator
 // based on this Service's outgoing edges in the design.
@@ -67,27 +114,18 @@ function mainGo(serviceName: string, endpoints: Endpoint[]): string {
 package main
 
 import (
-	"encoding/json"
-	"log"
-	"net/http"
-	"os"
-	"sort"
-	"strings"
-	"time"
+${allImports.map((i) => `\t${i}`).join("\n")}
 )
 
 var startedAt = time.Now()
-
+${concernGlobals}
 // newMux returns the request multiplexer used by both the runtime server and
 // the test suite, so tests can hit handlers without binding a port.
 func newMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{
-			"ok":         true,
-			"uptime_sec": time.Since(startedAt).Seconds(),
-		})
+		${healthBody}
 	})
 
 ${handlers || "	// No endpoints declared on this Service node yet."}
@@ -100,7 +138,7 @@ func main() {
 	if port == "" {
 		port = "${PORT}"
 	}
-
+${concernInit}${concernShutdown}
 	logEnv()
 	log.Printf("[${serviceName}] listening on :%s", port)
 	if err := http.ListenAndServe(":"+port, newMux()); err != nil {

@@ -1,15 +1,17 @@
 import type { Endpoint } from "../../types";
 import type { BundleFile } from "../bundle";
 import type { ScaffoldRequest, ScaffoldResult } from "./index";
+import type { MergedSlots } from "./concerns/types";
+import { EMPTY_SLOTS } from "./concerns/types";
 
 const PORT = 8000;
 
-export function scaffoldPythonService(req: ScaffoldRequest): ScaffoldResult {
+export function scaffoldPythonService(req: ScaffoldRequest, slots: MergedSlots = EMPTY_SLOTS): ScaffoldResult {
   const dir = `services/${req.serviceName}`;
   const files: BundleFile[] = [
     { path: `${dir}/Dockerfile`, content: dockerfile() },
-    { path: `${dir}/requirements.txt`, content: requirements() },
-    { path: `${dir}/src/main.py`, content: mainPy(req.serviceName, req.endpoints) },
+    { path: `${dir}/requirements.txt`, content: requirements(slots) },
+    { path: `${dir}/src/main.py`, content: mainPy(req.serviceName, req.endpoints, slots) },
     { path: `${dir}/src/__init__.py`, content: "" },
     { path: `${dir}/tests/test_health.py`, content: testHealthPy() },
     { path: `${dir}/tests/__init__.py`, content: "" },
@@ -35,12 +37,15 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
 `;
 }
 
-function requirements(): string {
-  return `fastapi==0.115.5
-uvicorn[standard]==0.32.1
-pytest==8.3.4
-httpx==0.28.1
-`;
+function requirements(slots: MergedSlots): string {
+  const base = [
+    "fastapi==0.115.5",
+    "uvicorn[standard]==0.32.1",
+    "pytest==8.3.4",
+    "httpx==0.28.1",
+  ];
+  const extra = Object.entries(slots.deps).map(([pkg, ver]) => `${pkg}==${ver}`);
+  return [...base, ...extra].join("\n") + "\n";
 }
 
 function testHealthPy(): string {
@@ -65,7 +70,7 @@ def test_unknown_route_is_404():
 `;
 }
 
-function mainPy(serviceName: string, endpoints: Endpoint[]): string {
+function mainPy(serviceName: string, endpoints: Endpoint[], slots: MergedSlots): string {
   const handlers = endpoints
     .filter((ep) => ep.path && ep.method)
     .map((ep) => {
@@ -77,6 +82,27 @@ def ${fnName}():
     })
     .join("\n\n\n");
 
+  // Deduplicate "import os" since the base template uses it and concerns may too.
+  const baseImports = new Set(["import os", "import time", "from fastapi import FastAPI"]);
+  const concernImports = slots.imports.filter((i) => !baseImports.has(i));
+  const extraImports = concernImports.length > 0 ? "\n" + concernImports.join("\n") : "";
+
+  const concernGlobals = slots.globals.length > 0
+    ? "\n" + slots.globals.join("\n")
+    : "";
+
+  const concernInit = slots.init.length > 0
+    ? `\n\n@app.on_event("startup")\ndef _init_connections():\n    ${slots.init.join("\n    ")}`
+    : "";
+
+  const concernShutdown = slots.shutdown.length > 0
+    ? `\n\n@app.on_event("shutdown")\ndef _shutdown_connections():\n    ${slots.shutdown.join("\n    ")}`
+    : "";
+
+  const healthBody = slots.healthChecks.length > 0
+    ? `try:\n        ${slots.healthChecks.join("\n        ")}\n        return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}\n    except Exception as e:\n        return {"ok": False, "error": str(e)}`
+    : 'return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}';
+
   return `"""Auto-scaffolded FastAPI service. Implement business logic here.
 
 The container's env vars are wired up automatically by the bundle generator
@@ -85,18 +111,18 @@ based on this Service's outgoing edges in the design.
 
 import os
 import time
-from fastapi import FastAPI
+from fastapi import FastAPI${extraImports}
 
 app = FastAPI(title="${serviceName}")
-_started_at = time.monotonic()
+_started_at = time.monotonic()${concernGlobals}
 
 
 @app.get("/health")
 def health():
-    return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}
+    ${healthBody}
 
 
-${handlers || "# No endpoints declared on this Service node yet."}
+${handlers || "# No endpoints declared on this Service node yet."}${concernInit}${concernShutdown}
 
 
 @app.on_event("startup")
