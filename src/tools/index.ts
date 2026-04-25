@@ -3,6 +3,7 @@ import type { ToolDef } from "./types";
 import CapacityCalculator from "./capacity-calculator/CapacityCalculator";
 import CronTranslator from "./cron-translator/CronTranslator";
 import SlaCalculator from "./sla-calculator/SlaCalculator";
+import CacheSizer from "./cache-sizer/CacheSizer";
 
 const TOOLS: ToolDef[] = [
   {
@@ -52,6 +53,13 @@ const TOOLS: ToolDef[] = [
       "stream-processor",
       "data-warehouse",
     ],
+  },
+  {
+    id: "cache-sizer",
+    label: "Cache Sizer",
+    icon: "M4 4h16v16H4zM4 9h16M9 4v16",
+    component: CacheSizer,
+    relevantTo: ["cache"],
   },
 ];
 
