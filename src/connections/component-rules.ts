@@ -29,6 +29,7 @@ export const COMPONENT_RULES: readonly ComponentConnectionRule[] = [
   { source: "serverless", target: "search-engine", protocol: "HTTPS", format: "JSON", label: "searches", commonality: 0.55 },
   { source: "serverless", target: "webhook", protocol: "HTTPS", format: "JSON", label: "notifies", commonality: 0.5 },
   { source: "serverless", target: "data-warehouse", protocol: "HTTPS", format: "JSON", label: "loads", commonality: 0.45 },
+  { source: "serverless", target: "stream-processor", protocol: "TCP", format: "Binary", label: "feeds", commonality: 0.5 },
   { source: "serverless", target: "serverless", protocol: "HTTPS", format: "JSON", label: "invokes", commonality: 0.4 },
 
   // ─── api-gateway → * ─────────────────────────────────────────────────
@@ -81,6 +82,11 @@ export const COMPONENT_RULES: readonly ComponentConnectionRule[] = [
   { source: "message-queue", target: "service", protocol: "TCP", format: "JSON", label: "delivers", commonality: 0.8 },
   { source: "message-queue", target: "serverless", protocol: "TCP", format: "JSON", label: "triggers", commonality: 0.75 },
   { source: "message-queue", target: "webhook", protocol: "HTTPS", format: "JSON", label: "delivers", commonality: 0.45 },
+
+  // ─── webhook → * ─────────────────────────────────────────────────────
+  { source: "webhook", target: "service", protocol: "HTTPS", format: "JSON", label: "delivers", commonality: 0.7 },
+  { source: "webhook", target: "serverless", protocol: "HTTPS", format: "JSON", label: "triggers", commonality: 0.65 },
+  { source: "webhook", target: "api-gateway", protocol: "HTTPS", format: "JSON", label: "calls", commonality: 0.4 },
 
   // ─── storage → * ─────────────────────────────────────────────────────
   { source: "storage", target: "serverless", protocol: "HTTPS", format: "JSON", label: "triggers", commonality: 0.7 },

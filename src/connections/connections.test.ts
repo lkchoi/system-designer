@@ -10,6 +10,7 @@ import {
 } from "./index";
 import { COMPONENT_RULES } from "./component-rules";
 import { TECH_RULES } from "./tech-rules";
+import { BUILTIN_ENTRIES } from "../registry/builtin-entries";
 
 describe("getComponentDefault", () => {
   it("returns rule for a known pair", () => {
@@ -240,5 +241,34 @@ describe("data integrity", () => {
       expect(keys.has(key), `Duplicate component rule: ${key}`).toBe(false);
       keys.add(key);
     }
+  });
+
+  it("every connectsTo pair in the registry has a matching component rule", () => {
+    const ruleKeys = new Set(
+      COMPONENT_RULES.map((r) => `${r.source}:${r.target}`),
+    );
+    const missing: string[] = [];
+    for (const entry of BUILTIN_ENTRIES) {
+      for (const target of entry.connectsTo) {
+        const key = `${entry.id}:${target}`;
+        if (!ruleKeys.has(key)) missing.push(key);
+      }
+    }
+    expect(missing, `connectsTo pairs missing from COMPONENT_RULES:\n  ${missing.join("\n  ")}`).toEqual([]);
+  });
+
+  it("every component rule has a matching connectsTo entry in the registry", () => {
+    const connectsToKeys = new Set<string>();
+    for (const entry of BUILTIN_ENTRIES) {
+      for (const target of entry.connectsTo) {
+        connectsToKeys.add(`${entry.id}:${target}`);
+      }
+    }
+    const orphaned: string[] = [];
+    for (const rule of COMPONENT_RULES) {
+      const key = `${rule.source}:${rule.target}`;
+      if (!connectsToKeys.has(key)) orphaned.push(key);
+    }
+    expect(orphaned, `COMPONENT_RULES without matching connectsTo:\n  ${orphaned.join("\n  ")}`).toEqual([]);
   });
 });
