@@ -31,10 +31,7 @@ export default defineConfig({
       name: "firefox",
       use: { ...devices["Desktop Firefox"] },
     },
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    // WebKit omitted — OPFS FileSystemWritableFileStream is unsupported
   ],
   webServer: {
     command: "bun run dev",

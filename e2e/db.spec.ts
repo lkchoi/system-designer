@@ -43,10 +43,12 @@ test.describe("db layer", () => {
   test("get + rename design", async ({ page }) => {
     await setupDB(page);
 
-    const result = await page.evaluate(() => {
+    const result = await page.evaluate(async () => {
       const { createDesign, getDesign, renameDesign } = (window as any).__db;
       const d = createDesign("Original");
       const before = getDesign(d.id);
+      // Ensure updatedAt advances past the create timestamp
+      await new Promise((r) => setTimeout(r, 5));
       renameDesign(d.id, "Renamed");
       const after = getDesign(d.id);
       return { before, after };

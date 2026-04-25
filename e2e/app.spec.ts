@@ -300,8 +300,8 @@ test("auto-save persists across page reload", async ({ page }) => {
   await addNode(page, "database", 0.6, 0.4);
   await expect(page.getByText("2 nodes")).toBeVisible();
 
-  // Wait for auto-save debounce
-  await page.waitForTimeout(600);
+  // Wait for auto-save debounce (300ms) + OPFS flush
+  await page.waitForTimeout(1000);
 
   // Reload the page
   await page.reload();
