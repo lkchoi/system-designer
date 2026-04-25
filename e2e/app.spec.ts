@@ -1,39 +1,30 @@
 import { test, expect, type Page } from "@playwright/test";
 
-/**
- * Drag a component from the sidebar onto the canvas center.
- * @param itemTitle - The visible title/label of the sidebar item (e.g. "Database")
- * @param dragType  - The type string to pass via dataTransfer (e.g. "database")
- */
-async function dragToCanvas(page: Page, itemTitle: string, dragType: string) {
-  const item = page.locator(`aside [title="${itemTitle}"][draggable]`);
-  const canvas = page.locator(".react-flow__viewport");
-  await item.waitFor();
-  await canvas.waitFor();
-
-  const src = (await item.boundingBox())!;
-  const dst = (await canvas.boundingBox())!;
-
-  const srcX = src.x + src.width / 2;
-  const srcY = src.y + src.height / 2;
-  const dstX = dst.x + dst.width / 2;
-  const dstY = dst.y + dst.height / 2;
-
+/** Drop a component onto the canvas at (clientX, clientY) via synthetic DragEvent. */
+async function dropOnCanvas(page: Page, type: string, clientX: number, clientY: number) {
   await page.evaluate(
-    ({ sx, sy, dx, dy, type }) => {
-      const canvasEl = document.querySelector(".react-flow__renderer")!;
+    ({ x, y, t }) => {
+      const el = document.querySelector(".react-flow__renderer")!;
       const dt = new DataTransfer();
-      dt.setData("application/system-designer", type);
-
-      canvasEl.dispatchEvent(
-        new DragEvent("dragover", { dataTransfer: dt, clientX: dx, clientY: dy, bubbles: true }),
-      );
-      canvasEl.dispatchEvent(
-        new DragEvent("drop", { dataTransfer: dt, clientX: dx, clientY: dy, bubbles: true }),
-      );
+      dt.setData("application/system-designer", t);
+      el.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
+      el.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
     },
-    { sx: srcX, sy: srcY, dx: dstX, dy: dstY, type: dragType },
+    { x: clientX, y: clientY, t: type },
   );
+}
+
+/** Get the canvas bounding box. */
+async function canvasBounds(page: Page) {
+  const canvas = page.locator(".react-flow__viewport");
+  await canvas.waitFor();
+  return (await canvas.boundingBox())!;
+}
+
+/** Add a system node to the canvas at a relative position (0-1) within the canvas. */
+async function addNode(page: Page, type: string, relX = 0.35, relY = 0.5) {
+  const b = await canvasBounds(page);
+  await dropOnCanvas(page, type, b.x + b.width * relX, b.y + b.height * relY);
 }
 
 test("app loads", async ({ page }) => {
@@ -43,12 +34,43 @@ test("app loads", async ({ page }) => {
 
 test("add node from sidebar", async ({ page }) => {
   await page.goto("/");
-  await page.locator(".react-flow__viewport").waitFor();
+  await canvasBounds(page);
 
   await expect(page.getByText("0 nodes")).toBeVisible();
 
-  await dragToCanvas(page, "Database", "database");
+  await addNode(page, "database");
 
   await expect(page.getByText("1 nodes")).toBeVisible();
   await expect(page.locator(".react-flow__node")).toHaveCount(1);
+});
+
+test("connect two nodes", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Add two nodes at different positions
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+  await expect(page.locator(".react-flow__node")).toHaveCount(2);
+  await expect(page.getByText("0 connections")).toBeVisible();
+
+  // Find the source (service) bottom handle and target (database) left handle
+  const nodes = page.locator(".react-flow__node");
+  const sourceNode = nodes.nth(0);
+  const targetNode = nodes.nth(1);
+
+  const sourceHandle = sourceNode.locator(".system-handle").nth(3); // bottom handle
+  const targetHandle = targetNode.locator(".system-handle").nth(1); // left handle
+
+  // Drag from source handle to target handle
+  await sourceHandle.hover({ force: true });
+  const srcBox = (await sourceHandle.boundingBox())!;
+  const tgtBox = (await targetHandle.boundingBox())!;
+
+  await page.mouse.move(srcBox.x + srcBox.width / 2, srcBox.y + srcBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(tgtBox.x + tgtBox.width / 2, tgtBox.y + tgtBox.height / 2, { steps: 5 });
+  await page.mouse.up();
+
+  await expect(page.getByText("1 connections")).toBeVisible();
 });
