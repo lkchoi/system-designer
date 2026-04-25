@@ -42,6 +42,7 @@ import LabeledEdge from "./components/LabeledEdge";
 import EdgePropertiesPanel from "./components/EdgePropertiesPanel";
 import HotkeyHelpOverlay from "./components/HotkeyHelpOverlay";
 import CapacityCalculator from "./components/CapacityCalculator";
+import CronTranslator from "./components/CronTranslator";
 import ExportDialog from "./components/ExportDialog";
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
@@ -178,6 +179,7 @@ function Canvas({
   const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
   const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
+  const [showCronTranslator, setShowCronTranslator] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
   const [stressScenarios, setStressScenarios] = useState<StressScenario[]>([]);
@@ -839,6 +841,10 @@ function Canvas({
           setShowCapacityCalc(false);
           return;
         }
+        if (showCronTranslator) {
+          setShowCronTranslator(false);
+          return;
+        }
         if (showHotkeyHelp) {
           setShowHotkeyHelp(false);
           return;
@@ -888,6 +894,7 @@ function Canvas({
 
       "show-help": () => setShowHotkeyHelp((prev) => !prev),
       "show-capacity-calc": () => setShowCapacityCalc((prev) => !prev),
+      "show-cron-translator": () => setShowCronTranslator((prev) => !prev),
       "focus-filter": () => {
         if (sidebarCollapsed) setSidebarCollapsed(false);
         setTimeout(() => filterInputRef.current?.focus(), 0);
@@ -915,6 +922,7 @@ function Canvas({
       flowPath.length,
       showHotkeyHelp,
       showCapacityCalc,
+      showCronTranslator,
       showExportDialog,
       showSaveForm,
       selectedNodeId,
@@ -1557,6 +1565,25 @@ function Canvas({
                     </svg>
                   </button>
                   <button
+                    className={`flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright${showCronTranslator ? " text-accent bg-accent-bg" : ""}`}
+                    onClick={() => setShowCronTranslator((prev) => !prev)}
+                    title="Cron Translator (R)"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                  </button>
+                  <button
                     className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
                     onClick={() => setShowExportDialog(true)}
                     title="Export (⌘E)"
@@ -1930,6 +1957,7 @@ function Canvas({
         )}
         <HotkeyHelpOverlay open={showHotkeyHelp} onClose={() => setShowHotkeyHelp(false)} />
         <CapacityCalculator open={showCapacityCalc} onClose={() => setShowCapacityCalc(false)} />
+        <CronTranslator open={showCronTranslator} onClose={() => setShowCronTranslator(false)} />
         <ExportDialog
           open={showExportDialog}
           onClose={() => setShowExportDialog(false)}

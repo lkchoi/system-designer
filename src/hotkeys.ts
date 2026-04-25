@@ -82,6 +82,14 @@ export const HOTKEYS: HotkeyDef[] = [
     category: "Tools",
   },
 
+  {
+    id: "show-cron-translator",
+    key: "r",
+    guard: true,
+    label: "Cron translator",
+    category: "Tools",
+  },
+
   { id: "export-design", key: "e", mod: true, label: "Export design", category: "Tools" },
   { id: "import-design", key: "i", mod: true, label: "Import design", category: "Tools" },
 
