@@ -29,9 +29,11 @@ export const elasticsearchConcern: ClientConcern = {
       imports: ['"github.com/elastic/go-elasticsearch/v8"'],
       globals: ["var esClient *elasticsearch.Client"],
       init: [
-        "es, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{os.Getenv(\"ES_URL\")}})",
-        'if err != nil { log.Fatalf("elasticsearch: %v", err) }',
-        "esClient = es",
+        "{",
+        "\tes, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{os.Getenv(\"ES_URL\")}})",
+        '\tif err != nil { log.Fatalf("elasticsearch: %v", err) }',
+        "\tesClient = es",
+        "}",
       ],
       shutdown: [],
       healthChecks: [

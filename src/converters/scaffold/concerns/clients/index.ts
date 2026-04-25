@@ -27,7 +27,26 @@ export const CLIENT_CONCERNS: readonly ClientConcern[] = [
 const byTechId = new Map<string, ClientConcern>();
 for (const c of CLIENT_CONCERNS) byTechId.set(c.targetTechId, c);
 
-/** Look up a client concern by target technology ID. */
+/**
+ * Wire-compatible tech aliases. Technologies that use the same client
+ * library and protocol as a canonical tech.
+ */
+const TECH_ALIASES: Record<string, string> = {
+  // PostgreSQL wire-compatible
+  cockroachdb: "postgresql",
+  aurora: "postgresql",
+  // MySQL wire-compatible
+  mariadb: "mysql",
+  // Redis wire-compatible
+  dragonfly: "redis",
+  keydb: "redis",
+  // OpenSearch uses the same client as Elasticsearch
+  opensearch: "elasticsearch",
+  // MinIO is S3-compatible
+  minio: "s3",
+};
+
+/** Look up a client concern by target technology ID, with alias resolution. */
 export function getClientConcern(targetTechId: string): ClientConcern | undefined {
-  return byTechId.get(targetTechId);
+  return byTechId.get(targetTechId) ?? byTechId.get(TECH_ALIASES[targetTechId]);
 }

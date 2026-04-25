@@ -137,6 +137,20 @@ describe("getClientConcern", () => {
   it("returns undefined for unregistered tech", () => {
     expect(getClientConcern("not-a-tech")).toBeUndefined();
   });
+
+  it.each([
+    ["cockroachdb", "postgresql"],
+    ["aurora", "postgresql"],
+    ["mariadb", "mysql"],
+    ["dragonfly", "redis"],
+    ["keydb", "redis"],
+    ["opensearch", "elasticsearch"],
+    ["minio", "s3"],
+  ])("resolves alias %s → %s concern", (alias, canonical) => {
+    const concern = getClientConcern(alias);
+    expect(concern).toBeDefined();
+    expect(concern!.targetTechId).toBe(canonical);
+  });
 });
 
 // ─── Integration: scaffoldService with connections ──────────────────────
@@ -241,5 +255,43 @@ describe("scaffoldService with connections", () => {
       String(result.files.find((f) => f.path.endsWith("package.json"))!.content),
     );
     expect(Object.keys(pkg.dependencies)).toHaveLength(0);
+  });
+
+  it("go scaffold with 2+ connections uses block scoping to avoid err redeclaration", () => {
+    const goData = { ...baseData, plan: { technology: "Go" } };
+    const result = scaffoldService({
+      serviceName: "api",
+      data: goData,
+      endpoints: [],
+      connections: [
+        { targetName: "cache", targetComponentType: "cache", targetTechId: "redis" },
+        { targetName: "db", targetComponentType: "database", targetTechId: "postgresql" },
+      ],
+    });
+    const mainGo = String(result.files.find((f) => f.path.endsWith("main.go"))!.content);
+    // Each init block should be in its own { } scope
+    expect(mainGo).toContain("redis.ParseURL");
+    expect(mainGo).toContain("pgxpool.New");
+    // The `:=` declarations for err must be in separate blocks
+    const initSection = mainGo.slice(mainGo.indexOf("// Initialize connections"));
+    const errDecls = initSection.match(/:=/g) ?? [];
+    expect(errDecls.length).toBeGreaterThanOrEqual(2);
+    // Verify block scoping — each `{` opens a new scope
+    expect(initSection).toContain("{\n");
+    expect(initSection).toContain("}");
+  });
+
+  it("go scaffold resolves cockroachdb alias to postgresql concern", () => {
+    const goData = { ...baseData, plan: { technology: "Go" } };
+    const result = scaffoldService({
+      serviceName: "api",
+      data: goData,
+      endpoints: [],
+      connections: [
+        { targetName: "db", targetComponentType: "database", targetTechId: "cockroachdb" },
+      ],
+    });
+    const goMod = String(result.files.find((f) => f.path.endsWith("go.mod"))!.content);
+    expect(goMod).toContain("github.com/jackc/pgx/v5");
   });
 });

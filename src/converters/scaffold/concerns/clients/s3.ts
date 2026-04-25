@@ -40,9 +40,11 @@ export const s3Concern: ClientConcern = {
       ],
       globals: ["var s3Client *s3.Client"],
       init: [
-        "cfg, err := config.LoadDefaultConfig(context.Background())",
-        'if err != nil { log.Fatalf("aws config: %v", err) }',
-        "s3Client = s3.NewFromConfig(cfg)",
+        "{",
+        "\tcfg, err := config.LoadDefaultConfig(context.Background())",
+        '\tif err != nil { log.Fatalf("aws config: %v", err) }',
+        "\ts3Client = s3.NewFromConfig(cfg)",
+        "}",
       ],
       shutdown: [],
       healthChecks: [
