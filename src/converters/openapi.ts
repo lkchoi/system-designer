@@ -26,9 +26,24 @@ export function buildOpenApiYaml(design: DesignJSON): string | null {
       const method = ep.method.toLowerCase();
       const path = ep.path.startsWith("/") ? ep.path : `/${ep.path}`;
       if (!paths[path]) paths[path] = {};
+      const responses: Record<string, { description: string }> = {
+        "200": { description: "OK" },
+        "400": { description: "Bad Request" },
+        "401": { description: "Unauthorized" },
+        "403": { description: "Forbidden" },
+        "404": { description: "Not Found" },
+        "500": { description: "Internal Server Error" },
+      };
+      if (method === "post" || method === "put") {
+        responses["409"] = { description: "Conflict" };
+        responses["422"] = { description: "Unprocessable Entity" };
+      }
+      if (method === "delete") {
+        responses["204"] = { description: "No Content" };
+      }
       paths[path][method] = {
         summary: `${ep.method} ${path} (${gwLabel})`,
-        responses: { "200": { description: "OK" } },
+        responses,
       };
     }
   }
