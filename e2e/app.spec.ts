@@ -109,3 +109,24 @@ test("edit node properties via panel", async ({ page }) => {
   // Verify the node label updated on the canvas
   await expect(page.locator(".react-flow__node").getByText("users-db")).toBeVisible();
 });
+
+test("delete a node", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+  await expect(page.getByText("2 nodes")).toBeVisible();
+
+  // Connect them first
+  await connectNodes(page, 0, 1);
+  await expect(page.getByText("1 connections")).toBeVisible();
+
+  // Select the first node and press Delete
+  await page.locator(".react-flow__node").first().click();
+  await page.keyboard.press("Delete");
+
+  // Node and its edge should be removed
+  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(page.getByText("0 connections")).toBeVisible();
+});
