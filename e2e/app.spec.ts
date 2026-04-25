@@ -310,3 +310,35 @@ test("auto-save persists across page reload", async ({ page }) => {
   // Nodes should persist
   await expect(page.getByText("2 nodes")).toBeVisible();
 });
+
+test("multiple designs with independent state", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Add nodes to the default design
+  await addNode(page, "database");
+  await expect(page.getByText("1 nodes")).toBeVisible();
+  await page.waitForTimeout(600); // wait for auto-save
+
+  // Open design menu and create a new design
+  await page.locator("[title='Click to switch designs, double-click to rename']").click();
+  await page.getByText("New Design").click();
+
+  // New design should be empty
+  await expect(page.getByText("0 nodes")).toBeVisible();
+
+  // Add a different node to the new design
+  await addNode(page, "service");
+  await addNode(page, "cache");
+  await expect(page.getByText("2 nodes")).toBeVisible();
+  await page.waitForTimeout(600);
+
+  // Switch back to the first design via the dropdown menu
+  await page.locator("[title='Click to switch designs, double-click to rename']").click();
+  // The non-active design item lacks the font-semibold class
+  const designMenu = page.locator(".absolute").filter({ hasText: "Designs" });
+  await designMenu.locator("div.group:not(.font-semibold)").first().click();
+
+  // First design should still have 1 node
+  await expect(page.getByText("1 nodes")).toBeVisible();
+});
