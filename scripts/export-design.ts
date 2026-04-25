@@ -80,7 +80,7 @@ function parseArgs(argv: string[]): Args {
     out: process.cwd(),
     outIsDir: true,
     preferLocalStack: false,
-    includeClaudeMd: false,
+    includeClaudeMd: true,
     listFormats: false,
     help: false,
   };
@@ -90,6 +90,7 @@ function parseArgs(argv: string[]): Args {
     else if (a === "-h" || a === "--help") args.help = true;
     else if (a === "--prefer-localstack") args.preferLocalStack = true;
     else if (a === "--include-claude-md") args.includeClaudeMd = true;
+    else if (a === "--no-include-claude-md") args.includeClaudeMd = false;
     else if (a === "-f" || a === "--format") args.format = argv[++i] as FormatId;
     else if (a === "-o" || a === "--out" || a === "--out-dir") {
       args.out = argv[++i];
@@ -120,9 +121,9 @@ Options:
   -f, --format <id>        Format id (see --list-formats)
   -o, --out <dir>          Output directory; converter picks filename (default: cwd)
   -O, --out-file <path>    Full output path; overrides converter filename
-      --prefer-localstack  Inject LocalStack for AWS services (docker-compose only)
-      --include-claude-md  Drop a CLAUDE.md into the bundle (docker-compose only)
-      --list-formats       List available format ids
+      --prefer-localstack    Inject LocalStack for AWS services (docker-compose only)
+      --no-include-claude-md Skip the bundle's generated CLAUDE.md (default: included)
+      --list-formats         List available format ids
   -h, --help               Show this help`);
 }
 
