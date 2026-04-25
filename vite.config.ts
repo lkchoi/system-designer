@@ -10,6 +10,15 @@ export default defineConfig({
   plugins: [tailwindcss(), react()],
   build: {
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/sql.js")) return "sql-js";
+          if (id.includes("node_modules/jszip")) return "jszip";
+          if (id.includes("node_modules/@xyflow")) return "reactflow";
+        },
+      },
+    },
   },
   server: certsExist
     ? {

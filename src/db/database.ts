@@ -1,6 +1,4 @@
-import initSqlJs from "sql.js";
 import type { Database as SqlJsDatabase } from "sql.js";
-import wasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 import { SCHEMA } from "./schema";
 
 const DB_FILE = "system-designer.db";
@@ -31,6 +29,10 @@ async function writeToOpfs(data: Uint8Array): Promise<void> {
 export async function initDB(): Promise<SqlJsDatabase> {
   if (db) return db;
 
+  const [{ default: initSqlJs }, { default: wasmUrl }] = await Promise.all([
+    import("sql.js"),
+    import("sql.js/dist/sql-wasm.wasm?url"),
+  ]);
   const SQL = await initSqlJs({ locateFile: () => wasmUrl });
   const existing = await readFromOpfs();
 

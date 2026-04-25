@@ -1,26 +1,13 @@
+import { lazy } from "react";
 import type { ComponentType } from "../types";
 import type { ToolDef } from "./types";
-import CapacityCalculator from "./capacity-calculator/CapacityCalculator";
-import CronTranslator from "./cron-translator/CronTranslator";
-import SlaCalculator from "./sla-calculator/SlaCalculator";
-import CacheSizer from "./cache-sizer/CacheSizer";
-import JwtInspector from "./jwt-inspector/JwtInspector";
-import PartitionCalculator from "./partition-calculator/PartitionCalculator";
-import ConnectionPoolSizer from "./connection-pool-sizer/ConnectionPoolSizer";
-import ServerlessCostEstimator from "./serverless-cost-estimator/ServerlessCostEstimator";
-import StorageGrowthProjector from "./storage-growth-projector/StorageGrowthProjector";
-import ReplicationPlanner from "./replication-planner/ReplicationPlanner";
-import LatencyBudgetCalculator from "./latency-budget-calculator/LatencyBudgetCalculator";
-import DnsTtlAdvisor from "./dns-ttl-advisor/DnsTtlAdvisor";
-import PayloadSizeEstimator from "./payload-size-estimator/PayloadSizeEstimator";
-import RegexTester from "./regex-tester/RegexTester";
 
 const TOOLS: ToolDef[] = [
   {
     id: "capacity-calculator",
     label: "Capacity Calculator",
     icon: "M4 2h16a2 2 0 012 2v16a2 2 0 01-2 2H4a2 2 0 01-2-2V4a2 2 0 012-2zm4 4h8M8 10h2M12 10h2M8 14h2M12 14h2M8 18h6",
-    component: CapacityCalculator,
+    component: lazy(() => import("./capacity-calculator/CapacityCalculator")),
     relevantTo: [
       "database",
       "cache",
@@ -35,14 +22,14 @@ const TOOLS: ToolDef[] = [
     id: "cron-translator",
     label: "Cron Translator",
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM12 6v6l4 2",
-    component: CronTranslator,
+    component: lazy(() => import("./cron-translator/CronTranslator")),
     relevantTo: ["cron", "serverless"],
   },
   {
     id: "sla-calculator",
     label: "SLA Calculator",
     icon: "M9 12l2 2 4-4M12 2a10 10 0 100 20 10 10 0 000-20z",
-    component: SlaCalculator,
+    component: lazy(() => import("./sla-calculator/SlaCalculator")),
     relevantTo: [
       "database",
       "api-gateway",
@@ -68,77 +55,77 @@ const TOOLS: ToolDef[] = [
     id: "cache-sizer",
     label: "Cache Sizer",
     icon: "M4 4h16v16H4zM4 9h16M9 4v16",
-    component: CacheSizer,
+    component: lazy(() => import("./cache-sizer/CacheSizer")),
     relevantTo: ["cache"],
   },
   {
     id: "jwt-inspector",
     label: "JWT Inspector",
     icon: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
-    component: JwtInspector,
+    component: lazy(() => import("./jwt-inspector/JwtInspector")),
     relevantTo: ["api-gateway", "firewall"],
   },
   {
     id: "partition-calculator",
     label: "Partition Calculator",
     icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z",
-    component: PartitionCalculator,
+    component: lazy(() => import("./partition-calculator/PartitionCalculator")),
     relevantTo: ["message-queue", "stream-processor"],
   },
   {
     id: "connection-pool-sizer",
     label: "Connection Pool Sizer",
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z",
-    component: ConnectionPoolSizer,
+    component: lazy(() => import("./connection-pool-sizer/ConnectionPoolSizer")),
     relevantTo: ["database", "cache"],
   },
   {
     id: "serverless-cost-estimator",
     label: "Serverless Cost Estimator",
     icon: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6",
-    component: ServerlessCostEstimator,
+    component: lazy(() => import("./serverless-cost-estimator/ServerlessCostEstimator")),
     relevantTo: ["serverless"],
   },
   {
     id: "storage-growth-projector",
     label: "Storage Growth Projector",
     icon: "M3 3v18h18M7 16l4-8 4 4 4-8",
-    component: StorageGrowthProjector,
+    component: lazy(() => import("./storage-growth-projector/StorageGrowthProjector")),
     relevantTo: ["storage", "data-warehouse"],
   },
   {
     id: "replication-planner",
     label: "Replication Planner",
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM8 12h8M12 8v8",
-    component: ReplicationPlanner,
+    component: lazy(() => import("./replication-planner/ReplicationPlanner")),
     relevantTo: ["database", "cache", "message-queue"],
   },
   {
     id: "latency-budget-calculator",
     label: "Latency Budget",
     icon: "M22 12h-4l-3 9L9 3l-3 9H2",
-    component: LatencyBudgetCalculator,
+    component: lazy(() => import("./latency-budget-calculator/LatencyBudgetCalculator")),
     relevantTo: ["api-gateway", "load-balancer", "cdn"],
   },
   {
     id: "dns-ttl-advisor",
     label: "DNS TTL Advisor",
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10c-2.5-2.5-4-6-4-10s1.5-7.5 4-10z",
-    component: DnsTtlAdvisor,
+    component: lazy(() => import("./dns-ttl-advisor/DnsTtlAdvisor")),
     relevantTo: ["dns"],
   },
   {
     id: "payload-size-estimator",
     label: "Payload Size Estimator",
     icon: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M9 15h6M9 11h6",
-    component: PayloadSizeEstimator,
+    component: lazy(() => import("./payload-size-estimator/PayloadSizeEstimator")),
     relevantTo: ["api-gateway", "message-queue", "webhook"],
   },
   {
     id: "regex-tester",
     label: "Regex Tester",
     icon: "M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5zM15 5l4 4",
-    component: RegexTester,
+    component: lazy(() => import("./regex-tester/RegexTester")),
     relevantTo: ["api-gateway", "firewall"],
   },
 ];

@@ -2,8 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Handle, Position, useReactFlow, NodeResizer } from "@xyflow/react";
 import type { NodeProps, Node } from "@xyflow/react";
 import type { SystemNodeData } from "../types";
-import { registry, PRICING } from "../registry";
+import { registry } from "../registry";
 import { useMode, useStress } from "../App";
+import { usePricing } from "../hooks/usePricing";
 
 const STATUS_COLORS: Record<string, string> = {
   healthy: "#22c55e",
@@ -36,6 +37,7 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
   }
   const mode = useMode();
   const { effects } = useStress();
+  const PRICING = usePricing();
   const def = registry.getOrDefault(data.componentType);
 
   const isStressMode = mode === "stress";
@@ -206,7 +208,7 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
         {mode === "price" ? (
           (() => {
             const techName = data.plan?.technology;
-            const pricing = techName ? PRICING[techName] : undefined;
+            const pricing = techName && PRICING ? PRICING[techName] : undefined;
             return (
               <div className="flex items-center gap-1.5 mb-2.5">
                 {pricing ? (

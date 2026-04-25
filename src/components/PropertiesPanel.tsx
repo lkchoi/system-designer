@@ -11,9 +11,10 @@ import type {
 } from "../types";
 import type { Mode, PanelPosition } from "../App";
 import { displayType } from "../data";
-import { registry, PRICING } from "../registry";
+import { registry } from "../registry";
 import { ulid } from "ulid";
 import ToolLauncher from "../tools/ToolLauncher";
+import { usePricing } from "../hooks/usePricing";
 
 const STATUSES: NodeStatus[] = ["healthy", "warning", "error", "idle"];
 
@@ -74,6 +75,7 @@ export default function PropertiesPanel({
   const { data } = node;
   const entry = registry.getOrDefault(data.componentType);
   const planFields = entry.planFields;
+  const PRICING = usePricing();
   const [editingEndpointId, setEditingEndpointId] = useState<string | null>(null);
 
   function updatePlanField(key: string, value: string) {
@@ -788,7 +790,7 @@ export default function PropertiesPanel({
         ) : mode === "price" ? (
           (() => {
             const techName = data.plan?.technology;
-            const pricing = techName ? PRICING[techName] : undefined;
+            const pricing = techName && PRICING ? PRICING[techName] : undefined;
             return (
               <div className="flex flex-col gap-2">
                 <label className="text-[13px] font-semibold text-text-dim">Pricing</label>

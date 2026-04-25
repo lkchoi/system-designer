@@ -6,6 +6,8 @@ import {
   useEffect,
   createContext,
   useContext,
+  lazy,
+  Suspense,
 } from "react";
 import {
   ReactFlow,
@@ -41,9 +43,10 @@ import ContainerNode from "./components/ContainerNode";
 import LabeledEdge from "./components/LabeledEdge";
 import EdgePropertiesPanel from "./components/EdgePropertiesPanel";
 import HotkeyHelpOverlay from "./components/HotkeyHelpOverlay";
-import CapacityCalculator from "./tools/capacity-calculator/CapacityCalculator";
-import CronTranslator from "./tools/cron-translator/CronTranslator";
-import ExportDialog from "./components/ExportDialog";
+const CapacityCalculator = lazy(() => import("./tools/capacity-calculator/CapacityCalculator"));
+const CronTranslator = lazy(() => import("./tools/cron-translator/CronTranslator"));
+const ExportDialog = lazy(() => import("./components/ExportDialog"));
+const CompareView = lazy(() => import("./components/CompareView"));
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
 import { randomMetrics } from "./data";
@@ -79,7 +82,6 @@ import {
   deleteFlowPath,
 } from "./db";
 import { importDesign, pickAndReadFile } from "./db/io";
-import { getImportFormats } from "./converters";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
 
@@ -1956,14 +1958,22 @@ function Canvas({
           </div>
         )}
         <HotkeyHelpOverlay open={showHotkeyHelp} onClose={() => setShowHotkeyHelp(false)} />
-        <CapacityCalculator open={showCapacityCalc} onClose={() => setShowCapacityCalc(false)} />
-        <CronTranslator open={showCronTranslator} onClose={() => setShowCronTranslator(false)} />
-        <ExportDialog
-          open={showExportDialog}
-          onClose={() => setShowExportDialog(false)}
-          designId={designId}
-          designName={currentDesign?.name ?? "design"}
-        />
+        <Suspense fallback={null}>
+          {showCapacityCalc && (
+            <CapacityCalculator open onClose={() => setShowCapacityCalc(false)} />
+          )}
+          {showCronTranslator && (
+            <CronTranslator open onClose={() => setShowCronTranslator(false)} />
+          )}
+          {showExportDialog && (
+            <ExportDialog
+              open
+              onClose={() => setShowExportDialog(false)}
+              designId={designId}
+              designName={currentDesign?.name ?? "design"}
+            />
+          )}
+        </Suspense>
       </StressContext.Provider>
     </ModeContext.Provider>
   );
@@ -2030,6 +2040,7 @@ export default function App() {
   );
 
   const handleImport = useCallback(async () => {
+    const { getImportFormats } = await import("./converters");
     const importFormats = getImportFormats();
     const extensions = [...new Set(importFormats.flatMap((f) => f.fileExtensions))].join(",");
     try {
@@ -2069,91 +2080,14 @@ export default function App() {
   }
 
   if (compareIds) {
-    const leftDesign = designs.find((d) => d.id === compareIds[0]);
-    const rightDesign = designs.find((d) => d.id === compareIds[1]);
-    const leftState = loadDesignState(compareIds[0]);
-    const rightState = loadDesignState(compareIds[1]);
-
     return (
-      <div className="flex flex-col h-screen bg-surface text-text">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-surface shrink-0">
-          <div className="flex items-center gap-3">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="text-accent"
-            >
-              <rect x="3" y="3" width="7" height="18" rx="1" />
-              <rect x="14" y="3" width="7" height="18" rx="1" />
-            </svg>
-            <span className="text-sm font-semibold text-text-bright">
-              {leftDesign?.name ?? "Left"}
-            </span>
-            <span className="text-text-dim text-xs">vs</span>
-            <span className="text-sm font-semibold text-text-bright">
-              {rightDesign?.name ?? "Right"}
-            </span>
-          </div>
-          <button
-            className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-lg text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3 bg-surface-2"
-            onClick={() => setCompareIds(null)}
-          >
-            Exit Compare
-          </button>
-        </div>
-        <div className="flex flex-1 min-h-0">
-          <div className="flex-1 border-r border-border relative">
-            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-surface-2 border border-border rounded-md text-[11px] font-semibold text-text-dim">
-              {leftDesign?.name}
-            </div>
-            <ReactFlowProvider>
-              <ReactFlow
-                nodes={leftState.nodes}
-                edges={leftState.edges}
-                nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
-                defaultViewport={leftState.viewport}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable={false}
-                panOnDrag
-                zoomOnScroll
-                fitView={false}
-              >
-                <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-              </ReactFlow>
-            </ReactFlowProvider>
-          </div>
-          <div className="flex-1 relative">
-            <div className="absolute top-2 left-2 z-10 px-2 py-1 bg-surface-2 border border-border rounded-md text-[11px] font-semibold text-text-dim">
-              {rightDesign?.name}
-            </div>
-            <ReactFlowProvider>
-              <ReactFlow
-                nodes={rightState.nodes}
-                edges={rightState.edges}
-                nodeTypes={nodeTypes}
-                edgeTypes={edgeTypes}
-                defaultViewport={rightState.viewport}
-                nodesDraggable={false}
-                nodesConnectable={false}
-                elementsSelectable={false}
-                panOnDrag
-                zoomOnScroll
-                fitView={false}
-              >
-                <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
-              </ReactFlow>
-            </ReactFlowProvider>
-          </div>
-        </div>
-      </div>
+      <Suspense fallback={null}>
+        <CompareView
+          designs={designs}
+          compareIds={compareIds}
+          onExit={() => setCompareIds(null)}
+        />
+      </Suspense>
     );
   }
 

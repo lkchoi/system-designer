@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import type { ComponentType } from "../types";
 import { getToolsForType } from "./index";
 
@@ -39,16 +39,21 @@ export default function ToolLauncher({ componentType }: Props) {
           </button>
         ))}
       </div>
-      {tools.map((tool) => {
-        const Component = tool.component;
-        return (
-          <Component
-            key={tool.id}
-            open={openToolId === tool.id}
-            onClose={() => setOpenToolId(null)}
-          />
-        );
-      })}
+      {openToolId && (
+        <Suspense fallback={null}>
+          {tools.map((tool) => {
+            if (tool.id !== openToolId) return null;
+            const Component = tool.component;
+            return (
+              <Component
+                key={tool.id}
+                open
+                onClose={() => setOpenToolId(null)}
+              />
+            );
+          })}
+        </Suspense>
+      )}
     </div>
   );
 }
