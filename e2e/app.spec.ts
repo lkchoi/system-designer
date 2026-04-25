@@ -342,3 +342,26 @@ test("multiple designs with independent state", async ({ page }) => {
   // First design should still have 1 node
   await expect(page.getByText("1 nodes")).toBeVisible();
 });
+
+test("sidebar search filters components", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  const sidebar = page.locator("aside");
+  const filterInput = sidebar.getByPlaceholder(/Filter/);
+
+  // Count visible draggable items before filtering
+  const allItems = sidebar.locator("[draggable]");
+  const initialCount = await allItems.count();
+  expect(initialCount).toBeGreaterThan(5);
+
+  // Type a filter term
+  await filterInput.fill("data");
+  const filteredCount = await allItems.count();
+  expect(filteredCount).toBeLessThan(initialCount);
+  expect(filteredCount).toBeGreaterThan(0);
+
+  // Clear filter — items should return
+  await filterInput.clear();
+  await expect(allItems).toHaveCount(initialCount);
+});
