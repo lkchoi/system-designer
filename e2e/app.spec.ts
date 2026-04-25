@@ -440,3 +440,112 @@ test("hotkeys", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.getByText("Keyboard Shortcuts")).not.toBeVisible();
 });
+
+test("flow path recording and saving", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Add three nodes
+  await addNode(page, "api-gateway", 0.25, 0.4);
+  await addNode(page, "service", 0.45, 0.4);
+  await addNode(page, "database", 0.65, 0.4);
+  await expect(page.getByText("3 nodes")).toBeVisible();
+
+  // Toggle flow path mode
+  await page.getByRole("button", { name: "Flow Path" }).click();
+  await expect(page.getByText("Click nodes to build a flow path...")).toBeVisible();
+
+  // Click nodes in sequence to build a path
+  const nodes = page.locator(".react-flow__node");
+  await nodes.nth(0).click();
+  await nodes.nth(1).click();
+  await nodes.nth(2).click();
+
+  // Path breadcrumbs should show all three labels
+  const pathBar = page.locator(".bg-surface-2.border-b").filter({ hasText: "Save" });
+  const labels = pathBar.locator(".font-medium.text-text-bright");
+  await expect(labels).toHaveCount(3);
+
+  // Click Save button to open the save form
+  await pathBar.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Save Flow Path")).toBeVisible();
+
+  // Fill in name and save
+  await page.getByPlaceholder("e.g. Post a comment").fill("Request Flow");
+  await page.getByRole("button", { name: "Save Flow", exact: true }).click();
+
+  // Flow should appear in the sidebar under "Paths"
+  await expect(page.locator("aside").getByRole("heading", { name: "Paths" })).toBeVisible();
+  await expect(page.locator("aside").getByText("Request Flow")).toBeVisible();
+});
+
+test("flow path: click last node again removes it", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+
+  // Enter flow path mode
+  await page.getByRole("button", { name: "Flow Path" }).click();
+
+  // Click both nodes
+  const nodes = page.locator(".react-flow__node");
+  await nodes.nth(0).click();
+  await nodes.nth(1).click();
+
+  const pathBar = page.locator(".bg-surface-2.border-b").filter({ hasText: "Save" });
+  await expect(pathBar.locator(".font-medium.text-text-bright")).toHaveCount(2);
+
+  // Click the last node again to remove it
+  await nodes.nth(1).click();
+  await expect(pathBar.locator(".font-medium.text-text-bright")).toHaveCount(1);
+});
+
+test("flow path: clear path", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+
+  await page.getByRole("button", { name: "Flow Path" }).click();
+
+  const nodes = page.locator(".react-flow__node");
+  await nodes.nth(0).click();
+  await nodes.nth(1).click();
+
+  // Clear the path
+  await page.locator("[title='Clear path']").click();
+  await expect(page.getByText("Click nodes to build a flow path...")).toBeVisible();
+});
+
+test("flow path: load saved flow from sidebar", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+
+  // Build and save a flow
+  await page.getByRole("button", { name: "Flow Path" }).click();
+  const nodes = page.locator(".react-flow__node");
+  await nodes.nth(0).click();
+  await nodes.nth(1).click();
+
+  const pathBar = page.locator(".bg-surface-2.border-b").filter({ hasText: "Save" });
+  await pathBar.getByRole("button", { name: "Save" }).click();
+  await page.getByPlaceholder("e.g. Post a comment").fill("DB Query");
+  await page.getByRole("button", { name: "Save Flow" }).click();
+
+  // Exit flow path mode
+  await page.getByRole("button", { name: "Flow Path" }).click();
+  await expect(page.getByText("Click nodes to build a flow path...")).not.toBeVisible();
+
+  // Click the saved flow in the sidebar to reload it
+  await page.locator("aside").getByText("DB Query").click();
+
+  // Flow path mode should re-activate with the saved steps
+  const reloadedBar = page.locator(".bg-surface-2.border-b").filter({ hasText: "Save" });
+  await expect(reloadedBar.locator(".font-medium.text-text-bright")).toHaveCount(2);
+});
