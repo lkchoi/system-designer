@@ -87,6 +87,17 @@ export default function PropertiesPanel({
     if (editingEndpointId === id) setEditingEndpointId(null);
   }
 
+  const METHOD_ORDER: Record<string, number> = { GET: 0, POST: 1, PUT: 2, PATCH: 3, DELETE: 4 };
+
+  function sortEndpoints() {
+    const sorted = [...(data.endpoints ?? [])].sort((a, b) => {
+      const pathCmp = a.path.localeCompare(b.path);
+      if (pathCmp !== 0) return pathCmp;
+      return (METHOD_ORDER[a.method] ?? 99) - (METHOD_ORDER[b.method] ?? 99);
+    });
+    onUpdate(node.id, { endpoints: sorted });
+  }
+
   function addLink() {
     const link: ResourceLink = { id: ulid(), label: "", url: "" };
     onUpdate(node.id, { links: [...(data.links ?? []), link] });
@@ -375,6 +386,26 @@ export default function PropertiesPanel({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="text-[13px] font-semibold text-text-dim">Endpoints</label>
+              <div className="flex items-center gap-1">
+                <button
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-text-dim bg-transparent transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+                  onClick={sortEndpoints}
+                  title="Sort by path, then method"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M3 6h18M3 12h12M3 18h6" />
+                  </svg>
+                  Sort
+                </button>
               <button
                 className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 hover:bg-accent-bg"
                 onClick={addEndpoint}
@@ -393,6 +424,7 @@ export default function PropertiesPanel({
                 </svg>
                 Add
               </button>
+              </div>
             </div>
             {(data.endpoints ?? []).length === 0 ? (
               <div className="text-xs text-text-dim p-3 text-center bg-surface-2 border border-dashed border-border rounded-lg mt-1">
