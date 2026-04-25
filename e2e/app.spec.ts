@@ -1,5 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Drop a component onto the canvas at (clientX, clientY) via synthetic DragEvent. */
 async function dropOnCanvas(page: Page, type: string, clientX: number, clientY: number) {
@@ -234,4 +238,56 @@ test("export native JSON", async ({ page }) => {
   const data = JSON.parse(content);
   expect(data.nodes).toHaveLength(2);
   expect(data.edges).toHaveLength(1);
+});
+
+test("import design from JSON file", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Create a fixture JSON file
+  const fixture = {
+    version: 1,
+    name: "Imported Design",
+    nodes: [
+      {
+        id: "n1",
+        type: "system",
+        position: { x: 100, y: 100 },
+        data: {
+          label: "imported-api",
+          description: "",
+          componentType: "api-gateway",
+          status: "healthy",
+          metrics: { cpu: 10, memory: 20, rps: 100, latency: 5 },
+          plan: {},
+          sharded: false,
+          shardKey: "",
+          endpoints: [],
+          links: [],
+          capClassification: "",
+          stressFailure: "none",
+          capacityPercent: 100,
+          consumerRate: 1000,
+        },
+      },
+    ],
+    edges: [],
+    viewport: { x: 0, y: 0, zoom: 1 },
+    flowPaths: [],
+  };
+  const fixturePath = path.join(__dirname, "test-import.json");
+  fs.writeFileSync(fixturePath, JSON.stringify(fixture));
+
+  // Click import and provide the file
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.locator("[title='Import (⌘I)']").click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(fixturePath);
+
+  // The imported design should load with the node visible
+  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(page.locator(".react-flow__node").getByText("imported-api")).toBeVisible();
+
+  // Clean up fixture
+  fs.unlinkSync(fixturePath);
 });
