@@ -44,25 +44,12 @@ test("add node from sidebar", async ({ page }) => {
   await expect(page.locator(".react-flow__node")).toHaveCount(1);
 });
 
-test("connect two nodes", async ({ page }) => {
-  await page.goto("/");
-  await canvasBounds(page);
-
-  // Add two nodes at different positions
-  await addNode(page, "service", 0.3, 0.4);
-  await addNode(page, "database", 0.6, 0.4);
-  await expect(page.locator(".react-flow__node")).toHaveCount(2);
-  await expect(page.getByText("0 connections")).toBeVisible();
-
-  // Find the source (service) bottom handle and target (database) left handle
+/** Drag from a handle on the source node to a handle on the target node. */
+async function connectNodes(page: Page, sourceIdx: number, targetIdx: number) {
   const nodes = page.locator(".react-flow__node");
-  const sourceNode = nodes.nth(0);
-  const targetNode = nodes.nth(1);
+  const sourceHandle = nodes.nth(sourceIdx).locator(".system-handle").nth(3); // bottom
+  const targetHandle = nodes.nth(targetIdx).locator(".system-handle").nth(1); // left
 
-  const sourceHandle = sourceNode.locator(".system-handle").nth(3); // bottom handle
-  const targetHandle = targetNode.locator(".system-handle").nth(1); // left handle
-
-  // Drag from source handle to target handle
   await sourceHandle.hover({ force: true });
   const srcBox = (await sourceHandle.boundingBox())!;
   const tgtBox = (await targetHandle.boundingBox())!;
@@ -71,6 +58,33 @@ test("connect two nodes", async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(tgtBox.x + tgtBox.width / 2, tgtBox.y + tgtBox.height / 2, { steps: 5 });
   await page.mouse.up();
+}
+
+test("connect two nodes", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+  await expect(page.locator(".react-flow__node")).toHaveCount(2);
+  await expect(page.getByText("0 connections")).toBeVisible();
+
+  await connectNodes(page, 0, 1);
 
   await expect(page.getByText("1 connections")).toBeVisible();
+});
+
+test("connection validation rejects incompatible nodes", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // cron and client cannot connect to each other
+  await addNode(page, "cron", 0.3, 0.4);
+  await addNode(page, "client", 0.6, 0.4);
+  await expect(page.locator(".react-flow__node")).toHaveCount(2);
+
+  await connectNodes(page, 0, 1);
+
+  // Connection should be rejected — still 0
+  await expect(page.getByText("0 connections")).toBeVisible();
 });
