@@ -10,6 +10,10 @@ import ConnectionPoolSizer from "./connection-pool-sizer/ConnectionPoolSizer";
 import ServerlessCostEstimator from "./serverless-cost-estimator/ServerlessCostEstimator";
 import StorageGrowthProjector from "./storage-growth-projector/StorageGrowthProjector";
 import ReplicationPlanner from "./replication-planner/ReplicationPlanner";
+import LatencyBudgetCalculator from "./latency-budget-calculator/LatencyBudgetCalculator";
+import DnsTtlAdvisor from "./dns-ttl-advisor/DnsTtlAdvisor";
+import PayloadSizeEstimator from "./payload-size-estimator/PayloadSizeEstimator";
+import RegexTester from "./regex-tester/RegexTester";
 
 const TOOLS: ToolDef[] = [
   {
@@ -108,6 +112,34 @@ const TOOLS: ToolDef[] = [
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM8 12h8M12 8v8",
     component: ReplicationPlanner,
     relevantTo: ["database", "cache", "message-queue"],
+  },
+  {
+    id: "latency-budget-calculator",
+    label: "Latency Budget",
+    icon: "M22 12h-4l-3 9L9 3l-3 9H2",
+    component: LatencyBudgetCalculator,
+    relevantTo: ["api-gateway", "load-balancer", "cdn"],
+  },
+  {
+    id: "dns-ttl-advisor",
+    label: "DNS TTL Advisor",
+    icon: "M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20M12 2c2.5 2.5 4 6 4 10s-1.5 7.5-4 10c-2.5-2.5-4-6-4-10s1.5-7.5 4-10z",
+    component: DnsTtlAdvisor,
+    relevantTo: ["dns"],
+  },
+  {
+    id: "payload-size-estimator",
+    label: "Payload Size Estimator",
+    icon: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M9 15h6M9 11h6",
+    component: PayloadSizeEstimator,
+    relevantTo: ["api-gateway", "message-queue", "webhook"],
+  },
+  {
+    id: "regex-tester",
+    label: "Regex Tester",
+    icon: "M17 3a2.83 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5zM15 5l4 4",
+    component: RegexTester,
+    relevantTo: ["api-gateway", "firewall"],
   },
 ];
 
