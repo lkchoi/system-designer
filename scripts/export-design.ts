@@ -18,8 +18,8 @@
  * outside Vite. We import each exporter directly and inline the trivial
  * native-json export to dodge that chain.
  */
-import { writeFile, mkdir, readFile, access } from "node:fs/promises";
-import { resolve, join } from "node:path";
+import { writeFile, mkdir, readFile, access, stat } from "node:fs/promises";
+import { resolve, join, dirname, sep } from "node:path";
 
 import type { ConverterModule, ExportResult, FormatId } from "../src/converters/types.ts";
 import type { DesignJSON } from "../src/db/io.ts";
@@ -68,6 +68,7 @@ interface Args {
   input?: string;
   format?: FormatId;
   out: string;
+  outIsDir: boolean;
   preferLocalStack: boolean;
   listFormats: boolean;
   help: boolean;
@@ -76,6 +77,7 @@ interface Args {
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     out: process.cwd(),
+    outIsDir: true,
     preferLocalStack: false,
     listFormats: false,
     help: false,
@@ -86,8 +88,13 @@ function parseArgs(argv: string[]): Args {
     else if (a === "-h" || a === "--help") args.help = true;
     else if (a === "--prefer-localstack") args.preferLocalStack = true;
     else if (a === "-f" || a === "--format") args.format = argv[++i] as FormatId;
-    else if (a === "-o" || a === "--out") args.out = argv[++i];
-    else if (!a.startsWith("-") && !args.input) args.input = a;
+    else if (a === "-o" || a === "--out" || a === "--out-dir") {
+      args.out = argv[++i];
+      args.outIsDir = true;
+    } else if (a === "-O" || a === "--out-file") {
+      args.out = argv[++i];
+      args.outIsDir = false;
+    } else if (!a.startsWith("-") && !args.input) args.input = a;
     else die(`unknown argument: ${a}`);
   }
   return args;
@@ -103,12 +110,13 @@ function printHelp(): void {
   console.log(`Export a DesignState JSON via any of the in-app converters.
 
 Usage:
-  bun run scripts/export-design.ts <input.json> --format <id> [--out <dir>] [--prefer-localstack]
+  bun run scripts/export-design.ts <input.json> --format <id> [--out <dir> | --out-file <path>] [--prefer-localstack]
   bun run scripts/export-design.ts --list-formats
 
 Options:
   -f, --format <id>        Format id (see --list-formats)
-  -o, --out <dir>          Output directory (default: cwd)
+  -o, --out <dir>          Output directory; converter picks filename (default: cwd)
+  -O, --out-file <path>    Full output path; overrides converter filename
       --prefer-localstack  Inject LocalStack for AWS services (docker-compose only)
       --list-formats       List available format ids
   -h, --help               Show this help`);
@@ -137,16 +145,43 @@ function parseDesign(raw: string): DesignJSON {
   };
 }
 
-async function writeOutput(result: ExportResult, outDir: string): Promise<string> {
-  await mkdir(outDir, { recursive: true });
-  const path = join(outDir, result.filename);
+async function resolveOutputPath(
+  result: ExportResult,
+  outArg: string,
+  outIsDir: boolean,
+): Promise<string> {
+  // --out-dir wins for explicit dirs. For --out (default), be smart: a trailing
+  // slash, an existing dir, or a path with no extension is treated as a dir.
+  let isDir = outIsDir;
+  if (isDir === false) {
+    // explicit --out-file: leave as-is
+  } else if (outArg.endsWith(sep) || outArg.endsWith("/")) {
+    isDir = true;
+  } else {
+    try {
+      const s = await stat(outArg);
+      isDir = s.isDirectory();
+    } catch {
+      // doesn't exist yet — treat as dir only when path has no file extension.
+      // /tmp/foo → dir; /tmp/foo.zip → file.
+      isDir = !/\.[^./\\]+$/.test(outArg);
+    }
+  }
+  if (isDir) {
+    await mkdir(outArg, { recursive: true });
+    return join(outArg, result.filename);
+  }
+  await mkdir(dirname(outArg), { recursive: true });
+  return outArg;
+}
+
+async function writeOutput(result: ExportResult, path: string): Promise<void> {
   if (result.content instanceof Blob) {
     const buf = Buffer.from(await result.content.arrayBuffer());
     await writeFile(path, buf);
   } else {
     await writeFile(path, result.content, "utf-8");
   }
-  return path;
 }
 
 async function main(): Promise<void> {
@@ -168,11 +203,12 @@ async function main(): Promise<void> {
   const design = parseDesign(await readFile(inputPath, "utf-8"));
 
   const result = await converter.exportDesign(design, { preferLocalStack: args.preferLocalStack });
-  const written = await writeOutput(result, resolve(args.out));
-  console.log(`wrote ${written}`);
+  const outPath = await resolveOutputPath(result, resolve(args.out), args.outIsDir);
+  await writeOutput(result, outPath);
+  console.log(`wrote ${outPath}`);
 }
 
 main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.stack ?? err.message : err);
+  console.error(err instanceof Error ? (err.stack ?? err.message) : err);
   process.exit(1);
 });
