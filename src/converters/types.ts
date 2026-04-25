@@ -27,6 +27,12 @@ export interface ExportOptions {
    * equivalents. Has no effect for non-AWS exporters.
    */
   preferLocalStack?: boolean;
+  /**
+   * When true, the local-deploy bundle includes a generated CLAUDE.md so a
+   * Claude Code session opened in the exported project starts with a map of
+   * services, commands, and conventions. No effect for non-bundle exporters.
+   */
+  includeClaudeMd?: boolean;
 }
 
 export interface ConverterModule {

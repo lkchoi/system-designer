@@ -1,5 +1,5 @@
 import yaml from "js-yaml";
-import type { ConverterModule, ExportResult } from "./types";
+import type { ConverterModule, ExportOptions, ExportResult } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { ComponentType, SystemNodeData } from "../types";
 import {
@@ -15,6 +15,7 @@ import { buildServiceEnv } from "./wiring";
 import { generateSecrets } from "./secrets";
 import { buildLifecycleScripts, urlsFor } from "./lifecycle";
 import { buildReadme } from "./readme";
+import { buildClaudeMd, type ScaffoldedServiceMeta } from "./claude-md";
 import { generateInitScripts } from "./init-scripts";
 import { scaffoldService } from "./scaffold";
 
@@ -59,7 +60,7 @@ interface DeployableNode {
   testCommand?: string;
 }
 
-async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
+async function exportToBundle(design: DesignJSON, options?: ExportOptions): Promise<ExportResult> {
   // 1) Resolve names + image + ports for every deployable node.
   const usedNames = new Set<string>();
   const usedHostPorts = new Set<number>();
@@ -67,6 +68,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
   const serviceNameByNodeId = new Map<string, string>();
   const hostPortByNodeId = new Map<string, number[]>();
   const scaffoldFiles: BundleFile[] = [];
+  const scaffoldedByNodeId = new Map<string, ScaffoldedServiceMeta>();
 
   for (const node of design.nodes) {
     if (node.type !== "system") continue;
@@ -130,6 +132,7 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
       containerPortOverride = scaffold.containerPort;
       testCommand = scaffold.testCommand;
       scaffolded = true;
+      scaffoldedByNodeId.set(node.id, { techId, testCommand: scaffold.testCommand });
     }
 
     serviceNameByNodeId.set(node.id, name);
@@ -281,6 +284,12 @@ async function exportToBundle(design: DesignJSON): Promise<ExportResult> {
     ...initScripts.files,
     ...scaffoldFiles,
   ];
+  if (options?.includeClaudeMd) {
+    files.push({
+      path: "CLAUDE.md",
+      content: buildClaudeMd(design, serviceNameByNodeId, hostPortByNodeId, scaffoldedByNodeId),
+    });
+  }
   return exportBundle(files, "local-stack");
 }
 
@@ -380,7 +389,7 @@ export const dockerComposeConverter: ConverterModule = {
   fileExtensions: [".zip"],
   canImport: false,
 
-  exportDesign(design: DesignJSON): Promise<ExportResult> {
-    return exportToBundle(design);
+  exportDesign(design: DesignJSON, options?: ExportOptions): Promise<ExportResult> {
+    return exportToBundle(design, options);
   },
 };

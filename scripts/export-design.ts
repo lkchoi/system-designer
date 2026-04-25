@@ -70,6 +70,7 @@ interface Args {
   out: string;
   outIsDir: boolean;
   preferLocalStack: boolean;
+  includeClaudeMd: boolean;
   listFormats: boolean;
   help: boolean;
 }
@@ -79,6 +80,7 @@ function parseArgs(argv: string[]): Args {
     out: process.cwd(),
     outIsDir: true,
     preferLocalStack: false,
+    includeClaudeMd: false,
     listFormats: false,
     help: false,
   };
@@ -87,6 +89,7 @@ function parseArgs(argv: string[]): Args {
     if (a === "--list-formats") args.listFormats = true;
     else if (a === "-h" || a === "--help") args.help = true;
     else if (a === "--prefer-localstack") args.preferLocalStack = true;
+    else if (a === "--include-claude-md") args.includeClaudeMd = true;
     else if (a === "-f" || a === "--format") args.format = argv[++i] as FormatId;
     else if (a === "-o" || a === "--out" || a === "--out-dir") {
       args.out = argv[++i];
@@ -118,6 +121,7 @@ Options:
   -o, --out <dir>          Output directory; converter picks filename (default: cwd)
   -O, --out-file <path>    Full output path; overrides converter filename
       --prefer-localstack  Inject LocalStack for AWS services (docker-compose only)
+      --include-claude-md  Drop a CLAUDE.md into the bundle (docker-compose only)
       --list-formats       List available format ids
   -h, --help               Show this help`);
 }
@@ -202,7 +206,10 @@ async function main(): Promise<void> {
   }
   const design = parseDesign(await readFile(inputPath, "utf-8"));
 
-  const result = await converter.exportDesign(design, { preferLocalStack: args.preferLocalStack });
+  const result = await converter.exportDesign(design, {
+    preferLocalStack: args.preferLocalStack,
+    includeClaudeMd: args.includeClaudeMd,
+  });
   const outPath = await resolveOutputPath(result, resolve(args.out), args.outIsDir);
   await writeOutput(result, outPath);
   console.log(`wrote ${outPath}`);

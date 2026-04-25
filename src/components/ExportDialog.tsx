@@ -11,17 +11,21 @@ interface Props {
 
 export default function ExportDialog({ open, onClose, designId, designName }: Props) {
   const [preferLocalStack, setPreferLocalStack] = useState(false);
+  const [includeClaudeMd, setIncludeClaudeMd] = useState(false);
 
   const handleExport = useCallback(
     async (converter: ConverterModule) => {
       const json = exportDesign(designId);
       const design = JSON.parse(json);
       design.name = designName;
-      const result = await converter.exportDesign(design, { preferLocalStack });
+      const result = await converter.exportDesign(design, {
+        preferLocalStack,
+        includeClaudeMd,
+      });
       downloadFile(result.content, result.filename, result.mimeType);
       onClose();
     },
-    [designId, designName, onClose, preferLocalStack],
+    [designId, designName, onClose, preferLocalStack, includeClaudeMd],
   );
 
   if (!open) return null;
@@ -59,7 +63,7 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
           </button>
         </div>
 
-        <label className="flex items-center gap-2 mb-5 px-3 py-2 bg-surface-2 border border-border rounded-lg cursor-pointer">
+        <label className="flex items-center gap-2 mb-2 px-3 py-2 bg-surface-2 border border-border rounded-lg cursor-pointer">
           <input
             type="checkbox"
             checked={preferLocalStack}
@@ -67,11 +71,25 @@ export default function ExportDialog({ open, onClose, designId, designName }: Pr
             className="cursor-pointer"
           />
           <div className="flex flex-col">
-            <span className="text-[13px] text-text-bright">
-              Prefer LocalStack for AWS services
-            </span>
+            <span className="text-[13px] text-text-bright">Prefer LocalStack for AWS services</span>
             <span className="text-[11px] text-text-dim leading-tight">
               Run Lambda, SNS, Kinesis, EventBridge, SQS via LocalStack instead of OSS swaps.
+            </span>
+          </div>
+        </label>
+
+        <label className="flex items-center gap-2 mb-5 px-3 py-2 bg-surface-2 border border-border rounded-lg cursor-pointer">
+          <input
+            type="checkbox"
+            checked={includeClaudeMd}
+            onChange={(e) => setIncludeClaudeMd(e.target.checked)}
+            className="cursor-pointer"
+          />
+          <div className="flex flex-col">
+            <span className="text-[13px] text-text-bright">Include CLAUDE.md</span>
+            <span className="text-[11px] text-text-dim leading-tight">
+              Drop a CLAUDE.md into the bundle so Claude Code starts with a service map and
+              command reference. Docker Compose only.
             </span>
           </div>
         </label>
