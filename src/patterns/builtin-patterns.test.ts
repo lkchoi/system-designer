@@ -1,15 +1,19 @@
 import { describe, it, expect } from "vitest";
 import { BUILTIN_PATTERNS } from "./builtin-patterns";
 
-// Stub localStorage for registry import
-const storage = new Map<string, string>();
-Object.defineProperty(globalThis, "localStorage", {
-  value: {
-    getItem: (k: string) => storage.get(k) ?? null,
-    setItem: (k: string, v: string) => storage.set(k, v),
-    removeItem: (k: string) => storage.delete(k),
-  },
-});
+// Stub localStorage only when the runtime doesn't provide it
+if (typeof globalThis.localStorage === "undefined") {
+  const storage = new Map<string, string>();
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: (k: string) => storage.get(k) ?? null,
+      setItem: (k: string, v: string) => storage.set(k, v),
+      removeItem: (k: string) => storage.delete(k),
+      clear: () => storage.clear(),
+    },
+  });
+}
 
 const { registry } = await import("../registry");
 
