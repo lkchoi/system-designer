@@ -416,3 +416,27 @@ test("panel dock position toggle", async ({ page }) => {
   await expect(panel.locator("[title='Dock to bottom']")).toBeVisible();
   await expect(panel).toHaveClass(/border-l/);
 });
+
+test("hotkeys", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // "/" focuses the sidebar filter
+  await page.keyboard.press("/");
+  const filterInput = page.locator("aside").getByPlaceholder(/Filter/);
+  await expect(filterInput).toBeFocused();
+  await page.keyboard.press("Escape");
+
+  // "1"-"4" switch modes
+  await page.keyboard.press("2");
+  await expect(page.getByRole("button", { name: "1x" })).toBeVisible(); // stress mode
+
+  await page.keyboard.press("1");
+  await expect(page.getByRole("button", { name: "1x" })).not.toBeVisible(); // back to plan
+
+  // "?" opens hotkey help overlay
+  await page.keyboard.press("?");
+  await expect(page.getByText("Keyboard Shortcuts")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Keyboard Shortcuts")).not.toBeVisible();
+});
