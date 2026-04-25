@@ -549,3 +549,101 @@ test("flow path: load saved flow from sidebar", async ({ page }) => {
   const reloadedBar = page.locator(".bg-surface-2.border-b").filter({ hasText: "Save" });
   await expect(reloadedBar.locator(".font-medium.text-text-bright")).toHaveCount(2);
 });
+
+test("rename design via double-click", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  const designButton = page.locator("[title='Click to switch designs, double-click to rename']");
+
+  // Double-click to enter edit mode
+  await designButton.dblclick();
+  const nameInput = page.locator("header input");
+  await expect(nameInput).toBeVisible();
+
+  // Clear and type new name
+  await nameInput.fill("My Architecture");
+  await nameInput.press("Enter");
+
+  // Verify the button now shows the new name
+  await expect(designButton).toHaveText(/My Architecture/);
+});
+
+test("remove a design", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".react-flow__viewport").waitFor();
+
+  // Create a second design
+  await page.locator("[title='Click to switch designs, double-click to rename']").click();
+  await page.getByText("New Design").click();
+  await page.locator(".react-flow__viewport").waitFor();
+  await page.waitForTimeout(1000);
+
+  // Open design menu, hover over the first design (non-active) and delete it
+  await page.locator("[title='Click to switch designs, double-click to rename']").click();
+  const designMenu = page.locator(".absolute").filter({ hasText: "Designs" });
+  const otherDesign = designMenu.locator("div.group:not(.font-semibold)").first();
+  await otherDesign.hover();
+  await otherDesign.locator("[title='Delete design']").click();
+
+  // Verify only one design remains — open menu, no delete button should appear
+  await page.locator("[title='Click to switch designs, double-click to rename']").click();
+  await expect(page.locator("[title='Delete design']")).toHaveCount(0);
+});
+
+test("delete flow path from sidebar", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Create nodes and save a flow path
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+
+  await page.getByRole("button", { name: "Flow Path" }).click();
+  const nodes = page.locator(".react-flow__node");
+  await nodes.nth(0).click();
+  await nodes.nth(1).click();
+
+  const pathBar = page.locator(".bg-surface-2.border-b").filter({ hasText: "Save" });
+  await pathBar.getByRole("button", { name: "Save" }).click();
+  await page.getByPlaceholder("e.g. Post a comment").fill("To Delete");
+  await page.getByRole("button", { name: "Save Flow", exact: true }).click();
+
+  // Exit flow path mode
+  await page.getByRole("button", { name: "Flow Path" }).click();
+
+  // Verify flow appears in sidebar
+  const sidebar = page.locator("aside");
+  await expect(sidebar.getByText("To Delete")).toBeVisible();
+
+  // Hover over the flow and click delete
+  const flowItem = sidebar.locator("div.group").filter({ hasText: "To Delete" });
+  await flowItem.hover();
+  await flowItem.locator("[title='Delete flow']").click();
+
+  // Flow should be gone from sidebar
+  await expect(sidebar.getByText("To Delete")).not.toBeVisible();
+});
+
+test("fork design", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // Add nodes to the original design
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+  await connectNodes(page, 0, 1);
+  await expect(page.getByText("2 nodes")).toBeVisible();
+  await expect(page.getByText("1 connections")).toBeVisible();
+  await page.waitForTimeout(1000);
+
+  // Fork the design
+  await page.locator("[title='Click to switch designs, double-click to rename']").click();
+  await page.getByText("Fork Design").click();
+
+  // Should switch to the forked design with the same nodes and edges
+  const designButton = page.locator("[title='Click to switch designs, double-click to rename']");
+  await expect(designButton).toHaveText(/fork/i);
+  await expect(page.getByText("2 nodes")).toBeVisible();
+  await expect(page.getByText("1 connections")).toBeVisible();
+});
