@@ -183,3 +183,23 @@ test("mode switching", async ({ page }) => {
   await page.getByRole("button", { name: "Plan" }).click();
   await expect(stressMultiplier).not.toBeVisible();
 });
+
+test("stress testing toggles failure state", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service");
+  await page.getByRole("button", { name: "Stress" }).click();
+
+  const node = page.locator(".react-flow__node");
+
+  // Click once: healthy → overloaded (yellow border)
+  await node.click();
+  // Click twice: overloaded → down (OFFLINE overlay)
+  await node.click();
+  await expect(node.getByText("OFFLINE")).toBeVisible();
+
+  // Click again: down → healthy (OFFLINE disappears)
+  await node.click();
+  await expect(node.getByText("OFFLINE")).not.toBeVisible();
+});
