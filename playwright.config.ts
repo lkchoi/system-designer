@@ -13,7 +13,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: [
+    ["html"],
+    ["json", { outputFile: "test-results/results.json" }],
+  ],
   use: {
     baseURL,
     ignoreHTTPSErrors: true,
