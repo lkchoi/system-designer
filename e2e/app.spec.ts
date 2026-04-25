@@ -291,3 +291,22 @@ test("import design from JSON file", async ({ page }) => {
   // Clean up fixture
   fs.unlinkSync(fixturePath);
 });
+
+test("auto-save persists across page reload", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  await addNode(page, "service", 0.3, 0.4);
+  await addNode(page, "database", 0.6, 0.4);
+  await expect(page.getByText("2 nodes")).toBeVisible();
+
+  // Wait for auto-save debounce
+  await page.waitForTimeout(600);
+
+  // Reload the page
+  await page.reload();
+  await canvasBounds(page);
+
+  // Nodes should persist
+  await expect(page.getByText("2 nodes")).toBeVisible();
+});
