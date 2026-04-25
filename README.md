@@ -144,7 +144,6 @@ src/
   data.ts              Utility functions (randomMetrics, displayType)
   technologies.ts      Shared technology base data (name, providers)
   hotkeys.ts           Hotkey definitions (key, modifiers, category)
-  replay.ts            rrweb session recording (optional, VITE_REPLAY_ENDPOINT)
   registry/
     builtin-entries.ts   18 component type definitions
     ComponentRegistry.ts Registry class (get, canConnect, register)

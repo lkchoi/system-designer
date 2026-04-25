@@ -23,10 +23,8 @@
     "jszip": "^3.10.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "rrweb": "2.0.0-alpha.20",
     "sql.js": "^1.14.1",
-    "tailwindcss": "^4.2.2",
-    "ulid": "^3.0.2"
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
