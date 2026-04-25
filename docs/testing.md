@@ -2,123 +2,144 @@
 
 ## Overview
 
-Tests use **Vitest** and run via `bun run test` (single run) or `bun run test:watch` (watch mode). All tests are unit tests — no browser automation or E2E tests.
+Three test tiers, tracked with `./scripts/test-pyramid.sh`:
+
+| Tier | Runner | Suffix | Location | Command |
+|------|--------|--------|----------|---------|
+| Unit | Vitest | `*.test.ts` | `src/` | `bun run test` |
+| Integration | Vitest | `*.integ.test.ts` | `src/` | `bun run test` |
+| E2E | Playwright | `*.spec.ts` | `e2e/` | `bun run test:e2e` |
 
 ```bash
-bun run test          # single run
-bun run test:watch    # watch mode
-bunx tsc --noEmit     # type check (no test execution)
+bun run test            # unit + integration (vitest)
+bun run test:watch      # vitest watch mode
+bun run test:e2e        # e2e (playwright, chromium + firefox)
+bun run test:e2e:ui     # playwright interactive UI
+bunx tsc --noEmit       # type check only
+./scripts/test-pyramid.sh  # print pyramid breakdown
 ```
 
-## Test coverage
+## E2E tests (Playwright)
+
+Runs against Chromium and Firefox. WebKit is excluded — OPFS `FileSystemWritableFileStream` is unsupported.
+
+### `e2e/app.spec.ts` — UI interactions
+
+| Test | What it covers |
+|------|---------------|
+| app loads | Smoke test — page title |
+| add node from sidebar | Drop component onto canvas via synthetic DragEvent |
+| connect two nodes | Drag between handles to create an edge |
+| connection validation | Incompatible types (cron + client) rejected |
+| edit node properties | Click node, change label in properties panel |
+| delete a node | Delete key removes node and its edges |
+| undo and redo | Undo restores deleted node, redo removes it |
+| drop a pattern template | Cache-Aside creates container + 3 nodes + 2 edges |
+| mode switching | Plan/Stress/Monitor show correct UI |
+| stress testing | Click cycles failure state, OFFLINE overlay |
+| export native JSON | Export produces valid JSON with nodes/edges |
+| import design | File chooser loads a JSON design |
+| auto-save persistence | Nodes survive page reload |
+| multiple designs | Independent state across designs |
+| sidebar search | Filter narrows visible components |
+| inline label editing | Double-click, edit, Enter commits |
+| panel dock toggle | Right/bottom dock position |
+| hotkeys | `/`, `1`–`2` mode keys, `?` help overlay |
+| flow path recording | Toggle mode, click nodes, save with name |
+| flow path remove last | Re-clicking last node removes it |
+| flow path clear | Clear button resets to empty |
+| flow path load | Click sidebar entry to reload saved flow |
+
+### `e2e/db.spec.ts` — database layer
+
+Exercises the sql.js db functions via `page.evaluate()` in a real browser context (OPFS-backed).
+
+| Test | Functions exercised |
+|------|-------------------|
+| create + list | `createDesign`, `listDesigns` |
+| get + rename | `getDesign`, `renameDesign` (verifies updatedAt advances) |
+| save + load state | `saveDesignState`, `loadDesignState` (nodes, edges, viewport round-trip) |
+| flow paths | `saveFlowPath`, `loadDesignState`, `deleteFlowPath` |
+| fork | `forkDesign` (copies state + flow paths, sets parentId, new IDs) |
+| delete | `deleteDesign` (cascades through all tables) |
+| export + import | `exportDesign`, `importDesign` (full round-trip) |
+| initDB idempotent | `initDB()` twice returns same instance |
+| getDB works | `getDB()` returns usable sql.js Database |
+
+## Unit tests (Vitest)
 
 ### Converters
 
 | File | What it tests |
 |------|--------------|
-| `converters/docker-compose.test.ts` | Bundle generation: compose YAML structure, service entries, depends_on from edges, env var wiring (DATABASE_URL, REDIS_URL), secrets generation, init scripts (schema SQL, bucket creation), volume mounts, shell script executability, README content, excluded components, vendor-locked serverless handling, multi-line description comments |
-| `converters/scaffold/scaffold.test.ts` | Scaffold output for Node.js, Go, Python: correct files produced, package deps, test file structure, health endpoint, endpoint stubs, connections → SDK injection |
-| `converters/scaffold/concerns/concerns.test.ts` | Merge engine (deps merge, import dedup, array concat), concern resolution (redis+pg for node/go/python, dedup by techId, unknown tech → empty), client concern registry (all 10 techs registered with all 3 langs), integration tests (scaffoldService with connections → correct deps/imports in output) |
-| `converters/cloudformation.test.ts` | CFn resource generation, DynamoDB attribute definitions, sharded key schemas |
+| `converters/docker-compose.test.ts` | Bundle generation: compose YAML, service entries, depends_on, env var wiring, secrets, init scripts, volume mounts, excluded components, vendor-locked serverless |
+| `converters/scaffold/scaffold.test.ts` | Scaffold output for Node.js, Go, Python: files, deps, health endpoint, endpoint stubs, connection SDK injection |
+| `converters/scaffold/concerns/concerns.test.ts` | Merge engine, concern resolution, client concern registry, integration (scaffoldService with connections) |
+| `converters/cloudformation.test.ts` | CFn resource generation, DynamoDB attribute definitions |
 | `converters/aws-cdk.test.ts` | CDK construct generation, module imports |
 | `converters/pulumi.test.ts` | Pulumi resource generation |
-| `converters/nomad.test.ts` | Nomad job spec structure, group/task/service generation |
-| `converters/localstack.test.ts` | LocalStack compose + CFn template generation |
-| `converters/claude-md.test.ts` | CLAUDE.md content generation for bundles |
-| `converters/secrets.test.ts` | Secret generation, .env file content, container env vars |
-| `converters/wiring.test.ts` | Edge → env var mapping, first-edge-wins, explicit overrides |
-| `converters/init-scripts.test.ts` | Schema SQL, bucket scripts, topic scripts, Ofelia config |
+| `converters/nomad.test.ts` | Nomad job spec structure |
+| `converters/localstack.test.ts` | LocalStack compose + CFn template |
+| `converters/claude-md.test.ts` | CLAUDE.md content generation |
+| `converters/secrets.test.ts` | Secret generation, .env content |
+| `converters/wiring.test.ts` | Edge to env var mapping |
+| `converters/init-scripts.test.ts` | Schema SQL, bucket scripts, topic scripts |
 
 ### Connections
 
 | File | What it tests |
 |------|--------------|
-| `connections/connections.test.ts` | Component defaults, tech rule lookup (wildcard vs specific), connection resolution (merge layers), blocked pairs (cf-workers), recommended targets (sorted by commonality), IaC metadata (IAM actions, CDK grants), env var templates, data integrity (no duplicates, commonality bounds, all blocked pairs have reasons) |
+| `connections/connections.test.ts` | Component defaults, tech rule lookup, connection resolution, blocked pairs, recommended targets, IaC metadata, env var templates, data integrity |
 
 ### Tools
 
 | File | What it tests |
 |------|--------------|
-| `tools/capacity-calculator/capacity.test.ts` | Capacity math: storage projections, bandwidth, DynamoDB WCU/RCU |
-| `tools/cron-translator/cron.test.ts` | Bidirectional cron parsing, next fire times, edge cases |
+| `tools/capacity-calculator/capacity.test.ts` | Storage projections, bandwidth, DynamoDB WCU/RCU |
+| `tools/cron-translator/cron.test.ts` | Bidirectional cron parsing, next fire times |
 | `tools/sla-calculator/sla.test.ts` | Composite SLA computation |
-| `tools/cache-sizer/cache-sizer.test.ts` | Memory estimation, eviction calculations |
+| `tools/cache-sizer/cache.test.ts` | Memory estimation, eviction calculations |
 | `tools/latency-budget-calculator/latency.test.ts` | Budget allocation, overflow detection |
-| *(other tools)* | Pattern varies — some have test files, some rely on type checking |
+| `tools/dns-ttl-advisor/dns.test.ts` | TTL recommendations |
+| `tools/payload-size-estimator/payload.test.ts` | Payload size calculations |
+| `tools/regex-tester/regex.test.ts` | Regex matching, flags |
+| `tools/jwt-inspector/jwt.test.ts` | JWT decode, validation |
+| `tools/partition-calculator/partition.test.ts` | Partition key distribution |
+| `tools/connection-pool-sizer/pool.test.ts` | Pool size recommendations |
+| `tools/serverless-cost-estimator/serverless.test.ts` | Cost projections |
+| `tools/storage-growth-projector/storage.test.ts` | Growth projections |
+| `tools/replication-planner/replication.test.ts` | Replication topology |
 
-### Registry
+### Other
 
 | File | What it tests |
 |------|--------------|
 | `registry/ComponentRegistry.test.ts` | Registry lookup, connection validation, custom type registration |
-
-### Patterns
-
-| File | What it tests |
-|------|--------------|
-| `patterns/patterns.test.ts` | Pattern instantiation, unique ID generation, position calculation |
-
-## What's not tested
-
-- **Browser rendering** — no E2E or component tests. UI correctness relies on manual verification.
-- **OPFS persistence** — sql.js + OPFS integration isn't tested (requires browser environment).
-- **Generated code compilation** — scaffold output is string-asserted, not compiled. A Go service with Redis + PostgreSQL connections would fail `go build` due to `err` redeclaration (known issue).
-- **Import round-trips** — export → import → export fidelity is not systematically tested.
-- **Canvas interactions** — drag-and-drop, connection drawing, undo/redo behavior.
-
-## Manual test scenarios
-
-When making changes, verify these golden paths manually:
-
-### Canvas basics
-1. Drag a Service and Database from sidebar onto canvas
-2. Connect Service → Database (should succeed)
-3. Try connecting Database → Client (should be blocked)
-4. Double-click node label to rename
-5. Undo the rename with Cmd+Z
-
-### Plan mode
-1. Press `1` to enter Plan mode
-2. Click a Database node, select PostgreSQL
-3. Fill in table names: `users, orders`
-4. Verify technology info shows throughput/limits
-
-### Export round-trip
-1. Create a design with Service → PostgreSQL + Redis
-2. Export as Docker Compose — verify:
-   - `docker-compose.yaml` has services for all nodes
-   - Service entry has `DATABASE_URL` and `REDIS_URL` in environment
-   - `services/` dir has scaffolded code with `pg` and `ioredis` deps
-   - `init/` has `schema.sql` with CREATE TABLE statements
-3. Export as Native JSON, then import it — verify nodes and edges match
-
-### Stress mode
-1. Press `2` to enter Stress mode
-2. Set a Database node's CAP to CP
-3. Click an edge to simulate partition
-4. Verify cascading effects propagate to dependent services
-
-### Patterns
-1. Drag "Cache-Aside" pattern from sidebar
-2. Verify 3 nodes and 2 edges appear correctly wired
-3. Each node should have the correct component type
+| `patterns/builtin-patterns.test.ts` | Pattern instantiation, unique IDs, position calculation |
+| `db/io.test.ts` | `parseDesignJSON` validation, defaults, round-trip |
+| `data.test.ts` | Utility functions |
 
 ## Adding tests
 
-Follow the existing pattern: colocate tests with source files using `.test.ts` suffix. Tests for converters go in `src/converters/`, tests for tools go in their tool directory.
+### Unit / integration tests
 
-```typescript
-import { describe, it, expect } from "vitest";
-
-describe("myFeature", () => {
-  it("does the thing", () => {
-    expect(myFunction(input)).toBe(expectedOutput);
-  });
-});
-```
-
-Run a single test file:
+Colocate with source files. Use `.test.ts` for unit tests, `.integ.test.ts` for integration tests.
 
 ```bash
 bunx vitest run src/converters/my-converter.test.ts
 ```
+
+### E2E tests
+
+Add to `e2e/app.spec.ts` for UI interactions. Use the `addNode()` and `connectNodes()` helpers defined at the top of the file.
+
+```bash
+bunx playwright test --project=chromium -g "my test name"
+```
+
+## Reporting
+
+- **Vitest**: terminal output
+- **Playwright HTML report**: `playwright-report/` (auto-generated)
+- **Playwright JSON report**: `test-results/results.json` (per-test durations, flakiness)
+- **Test pyramid**: `./scripts/test-pyramid.sh`
