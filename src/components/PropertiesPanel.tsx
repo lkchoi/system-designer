@@ -420,11 +420,31 @@ export default function PropertiesPanel({
                       <input
                         className="flex-1 text-[13px] font-mono px-1.5 py-0.5 rounded bg-surface-2 border border-border text-text-bright outline-none min-w-0 focus:border-accent"
                         value={ep.path}
-                        onChange={(e) => updateEndpoint(ep.id, { path: e.target.value })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const match = val.match(/^(GET|POST|PUT|PATCH|DELETE)\s+/i);
+                          if (match) {
+                            updateEndpoint(ep.id, {
+                              method: match[1].toUpperCase(),
+                              path: val.slice(match[0].length),
+                            });
+                          } else {
+                            updateEndpoint(ep.id, { path: val });
+                          }
+                        }}
                         placeholder="/api/v1/resource"
                         autoFocus
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === "Escape") setEditingEndpointId(null);
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addEndpoint();
+                          } else if (e.key === "Escape") {
+                            if (!ep.path.trim()) {
+                              deleteEndpoint(ep.id);
+                            } else {
+                              setEditingEndpointId(null);
+                            }
+                          }
                         }}
                       />
                       <button

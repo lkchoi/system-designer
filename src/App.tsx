@@ -162,7 +162,9 @@ function Canvas({
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("plan");
-  const [panelPosition, setPanelPosition] = useState<PanelPosition>("right");
+  const [panelPosition, setPanelPosition] = useState<PanelPosition>(
+    () => (localStorage.getItem("panelPosition") as PanelPosition) || "right",
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const [panelWidth, setPanelWidth] = useState(340);
@@ -740,7 +742,11 @@ function Canvas({
   }, []);
 
   const togglePanelPosition = useCallback(() => {
-    setPanelPosition((prev) => (prev === "right" ? "bottom" : "right"));
+    setPanelPosition((prev) => {
+      const next = prev === "right" ? "bottom" : "right";
+      localStorage.setItem("panelPosition", next);
+      return next;
+    });
   }, []);
 
   const clearCanvas = useCallback(() => {
