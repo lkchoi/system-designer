@@ -2,29 +2,175 @@
  * useCollabState — dual-mode state wrapper for nodes and edges.
  *
  * Local mode (doc is null): passes through to useState. Zero overhead.
- * Collab mode (doc is active): mutations write to Y.Doc; observation
- * callbacks update React state from Y.Doc for remote changes.
- *
- * Phase 1: always local mode (CollabProvider returns null doc).
- * Phase 2 will add the collab-mode logic.
+ * Collab mode (doc is active): mutations diff against the Y.Doc and
+ * apply changes via Y.Map transactions. Remote changes are observed
+ * and merged into React state automatically.
  */
 
-import { useState } from "react";
-import type { Edge } from "@xyflow/react";
-import type { Node } from "@xyflow/react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import type { Edge, Node } from "@xyflow/react";
+import { useCollab } from "./provider";
+import {
+  syncNodesToYMap,
+  syncEdgesToYMap,
+  materializeNodes,
+  materializeEdges,
+} from "./sync";
+import { nodesToYMap, edgesToYMap } from "./schema";
+
+/** Throttle interval for position-only updates during drag (ms). */
+const DRAG_THROTTLE_MS = 50;
 
 /**
  * Drop-in replacement for useState<Node[]> + useState<Edge[]>.
  * Returns [nodes, setNodes, edges, setEdges].
+ *
+ * In local mode (no Y.Doc), delegates to useState.
+ * In collab mode, mutations flow through Yjs and remote changes
+ * are observed and merged.
  */
 export function useCollabState<N extends Node>(
   initialNodes: N[],
   initialEdges: Edge[],
-): [N[], React.Dispatch<React.SetStateAction<N[]>>, Edge[], React.Dispatch<React.SetStateAction<Edge[]>>] {
-  // Phase 1: always local mode — straight useState pass-through.
-  // Phase 2 will check useCollab().doc and branch to Y.Doc-backed state.
-  const [nodes, setNodes] = useState<N[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
+): [
+  N[],
+  React.Dispatch<React.SetStateAction<N[]>>,
+  Edge[],
+  React.Dispatch<React.SetStateAction<Edge[]>>,
+] {
+  const { doc, nodesMap, edgesMap } = useCollab();
+  const [nodes, setNodesRaw] = useState<N[]>(initialNodes);
+  const [edges, setEdgesRaw] = useState<Edge[]>(initialEdges);
+
+  // Refs to avoid stale closures in callbacks
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+  const edgesRef = useRef(edges);
+  edgesRef.current = edges;
+
+  // Track if we're in a local transaction to prevent echo
+  const inLocalTxRef = useRef(false);
+
+  // Throttle tracking for drag updates
+  const lastNodeSyncRef = useRef(0);
+  const pendingNodeSyncRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ─── Collab-mode: populate Y.Doc on first connect ──────────────────
+
+  const initializedRef = useRef(false);
+  useEffect(() => {
+    if (!doc || !nodesMap || !edgesMap || initializedRef.current) return;
+    initializedRef.current = true;
+
+    // If the Y.Doc is empty (we're sharing), populate from local state.
+    // If the Y.Doc has content (we're joining), materialize into React.
+    if (nodesMap.size === 0 && edgesMap.size === 0) {
+      nodesToYMap(nodesRef.current, nodesMap);
+      edgesToYMap(edgesRef.current, edgesMap);
+    } else {
+      setNodesRaw(materializeNodes(nodesMap, nodesRef.current) as N[]);
+      setEdgesRaw(materializeEdges(edgesMap, edgesRef.current));
+    }
+  }, [doc, nodesMap, edgesMap]);
+
+  // ─── Collab-mode: observe remote changes ───────────────────────────
+
+  useEffect(() => {
+    if (!nodesMap) return;
+    const handler = (events: unknown[], tx: { origin: unknown }) => {
+      // Skip our own local transactions
+      if (inLocalTxRef.current) return;
+      setNodesRaw(materializeNodes(nodesMap, nodesRef.current) as N[]);
+    };
+    nodesMap.observeDeep(handler);
+    return () => nodesMap.unobserveDeep(handler);
+  }, [nodesMap]);
+
+  useEffect(() => {
+    if (!edgesMap) return;
+    const handler = (events: unknown[], tx: { origin: unknown }) => {
+      if (inLocalTxRef.current) return;
+      setEdgesRaw(materializeEdges(edgesMap, edgesRef.current));
+    };
+    edgesMap.observeDeep(handler);
+    return () => edgesMap.unobserveDeep(handler);
+  }, [edgesMap]);
+
+  // ─── Wrapped setNodes ──────────────────────────────────────────────
+
+  const setNodes: React.Dispatch<React.SetStateAction<N[]>> = useCallback(
+    (action) => {
+      if (!doc || !nodesMap) {
+        // Local mode: pass through
+        setNodesRaw(action);
+        return;
+      }
+
+      // Collab mode: resolve the action, diff, and sync to Y.Doc
+      const prev = nodesRef.current;
+      const next = typeof action === "function" ? (action as (prev: N[]) => N[])(prev) : action;
+
+      // Update React state immediately (optimistic)
+      setNodesRaw(next);
+
+      // Sync to Y.Doc with throttling for rapid position updates
+      const now = Date.now();
+      const isRapidUpdate = now - lastNodeSyncRef.current < DRAG_THROTTLE_MS;
+
+      if (isRapidUpdate) {
+        // Buffer the update — will flush on next tick or when throttle expires
+        if (pendingNodeSyncRef.current) clearTimeout(pendingNodeSyncRef.current);
+        pendingNodeSyncRef.current = setTimeout(() => {
+          pendingNodeSyncRef.current = null;
+          lastNodeSyncRef.current = Date.now();
+          inLocalTxRef.current = true;
+          syncNodesToYMap(nodesRef.current, nodesRef.current, nodesMap);
+          inLocalTxRef.current = false;
+        }, DRAG_THROTTLE_MS);
+      } else {
+        lastNodeSyncRef.current = now;
+        inLocalTxRef.current = true;
+        syncNodesToYMap(prev, next, nodesMap);
+        inLocalTxRef.current = false;
+      }
+    },
+    [doc, nodesMap],
+  );
+
+  // ─── Wrapped setEdges ──────────────────────────────────────────────
+
+  const setEdges: React.Dispatch<React.SetStateAction<Edge[]>> = useCallback(
+    (action) => {
+      if (!doc || !edgesMap) {
+        setEdgesRaw(action);
+        return;
+      }
+
+      const prev = edgesRef.current;
+      const next = typeof action === "function" ? (action as (prev: Edge[]) => Edge[])(prev) : action;
+
+      setEdgesRaw(next);
+
+      inLocalTxRef.current = true;
+      syncEdgesToYMap(prev, next, edgesMap);
+      inLocalTxRef.current = false;
+    },
+    [doc, edgesMap],
+  );
+
+  // ─── Cleanup pending sync on unmount ───────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      if (pendingNodeSyncRef.current) {
+        clearTimeout(pendingNodeSyncRef.current);
+        // Flush any pending changes
+        if (nodesMap && doc) {
+          syncNodesToYMap(nodesRef.current, nodesRef.current, nodesMap);
+        }
+      }
+    };
+  }, [doc, nodesMap]);
 
   return [nodes, setNodes, edges, setEdges];
 }
