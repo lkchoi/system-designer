@@ -69,7 +69,7 @@ import type {
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
 import { instantiatePattern } from "./patterns";
-import { resolveConnection } from "./connections";
+import { resolveConnection } from "./connections/index";
 import { ulid } from "ulid";
 import {
   initDB,
