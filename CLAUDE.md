@@ -7,6 +7,13 @@ React + TypeScript system architecture designer built on ReactFlow.
 - Commit after completing each task. Do not batch multiple tasks into one commit.
 - Run `npx tsc --noEmit` to verify the build before committing.
 
+## Testing conventions
+
+- `src/**/*.test.ts` — unit tests (vitest)
+- `src/**/*.integration.test.ts` — integration tests (vitest, multiple modules wired together)
+- `e2e/**/*.spec.ts` — end-to-end tests (Playwright)
+- Run `./scripts/test-pyramid.sh` to see the test pyramid breakdown.
+
 ## Architecture
 
 - `src/registry/` — single source of truth for all component types (visuals, plan fields, technologies, connection compatibility)
