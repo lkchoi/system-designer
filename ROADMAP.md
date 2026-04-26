@@ -2,7 +2,7 @@
 
 ## Data-connected editor tools
 
-The app has 14 utility tools (calculators, estimators, reference aids) that are stateless. The next step is purpose-built editors tied to specific component types that let users define the actual artifacts of their system — API specs, database schemas, queue topologies — and feed those into exports.
+The app has 16 utility tools (calculators, estimators, reference aids) that are stateless. The next step is purpose-built editors tied to specific component types that let users define the actual artifacts of their system — API specs, database schemas, queue topologies — and feed those into exports.
 
 ### Architecture
 
@@ -73,6 +73,8 @@ Topic/queue designer for Kafka, RabbitMQ, SQS, Pub/Sub. Define partitions, consu
 | Cache Strategy Editor | cache | Key patterns, TTL policies, eviction strategies, invalidation triggers |
 | CDN Rules Editor | cdn, load-balancer | Routing rules, cache headers, origin failover, rate limits |
 | IAM Policy Builder | serverless, storage | Roles, policies, least-privilege permissions |
+| Rate Limiter Calculator | api-gateway, firewall | Token bucket / sliding window config from QPS + burst tolerance |
+| Cache Invalidation Strategy Picker | cache | Decision tree: write-through vs write-behind vs cache-aside based on read/write ratio |
 
 ---
 
