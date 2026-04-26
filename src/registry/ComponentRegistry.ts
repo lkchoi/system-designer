@@ -3,11 +3,14 @@ import { BUILTIN_ENTRIES } from "./builtin-entries";
 
 class ComponentRegistry {
   private entries: Map<ComponentTypeId, ComponentRegistryEntry>;
+  private connectsToSets: Map<ComponentTypeId, Set<ComponentTypeId>>;
 
   constructor() {
     this.entries = new Map();
+    this.connectsToSets = new Map();
     for (const entry of BUILTIN_ENTRIES) {
       this.entries.set(entry.id, entry);
+      this.connectsToSets.set(entry.id, new Set(entry.connectsTo));
     }
     this.loadCustomEntries();
   }
@@ -36,18 +39,17 @@ class ComponentRegistry {
 
   /** Allow if either side declares the other in connectsTo (or has an empty list, meaning unrestricted). */
   canConnect(sourceTypeId: ComponentTypeId, targetTypeId: ComponentTypeId): boolean {
-    const sourceEntry = this.entries.get(sourceTypeId);
-    const targetEntry = this.entries.get(targetTypeId);
-    if (!sourceEntry || !targetEntry) return false;
-    const sourceAllows =
-      sourceEntry.connectsTo.length === 0 || sourceEntry.connectsTo.includes(targetTypeId);
-    const targetAllows =
-      targetEntry.connectsTo.length === 0 || targetEntry.connectsTo.includes(sourceTypeId);
+    const sourceSet = this.connectsToSets.get(sourceTypeId);
+    const targetSet = this.connectsToSets.get(targetTypeId);
+    if (!sourceSet || !targetSet) return false;
+    const sourceAllows = sourceSet.size === 0 || sourceSet.has(targetTypeId);
+    const targetAllows = targetSet.size === 0 || targetSet.has(sourceTypeId);
     return sourceAllows || targetAllows;
   }
 
   register(entry: ComponentRegistryEntry): void {
     this.entries.set(entry.id, { ...entry, source: "custom" });
+    this.connectsToSets.set(entry.id, new Set(entry.connectsTo));
     this.saveCustomEntries();
   }
 
@@ -55,6 +57,7 @@ class ComponentRegistry {
     const entry = this.entries.get(id);
     if (!entry || entry.source === "builtin") return false;
     this.entries.delete(id);
+    this.connectsToSets.delete(id);
     this.saveCustomEntries();
     return true;
   }
@@ -66,6 +69,7 @@ class ComponentRegistry {
       const customs: ComponentRegistryEntry[] = JSON.parse(raw);
       for (const entry of customs) {
         this.entries.set(entry.id, { ...entry, source: "custom" });
+        this.connectsToSets.set(entry.id, new Set(entry.connectsTo));
       }
     } catch {
       // ignore corrupt data
