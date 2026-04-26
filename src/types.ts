@@ -20,13 +20,6 @@ export type ComponentType =
 
 export type NodeStatus = "healthy" | "warning" | "error" | "idle";
 
-export interface NodeMetrics {
-  cpu: number;
-  memory: number;
-  requestsPerSec: number;
-  latency: number;
-}
-
 export interface PlanFieldDef {
   key: string;
   label: string;
@@ -161,7 +154,6 @@ export interface EdgeData {
   [key: string]: unknown;
 }
 
-export type CAPClassification = "CP" | "AP" | "CA" | "";
 export type StressFailure = "none" | "overloaded" | "down";
 
 export interface EffectiveStress {
@@ -169,8 +161,7 @@ export interface EffectiveStress {
   reason:
     | "direct"
     | "cascade"
-    | "partition-cp"
-    | "partition-ap"
+    | "partition"
     | "healthy"
     | "slow-edge"
     | "capacity"
@@ -185,14 +176,11 @@ export interface SystemNodeData {
   label: string;
   description: string;
   componentType: ComponentType;
-  status: NodeStatus;
-  metrics: NodeMetrics;
   plan: Record<string, string>;
   sharded: boolean;
   shardKey: string;
   endpoints: Endpoint[];
   links: ResourceLink[];
-  capClassification: CAPClassification;
   stressFailure: StressFailure;
   capacityPercent: number;
   consumerRate: number;

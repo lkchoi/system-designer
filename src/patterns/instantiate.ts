@@ -2,7 +2,6 @@ import type { Node, Edge } from "@xyflow/react";
 import type { SystemNodeData, ContainerNodeData } from "../types";
 import type { ComponentType } from "../types";
 import { ulid } from "ulid";
-import { randomMetrics } from "../data";
 import { BUILTIN_PATTERNS } from "./builtin-patterns";
 
 export interface PatternAnchor {
@@ -148,14 +147,11 @@ function makeNodeData(
     label: generateLabel(componentType),
     description: "",
     componentType,
-    status: "healthy",
-    metrics: randomMetrics(),
     plan: {},
     sharded: false,
     shardKey: "",
     endpoints: [],
     links: [],
-    capClassification: "",
     stressFailure: "none",
     capacityPercent: 100,
     consumerRate: 1000,

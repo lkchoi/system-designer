@@ -4,14 +4,6 @@ import type { NodeProps, Node } from "@xyflow/react";
 import type { SystemNodeData } from "../types";
 import { registry } from "../registry";
 import { useMode, useStress } from "../App";
-import { usePricing } from "../hooks/usePricing";
-
-const STATUS_COLORS: Record<string, string> = {
-  healthy: "#22c55e",
-  warning: "#eab308",
-  error: "#ef4444",
-  idle: "#6b7280",
-};
 
 type SystemNode = Node<SystemNodeData, "system">;
 
@@ -37,13 +29,11 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
   }
   const mode = useMode();
   const { effects } = useStress();
-  const PRICING = usePricing();
   const def = registry.getOrDefault(data.componentType);
 
   const isStressMode = mode === "stress";
   const stressEffect = effects.get(id);
   const failureState = data.stressFailure || "none";
-  const displayStatus = isStressMode && stressEffect ? stressEffect.status : data.status;
 
   const baseClasses =
     "bg-surface border border-border rounded-xl px-4 pt-3.5 pb-2.5 min-w-[180px] w-full h-full transition-[border-color,box-shadow] duration-150 box-border overflow-hidden";
@@ -58,9 +48,7 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
       : failureState === "overloaded"
         ? " border-[#eab308] shadow-[0_0_0_1px_#eab308,0_0_16px_rgba(234,179,8,0.2)] animate-[stress-pulse_2s_ease-in-out_infinite]"
         : stressEffect?.status === "error"
-          ? stressEffect.reason === "partition-cp"
-            ? " border-dashed border-[#ef4444]"
-            : " border-[#ef4444] shadow-[0_0_0_1px_#ef4444,0_0_16px_rgba(239,68,68,0.25)] relative"
+          ? " border-[#ef4444] shadow-[0_0_0_1px_#ef4444,0_0_16px_rgba(239,68,68,0.25)] relative"
           : stressEffect?.status === "warning"
             ? stressEffect.reason === "backpressure"
               ? " border-dashed border-[#f97316]"
@@ -130,31 +118,12 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
               {data.label}
             </span>
           )}
-          <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ background: STATUS_COLORS[displayStatus] }}
-          />
         </div>
         {data.description && (
           <div className="flex-1 min-h-0 overflow-hidden mb-2">
             <p className="text-[11px] text-text-dim leading-[1.4] whitespace-pre-line">
               {data.description}
             </p>
-          </div>
-        )}
-        {isStressMode && data.capClassification && (
-          <div
-            className={`inline-flex items-center px-2 py-0.5 mb-2 rounded-full text-[11px] font-bold tracking-wide${
-              data.capClassification.toLowerCase() === "cp"
-                ? " bg-[rgba(99,102,241,0.15)] text-[#818cf8] border border-[rgba(99,102,241,0.25)]"
-                : data.capClassification.toLowerCase() === "ap"
-                  ? " bg-[rgba(34,197,94,0.15)] text-[#22c55e] border border-[rgba(34,197,94,0.25)]"
-                  : data.capClassification.toLowerCase() === "ca"
-                    ? " bg-[rgba(234,179,8,0.15)] text-[#eab308] border border-[rgba(234,179,8,0.25)]"
-                    : ""
-            }`}
-          >
-            {data.capClassification}
           </div>
         )}
         {data.sharded && (
@@ -205,54 +174,6 @@ export default function SystemNode({ id, data, selected }: NodeProps<SystemNode>
             )}
           </div>
         )}
-        {mode === "price" ? (
-          (() => {
-            const techName = data.plan?.technology;
-            const pricing = techName && PRICING ? PRICING[techName] : undefined;
-            return (
-              <div className="flex items-center gap-1.5 mb-2.5">
-                {pricing ? (
-                  <>
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="#22c55e"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="shrink-0"
-                    >
-                      <line x1="12" y1="1" x2="12" y2="23" />
-                      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-                    </svg>
-                    <span className="text-xs text-[#22c55e] font-semibold font-mono whitespace-nowrap overflow-hidden text-ellipsis">
-                      {pricing.tiers[0]?.price}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-[11px] text-text-dim italic">
-                    {techName ? "No pricing data" : "Set tech in Plan mode"}
-                  </span>
-                )}
-              </div>
-            );
-          })()
-        ) : mode !== "plan" ? (
-          <div className="flex gap-4 mb-2.5">
-            <div className="flex gap-2 text-xs text-text-dim">
-              <span>CPU</span>
-              <span className="text-text-bright font-semibold font-mono">{data.metrics.cpu}%</span>
-            </div>
-            <div className="flex gap-2 text-xs text-text-dim">
-              <span>Memory</span>
-              <span className="text-text-bright font-semibold font-mono">
-                {data.metrics.memory}%
-              </span>
-            </div>
-          </div>
-        ) : null}
         <div className="flex items-center gap-2 border-t border-border pt-2 mt-auto shrink-0">
           <button
             className="flex items-center gap-[5px] px-2 py-1 rounded-md text-xs text-accent transition-all duration-150 hover:bg-accent-bg hover:text-text-bright"

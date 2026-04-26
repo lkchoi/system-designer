@@ -232,13 +232,10 @@ function importFromK8s(content: string): DesignJSON {
       data: {
         label: name,
         componentType,
-        status: "healthy",
-        metrics: { cpu: 0, memory: 0, requestsPerSec: 0, latency: 0 },
         plan: technologyId ? { technology: technologyId } : {},
         sharded: false,
         shardKey: "",
         endpoints: [],
-        capClassification: "",
         stressFailure: "none",
         capacityPercent: 100,
         consumerRate: 1000,

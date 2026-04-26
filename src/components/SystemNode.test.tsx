@@ -29,14 +29,11 @@ const defaultData: SystemNodeData = {
   label: "auth-service",
   description: "Handles authentication",
   componentType: "service",
-  status: "healthy",
-  metrics: { cpu: 45, memory: 60, requestsPerSec: 120, latency: 35 },
   plan: {},
   sharded: false,
   shardKey: "",
   endpoints: [],
   links: [],
-  capClassification: "",
   stressFailure: "none",
   capacityPercent: 100,
   consumerRate: 0,
@@ -114,27 +111,6 @@ describe("SystemNode", () => {
     });
   });
 
-  it("shows CPU and Memory metrics in monitor mode", () => {
-    renderSystemNode({}, { mode: "monitor" });
-    expect(screen.getByText("CPU")).toBeInTheDocument();
-    expect(screen.getByText("45%")).toBeInTheDocument();
-    expect(screen.getByText("Memory")).toBeInTheDocument();
-    expect(screen.getByText("60%")).toBeInTheDocument();
-  });
-
-  it("does not show metrics in plan mode", () => {
-    renderSystemNode({}, { mode: "plan" });
-    expect(screen.queryByText("CPU")).not.toBeInTheDocument();
-  });
-
-  it("shows CAP classification badge in stress mode", () => {
-    renderSystemNode(
-      { data: { capClassification: "CP" } },
-      { mode: "stress" },
-    );
-    expect(screen.getByText("CP")).toBeInTheDocument();
-  });
-
   it("shows OFFLINE overlay when stressFailure is down in stress mode", () => {
     renderSystemNode(
       { data: { stressFailure: "down" } },
@@ -146,19 +122,6 @@ describe("SystemNode", () => {
   it("shows sharded badge when node is sharded", () => {
     renderSystemNode({ data: { sharded: true, shardKey: "user_id" } });
     expect(screen.getByText("user_id")).toBeInTheDocument();
-  });
-
-  it("shows price fallback text when no technology is set", () => {
-    renderSystemNode({}, { mode: "price" });
-    expect(screen.getByText("Set tech in Plan mode")).toBeInTheDocument();
-  });
-
-  it("shows no pricing data fallback when technology has no pricing", () => {
-    renderSystemNode(
-      { data: { plan: { technology: "UnknownTech" } } },
-      { mode: "price" },
-    );
-    expect(screen.getByText("No pricing data")).toBeInTheDocument();
   });
 
   it("shows stress effect capacity and queue badges", () => {

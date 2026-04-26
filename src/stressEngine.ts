@@ -102,23 +102,14 @@ export function computeStressEffects(
       const current = result.get(nodeId);
       if (current && current.reason === "direct") continue;
 
-      const cap = node.data.capClassification || "";
       const otherNodeId = nodeId === edge.source ? edge.target : edge.source;
       const otherLabel = nodeMap.get(otherNodeId)?.data.label ?? otherNodeId;
 
-      if (cap === "CP" || cap === "CA") {
-        applyIfWorse(result, nodeId, {
-          status: "error",
-          reason: "partition-cp",
-          explanation: `Unavailable: network partition with ${otherLabel}`,
-        });
-      } else {
-        applyIfWorse(result, nodeId, {
-          status: "warning",
-          reason: "partition-ap",
-          explanation: `Degraded: serving stale data, partition with ${otherLabel}`,
-        });
-      }
+      applyIfWorse(result, nodeId, {
+        status: "warning",
+        reason: "partition",
+        explanation: `Degraded: network partition with ${otherLabel}`,
+      });
     }
   }
 
@@ -168,7 +159,7 @@ export function computeStressEffects(
         upstreamEdges.push(edge);
         const sourceNode = nodeMap.get(edge.source);
         if (sourceNode) {
-          producerRate += (sourceNode.data.metrics.requestsPerSec || 0) * config.trafficMultiplier;
+          producerRate += (sourceNode.data.consumerRate ?? 1000) * config.trafficMultiplier;
         }
       }
     }

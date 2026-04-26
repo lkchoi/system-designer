@@ -51,7 +51,6 @@ import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
 import { useStressRecording } from "./hooks/useStressRecording";
 import { useFlowPath } from "./hooks/useFlowPath";
-import { randomMetrics } from "./data";
 import { registry } from "./registry";
 import type {
   SystemNodeData,
@@ -556,14 +555,11 @@ function Canvas({
             label: generateLabel(type as ComponentType),
             description: "",
             componentType: type as ComponentType,
-            status: "healthy",
-            metrics: randomMetrics(),
             plan: {},
             sharded: false,
             shardKey: "",
             endpoints: [],
             links: [],
-            capClassification: "",
             stressFailure: "none",
             capacityPercent: 100,
             consumerRate: 1000,

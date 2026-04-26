@@ -1,14 +1,3 @@
-import type { NodeMetrics } from "./types";
-
-export function randomMetrics(): NodeMetrics {
-  return {
-    cpu: Math.round(Math.random() * 90 + 5),
-    memory: Math.round(Math.random() * 90 + 5),
-    requestsPerSec: Math.round(Math.random() * 900 + 50),
-    latency: Math.round(Math.random() * 400 + 10),
-  };
-}
-
 const ACRONYMS = new Set(["api", "cdn", "dns", "etl", "cqrs", "cdc"]);
 
 export function displayType(type: string): string {

@@ -158,13 +158,10 @@ function importFromCfn(content: string): DesignJSON {
       data: {
         label: logicalId,
         componentType: match.componentType as ComponentType,
-        status: "healthy",
-        metrics: { cpu: 0, memory: 0, requestsPerSec: 0, latency: 0 },
         plan: { technology: match.technologyId },
         sharded: false,
         shardKey: "",
         endpoints: [],
-        capClassification: "",
         stressFailure: "none",
         capacityPercent: 100,
         consumerRate: 1000,
