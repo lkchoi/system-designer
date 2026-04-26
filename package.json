@@ -16,7 +16,8 @@
     "pricing:fetch": "npx tsx scripts/pricing/run.ts",
     "pricing:list": "npx tsx scripts/pricing/run.ts --list",
     "export": "bun run scripts/export-design.ts",
-    "deploy": "wrangler deploy",
+    "predeploy": "bunx oxlint . && bunx tsc --noEmit && bunx vitest run src/ --exclude '.claude/**' --reporter=dot",
+    "deploy": "bun run build && wrangler deploy",
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
