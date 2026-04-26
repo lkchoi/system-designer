@@ -38,8 +38,8 @@ function exportToCfn(design: DesignJSON): string {
       Type: mapping.cfn,
       Properties: buildCfnProperties(data, mapping.cfn),
       Metadata: {
-        "system-designer:nodeId": node.id,
-        "system-designer:componentType": data.componentType,
+        "arkon:nodeId": node.id,
+        "arkon:componentType": data.componentType,
       },
     };
   }
@@ -152,7 +152,7 @@ function importFromCfn(content: string): DesignJSON {
     if (!match) continue;
 
     const node: Node = {
-      id: (resource.Metadata?.["system-designer:nodeId"] as string) ?? logicalId,
+      id: (resource.Metadata?.["arkon:nodeId"] as string) ?? logicalId,
       type: "system",
       position: { x, y },
       data: {

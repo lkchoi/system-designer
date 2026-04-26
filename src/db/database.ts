@@ -1,7 +1,7 @@
 import type { Database as SqlJsDatabase } from "sql.js";
 import { SCHEMA } from "./schema";
 
-const DB_FILE = "system-designer.db";
+const DB_FILE = "arkon.db";
 
 let db: SqlJsDatabase | null = null;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;

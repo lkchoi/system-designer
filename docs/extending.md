@@ -1,4 +1,4 @@
-# Extending System Designer
+# Extending Arkon
 
 Four extension points, each following the same pattern: add one entry to a registry, no other files need to change.
 

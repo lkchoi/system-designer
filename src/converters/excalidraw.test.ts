@@ -86,7 +86,7 @@ describe("excalidraw converter — export", () => {
     const parsed = parseExport(SAMPLE_DESIGN);
     expect(parsed.type).toBe("excalidraw");
     expect(parsed.version).toBe(2);
-    expect(parsed.source).toBe("system-designer");
+    expect(parsed.source).toBe("arkon");
     expect(Array.isArray(parsed.elements)).toBe(true);
   });
 

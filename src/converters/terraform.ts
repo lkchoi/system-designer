@@ -39,8 +39,8 @@ function exportToTerraform(design: DesignJSON): string {
     }
 
     const meta: Record<string, unknown> = {
-      "system-designer:nodeId": node.id,
-      "system-designer:componentType": data.componentType,
+      "arkon:nodeId": node.id,
+      "arkon:componentType": data.componentType,
     };
     const desc = (data as Record<string, unknown>).description as string | undefined;
     if (desc) meta.description = desc;

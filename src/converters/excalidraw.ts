@@ -144,7 +144,7 @@ function exportToExcalidraw(design: DesignJSON): string {
     {
       type: "excalidraw",
       version: 2,
-      source: "system-designer",
+      source: "arkon",
       elements,
       appState: { viewBackgroundColor: "#ffffff" },
       files: {},

@@ -1,4 +1,4 @@
-# System Designer
+# Arkon
 
 React + TypeScript system architecture designer built on ReactFlow.
 

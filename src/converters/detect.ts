@@ -19,7 +19,7 @@ export function detectFormat(filename: string, content: string): FormatId | null
       // Excalidraw
       if (parsed.type === "excalidraw") return "excalidraw";
 
-      // Native system-designer format
+      // Native arkon format
       if (parsed.version && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
         return "native-json";
       }

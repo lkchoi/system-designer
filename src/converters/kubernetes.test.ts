@@ -152,10 +152,10 @@ describe("kubernetes converter — export", () => {
     expect(yaml).toContain("description: Public REST surface");
   });
 
-  it("includes system-designer/component-type labels on workloads", () => {
+  it("includes arkon/component-type labels on workloads", () => {
     const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
-    expect(yaml).toContain("system-designer/component-type: service");
-    expect(yaml).toContain("system-designer/component-type: database");
+    expect(yaml).toContain("arkon/component-type: service");
+    expect(yaml).toContain("arkon/component-type: database");
   });
 
   it("handles an empty design", () => {
@@ -249,7 +249,7 @@ describe("kubernetes converter — import", () => {
     expect(imported.nodes.length).toBeGreaterThan(0);
   });
 
-  it("recovers component type from system-designer label", () => {
+  it("recovers component type from arkon label", () => {
     const exported = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
     const imported = kubernetesConverter.importDesign!(exported);
     const dbNode = imported.nodes.find((n) => n.id === "ordersdb");
@@ -273,7 +273,7 @@ kind: Deployment
 metadata:
   name: my-app
   labels:
-    system-designer/component-type: service`;
+    arkon/component-type: service`;
     const imported = kubernetesConverter.importDesign!(yaml);
     expect(imported.nodes).toHaveLength(1);
     expect(imported.nodes[0].id).toBe("my-app");

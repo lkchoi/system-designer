@@ -1,6 +1,6 @@
 # Getting Started
 
-System Designer is a browser-based tool for designing distributed system architectures. No installation, no backend, no account required — open the app and start building.
+Arkon is a browser-based tool for designing distributed system architectures. No installation, no backend, no account required — open the app and start building.
 
 ## Your first design
 

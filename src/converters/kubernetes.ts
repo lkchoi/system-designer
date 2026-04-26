@@ -71,7 +71,7 @@ function buildWorkload(
   const metadata: Record<string, unknown> = {
     name,
     namespace,
-    labels: { app: name, "system-designer/component-type": data.componentType },
+    labels: { app: name, "arkon/component-type": data.componentType },
   };
   if (description) metadata.annotations = { description };
   return {
@@ -123,7 +123,7 @@ function buildIngress(
   const metadata: Record<string, unknown> = {
     name,
     namespace,
-    labels: { "system-designer/component-type": data.componentType },
+    labels: { "arkon/component-type": data.componentType },
   };
   if (description) metadata.annotations = { description };
   return {
@@ -159,7 +159,7 @@ function buildCronJob(
   const metadata: Record<string, unknown> = {
     name,
     namespace,
-    labels: { "system-designer/component-type": data.componentType },
+    labels: { "arkon/component-type": data.componentType },
   };
   if (description) metadata.annotations = { description };
   return {
@@ -218,7 +218,7 @@ function importFromK8s(content: string): DesignJSON {
     const name = metadata?.name ?? "resource";
 
     // Try to recover componentType from label
-    const labelType = metadata?.labels?.["system-designer/component-type"] as
+    const labelType = metadata?.labels?.["arkon/component-type"] as
       | ComponentType
       | undefined;
 

@@ -504,7 +504,7 @@ function Canvas({
   const onDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      const type = e.dataTransfer.getData("application/system-designer");
+      const type = e.dataTransfer.getData("application/arkon");
       if (!type) return;
 
       takeSnapshot();

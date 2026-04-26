@@ -1,4 +1,4 @@
-# System Designer
+# Arkon
 
 An interactive system architecture designer built with React, TypeScript, and [React Flow](https://reactflow.dev). Design distributed systems on a visual canvas, configure technologies, simulate failures, and export to infrastructure-as-code.
 

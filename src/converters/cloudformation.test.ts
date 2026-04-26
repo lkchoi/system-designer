@@ -161,10 +161,10 @@ describe("cloudformation converter — export", () => {
     expect(yaml).toContain("# Primary OLTP store");
   });
 
-  it("stores system-designer metadata on resources", () => {
+  it("stores arkon metadata on resources", () => {
     const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
-    expect(yaml).toContain("system-designer:nodeId: db");
-    expect(yaml).toContain("system-designer:componentType: database");
+    expect(yaml).toContain("arkon:nodeId: db");
+    expect(yaml).toContain("arkon:componentType: database");
   });
 
   it("generates MySQL engine for a MySQL database", () => {

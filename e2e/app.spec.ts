@@ -11,7 +11,7 @@ async function dropOnCanvas(page: Page, type: string, clientX: number, clientY: 
     ({ x, y, t }) => {
       const el = document.querySelector(".react-flow__renderer")!;
       const dt = new DataTransfer();
-      dt.setData("application/system-designer", t);
+      dt.setData("application/arkon", t);
       el.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
       el.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
     },
@@ -34,7 +34,7 @@ async function addNode(page: Page, type: string, relX = 0.35, relY = 0.5) {
 
 test("app loads", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle(/System Designer/i);
+  await expect(page).toHaveTitle(/Arkon/i);
 });
 
 test("add node from sidebar", async ({ page }) => {

@@ -64,7 +64,7 @@ class ComponentRegistry {
 
   private loadCustomEntries(): void {
     try {
-      const raw = localStorage.getItem("system-designer:custom-components");
+      const raw = localStorage.getItem("arkon:custom-components");
       if (!raw) return;
       const customs: ComponentRegistryEntry[] = JSON.parse(raw);
       for (const entry of customs) {
@@ -78,7 +78,7 @@ class ComponentRegistry {
 
   private saveCustomEntries(): void {
     const customs = this.getCustom();
-    localStorage.setItem("system-designer:custom-components", JSON.stringify(customs));
+    localStorage.setItem("arkon:custom-components", JSON.stringify(customs));
   }
 }
 

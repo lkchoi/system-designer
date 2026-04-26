@@ -90,7 +90,7 @@ export default function Sidebar({
   const annotations = ANNOTATION_ITEMS.filter((a) => a.label.toLowerCase().includes(q));
 
   function onDragStart(e: React.DragEvent, type: string) {
-    e.dataTransfer.setData("application/system-designer", type);
+    e.dataTransfer.setData("application/arkon", type);
     e.dataTransfer.effectAllowed = "move";
   }
 

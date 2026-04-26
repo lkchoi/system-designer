@@ -1,6 +1,6 @@
 # Architecture
 
-System Designer is a pure frontend SPA — no backend, no API, no server. All data lives in the browser via SQLite (OPFS). The app is deployed as static files to Cloudflare Pages.
+Arkon is a pure frontend SPA — no backend, no API, no server. All data lives in the browser via SQLite (OPFS). The app is deployed as static files to Cloudflare Pages.
 
 ## System overview
 

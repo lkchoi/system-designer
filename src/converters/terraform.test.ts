@@ -155,12 +155,12 @@ describe("terraform converter — export", () => {
     expect(resources["aws_sqs_queue"]).toBeDefined();
   });
 
-  it("embeds system-designer metadata in // key", () => {
+  it("embeds arkon metadata in // key", () => {
     const tf = parse(SAMPLE_DESIGN);
     const resources = tf.resource as Record<string, Record<string, Record<string, unknown>>>;
     const meta = resources["aws_db_instance"]["ordersdb"]["//"] as Record<string, string>;
-    expect(meta["system-designer:nodeId"]).toBe("db");
-    expect(meta["system-designer:componentType"]).toBe("database");
+    expect(meta["arkon:nodeId"]).toBe("db");
+    expect(meta["arkon:componentType"]).toBe("database");
     expect(meta.description).toBe("Primary store");
   });
 
