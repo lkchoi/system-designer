@@ -12,8 +12,6 @@ export const HOTKEYS: HotkeyDef[] = [
   // Mode switching
   { id: "mode-plan", key: "1", guard: true, label: "Plan mode", category: "Mode" },
   { id: "mode-stress", key: "2", guard: true, label: "Stress mode", category: "Mode" },
-  { id: "mode-monitor", key: "3", guard: true, label: "Monitor mode", category: "Mode" },
-  { id: "mode-price", key: "4", guard: true, label: "Price mode", category: "Mode" },
 
   // Canvas
   { id: "redo", key: "z", mod: true, shift: true, label: "Redo", category: "Canvas" },

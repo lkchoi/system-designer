@@ -738,8 +738,6 @@ function Canvas({
     () => ({
       "mode-plan": () => setMode("plan"),
       "mode-stress": () => setMode("stress"),
-      "mode-monitor": () => {},
-      "mode-price": () => {},
 
       undo: () => undo(),
       redo: () => redo(),
@@ -1198,44 +1196,6 @@ function Canvas({
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                       </svg>
                       Stress
-                    </button>
-                    <button
-                      className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim opacity-40 cursor-not-allowed"
-                      disabled
-                      title="Monitor — requires observability integration (coming soon)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                      </svg>
-                      Monitor
-                    </button>
-                    <button
-                      className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim opacity-40 cursor-not-allowed"
-                      disabled
-                      title="Price — requires system-level cost model (coming soon)"
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-                      </svg>
-                      Price
                     </button>
                   </nav>
                   <div className="w-px h-6 bg-border shrink-0" />
