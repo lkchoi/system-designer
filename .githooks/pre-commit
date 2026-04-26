@@ -89,7 +89,7 @@ if $has_docs_trigger; then
   fi
 
   # Check if a new tool directory was added but docs/tools.md wasn't updated
-  new_tool_dirs=$(echo "$staged" | grep '^src/tools/[^/]*/[^/]*$' | sed 's|src/tools/\([^/]*\)/.*|\1|' | sort -u)
+  new_tool_dirs=$(echo "$staged" | grep '^src/tools/[^/]*/[^/]*$' | sed 's|src/tools/\([^/]*\)/.*|\1|' | sort -u || true)
   if [ -n "$new_tool_dirs" ]; then
     for dir in $new_tool_dirs; do
       if ! grep -qi "$dir" docs/tools.md 2>/dev/null; then

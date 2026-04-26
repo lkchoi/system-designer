@@ -105,7 +105,6 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
 
     let image: string | undefined;
     let buildContext = data.buildContext;
-    let testCommand: string | undefined;
 
     if (data.image) {
       image = data.image;
@@ -141,7 +140,7 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
       containerPorts,
       hostPorts,
       scaffolded: needsScaffold,
-      testCommand,
+      testCommand: undefined,
     });
   }
 

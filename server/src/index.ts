@@ -12,7 +12,6 @@
 
 import http from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
-import * as Y from "yjs";
 import * as syncProtocol from "y-protocols/sync";
 import * as encoding from "lib0/encoding";
 import * as decoding from "lib0/decoding";
@@ -166,7 +165,7 @@ wss.on("connection", async (ws, req) => {
   });
 
   // Broadcast doc updates to all other clients in the same room
-  const onDocUpdate = (update: Uint8Array, origin: unknown) => {
+  const onDocUpdate = (update: Uint8Array, _origin: unknown) => {
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, MSG_SYNC);
     syncProtocol.writeUpdate(encoder, update);

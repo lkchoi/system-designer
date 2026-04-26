@@ -20,7 +20,7 @@ export const s3Concern: ClientConcern = {
       deps: { boto3: "1.35.74" },
       imports: ["import os", "import boto3"],
       globals: [
-        '_s3 = boto3.client("s3", **({\"endpoint_url\": os.environ[\"S3_ENDPOINT\"]} if os.environ.get(\"S3_ENDPOINT\") else {}))',
+        '_s3 = boto3.client("s3", **({"endpoint_url": os.environ["S3_ENDPOINT"]} if os.environ.get("S3_ENDPOINT") else {}))',
       ],
       init: [],
       shutdown: [],
