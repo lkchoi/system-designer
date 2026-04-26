@@ -69,6 +69,7 @@ import type {
 import { computeStressEffects } from "./stressEngine";
 import { instantiatePattern } from "./patterns";
 import { resolveConnection } from "./connections/index";
+import { resolveTechId } from "./converters/iac-mapping";
 import { ulid } from "ulid";
 import {
   initDB,
@@ -219,6 +220,14 @@ function Canvas({
   const [showDesignMenu, setShowDesignMenu] = useState(false);
   const [editingDesignName, setEditingDesignName] = useState(false);
   const [designNameDraft, setDesignNameDraft] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((message: string) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast(message);
+    toastTimerRef.current = setTimeout(() => setToast(null), 5000);
+  }, []);
   const canvasRef = useRef<HTMLDivElement>(null);
   const filterInputRef = useRef<HTMLInputElement>(null);
   const clearFilterRef = useRef<(() => void) | null>(null);
@@ -391,16 +400,27 @@ function Canvas({
       if (sourceNode?.type === "system" && targetNode?.type === "system") {
         const sourceData = sourceNode.data as SystemNodeData;
         const targetData = targetNode.data as SystemNodeData;
-        const resolved = resolveConnection(
+        const sourceTechId = resolveTechId(
           sourceData.componentType,
           sourceData.plan?.technology ?? "",
+        );
+        const targetTechId = resolveTechId(
           targetData.componentType,
           targetData.plan?.technology ?? "",
+        );
+        const resolved = resolveConnection(
+          sourceData.componentType,
+          sourceTechId,
+          targetData.componentType,
+          targetTechId,
         );
         if (resolved) {
           label = resolved.label;
           protocol = resolved.protocol;
           format = resolved.format;
+          if (!resolved.allowed && resolved.blockedReason) {
+            showToast(resolved.blockedReason);
+          }
         }
       }
 
@@ -416,7 +436,7 @@ function Canvas({
         ),
       );
     },
-    [takeSnapshot, nodes],
+    [takeSnapshot, nodes, showToast],
   );
 
   useEffect(() => {
@@ -2009,6 +2029,14 @@ function Canvas({
             />
           )}
         </Suspense>
+        {toast && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-900/90 text-amber-100 text-sm px-4 py-3 rounded-lg shadow-lg max-w-md backdrop-blur-sm border border-amber-700/50">
+            <div className="flex items-start gap-2">
+              <span className="shrink-0 mt-0.5">&#9888;</span>
+              <span>{toast}</span>
+            </div>
+          </div>
+        )}
       </StressContext.Provider>
     </ModeContext.Provider>
   );
