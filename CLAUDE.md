@@ -70,7 +70,7 @@ Add one line to `TECH_ALIASES` in `clients/index.ts` (e.g., `tidb: "mysql"`).
 | Feature | Status |
 |---------|--------|
 | Scaffold SDK injection (docker-compose export) | Wired |
-| Edge auto-suggestion (App.tsx onConnect) | Data exists, not wired |
+| Edge auto-suggestion (App.tsx onConnect) | Wired |
 | Tech-level validation (App.tsx isValidConnection) | Data exists, not wired |
 | Connection recommendations (sidebar) | Data exists, not wired |
 | IaC connection generation (IAM/SG in CFn/CDK/TF/K8s) | Data exists, not wired |
