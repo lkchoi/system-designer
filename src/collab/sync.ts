@@ -1,9 +1,9 @@
 /**
  * Y.Doc ↔ React state synchronization.
  *
- * Provides functions to:
- * 1. Diff two arrays and apply changes to a Y.Map (React → Yjs)
- * 2. Observe a Y.Map and produce a React state update (Yjs → React)
+ * Two sync directions:
+ *   Outbound (React → Yjs): incremental diff using reference identity
+ *   Inbound (Yjs → React): incremental patch using YEvent change info
  */
 
 import * as Y from "yjs";
@@ -16,173 +16,285 @@ import { nodeToRecord, recordToNode, edgeToRecord, recordToEdge } from "./schema
  */
 export const LOCAL_ORIGIN = "local";
 
-// ─── React → Yjs (diff and apply) ─────────────────────────────────────
+// ─── Helpers ───────────────────────────────────────────────────────────
 
-/**
- * Compare prevNodes and nextNodes, then apply the minimal diff to the
- * Y.Map. Runs inside a single Y.Doc transaction for atomicity.
- *
- * Skips `selected`, `dragging`, and other per-user keys.
- */
-export function syncNodesToYMap(
-  prevNodes: Node[],
-  nextNodes: Node[],
-  ymap: Y.Map<Y.Map<unknown>>,
-): void {
-  const doc = ymap.doc;
-  if (!doc) return;
-
-  const nextById = new Map(nextNodes.map((n) => [n.id, n]));
-  const prevIds = new Set(prevNodes.map((n) => n.id));
-
-  doc.transact(() => {
-    // Removals
-    for (const id of prevIds) {
-      if (!nextById.has(id)) ymap.delete(id);
-    }
-
-    // Additions + updates
-    for (const node of nextNodes) {
-      const rec = nodeToRecord(node);
-      let entry = ymap.get(node.id);
-
-      if (!entry) {
-        // New node
-        entry = new Y.Map<unknown>();
-        for (const [k, v] of Object.entries(rec)) {
-          entry.set(k, v);
-        }
-        ymap.set(node.id, entry);
-      } else if (prevIds.has(node.id)) {
-        // Existing node — only write changed keys
-        for (const [k, v] of Object.entries(rec)) {
-          const current = entry.get(k);
-          if (!valuesEqual(current, v)) {
-            entry.set(k, v);
-          }
-        }
-        // Remove keys that no longer exist in the record
-        // (rare, but handles cases like optional fields being unset)
-        entry.forEach((_, k) => {
-          if (!(k in rec)) entry!.delete(k);
-        });
-      }
-    }
-  }, LOCAL_ORIGIN);
-}
-
-/**
- * Compare prevEdges and nextEdges, then apply the minimal diff to the
- * Y.Map.
- */
-export function syncEdgesToYMap(
-  prevEdges: Edge[],
-  nextEdges: Edge[],
-  ymap: Y.Map<Y.Map<unknown>>,
-): void {
-  const doc = ymap.doc;
-  if (!doc) return;
-
-  const nextById = new Map(nextEdges.map((e) => [e.id, e]));
-  const prevIds = new Set(prevEdges.map((e) => e.id));
-
-  doc.transact(() => {
-    for (const id of prevIds) {
-      if (!nextById.has(id)) ymap.delete(id);
-    }
-
-    for (const edge of nextEdges) {
-      const rec = edgeToRecord(edge);
-      let entry = ymap.get(edge.id);
-
-      if (!entry) {
-        entry = new Y.Map<unknown>();
-        for (const [k, v] of Object.entries(rec)) {
-          entry.set(k, v);
-        }
-        ymap.set(edge.id, entry);
-      } else if (prevIds.has(edge.id)) {
-        for (const [k, v] of Object.entries(rec)) {
-          const current = entry.get(k);
-          if (!valuesEqual(current, v)) {
-            entry.set(k, v);
-          }
-        }
-        entry.forEach((_, k) => {
-          if (!(k in rec)) entry!.delete(k);
-        });
-      }
-    }
-  }, LOCAL_ORIGIN);
-}
-
-// ─── Yjs → React (materialize) ────────────────────────────────────────
-
-/**
- * Materialize all nodes from Y.Map, preserving local-only state
- * (selected, dragging) from the current React state.
- */
-export function materializeNodes<N extends Node>(
-  ymap: Y.Map<Y.Map<unknown>>,
-  currentNodes: N[],
-): N[] {
-  const localState = new Map<string, Partial<N>>();
-  for (const n of currentNodes) {
-    localState.set(n.id, {
-      selected: n.selected,
-      dragging: n.dragging,
-    } as Partial<N>);
-  }
-
-  const nodes: N[] = [];
-  ymap.forEach((entry) => {
-    const rec: Record<string, unknown> = {};
-    entry.forEach((v, k) => {
-      rec[k] = v;
-    });
-    const node = recordToNode(rec) as N;
-    const local = localState.get(node.id);
-    if (local) {
-      if (local.selected != null) node.selected = local.selected;
-      if (local.dragging != null) node.dragging = local.dragging;
-    }
-    nodes.push(node);
+/** Read a Y.Map entry into a flat record. */
+export function yMapToRecord(entry: Y.Map<unknown>): Record<string, unknown> {
+  const rec: Record<string, unknown> = {};
+  entry.forEach((v, k) => {
+    rec[k] = v;
   });
-  return nodes;
+  return rec;
 }
-
-/**
- * Materialize all edges from Y.Map, preserving local-only state.
- */
-export function materializeEdges(
-  ymap: Y.Map<Y.Map<unknown>>,
-  currentEdges: Edge[],
-): Edge[] {
-  const localState = new Map<string, Partial<Edge>>();
-  for (const e of currentEdges) {
-    localState.set(e.id, { selected: e.selected } as Partial<Edge>);
-  }
-
-  const edges: Edge[] = [];
-  ymap.forEach((entry) => {
-    const rec: Record<string, unknown> = {};
-    entry.forEach((v, k) => {
-      rec[k] = v;
-    });
-    const edge = recordToEdge(rec);
-    const local = localState.get(edge.id);
-    if (local?.selected != null) edge.selected = local.selected;
-    edges.push(edge);
-  });
-  return edges;
-}
-
-// ─── Utilities ─────────────────────────────────────────────────────────
 
 /** Shallow equality check for Y.Map values (primitives + JSON strings). */
 function valuesEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a == null || b == null) return false;
-  // Both are primitives or JSON strings at this point
-  return false;
+  return a === b;
 }
+
+// ─── Outbound: React → Yjs (incremental) ──────────────────────────────
+
+/**
+ * Sync only the changed/added/removed nodes to the Y.Map.
+ * Uses reference identity (prevNode !== nextNode) to avoid diffing
+ * unchanged nodes. Only the changed nodes go through nodeToRecord.
+ */
+export function syncChangedNodes(
+  changed: Node[],
+  added: Node[],
+  removedIds: string[],
+  ymap: Y.Map<Y.Map<unknown>>,
+): void {
+  const doc = ymap.doc;
+  if (!doc) return;
+  if (changed.length === 0 && added.length === 0 && removedIds.length === 0) return;
+
+  doc.transact(() => {
+    for (const id of removedIds) {
+      ymap.delete(id);
+    }
+
+    for (const node of added) {
+      const rec = nodeToRecord(node);
+      const entry = new Y.Map<unknown>();
+      for (const [k, v] of Object.entries(rec)) {
+        entry.set(k, v);
+      }
+      ymap.set(node.id, entry);
+    }
+
+    for (const node of changed) {
+      const entry = ymap.get(node.id);
+      if (!entry) continue;
+      const rec = nodeToRecord(node);
+      for (const [k, v] of Object.entries(rec)) {
+        if (!valuesEqual(entry.get(k), v)) {
+          entry.set(k, v);
+        }
+      }
+    }
+  }, LOCAL_ORIGIN);
+}
+
+/**
+ * Sync only the changed/added/removed edges to the Y.Map.
+ */
+export function syncChangedEdges(
+  changed: Edge[],
+  added: Edge[],
+  removedIds: string[],
+  ymap: Y.Map<Y.Map<unknown>>,
+): void {
+  const doc = ymap.doc;
+  if (!doc) return;
+  if (changed.length === 0 && added.length === 0 && removedIds.length === 0) return;
+
+  doc.transact(() => {
+    for (const id of removedIds) {
+      ymap.delete(id);
+    }
+
+    for (const edge of added) {
+      const rec = edgeToRecord(edge);
+      const entry = new Y.Map<unknown>();
+      for (const [k, v] of Object.entries(rec)) {
+        entry.set(k, v);
+      }
+      ymap.set(edge.id, entry);
+    }
+
+    for (const edge of changed) {
+      const entry = ymap.get(edge.id);
+      if (!entry) continue;
+      const rec = edgeToRecord(edge);
+      for (const [k, v] of Object.entries(rec)) {
+        if (!valuesEqual(entry.get(k), v)) {
+          entry.set(k, v);
+        }
+      }
+    }
+  }, LOCAL_ORIGIN);
+}
+
+/**
+ * Diff two node arrays using reference identity and return the
+ * changed, added, and removed sets. O(n) scan but O(changed) for
+ * the expensive nodeToRecord work that happens downstream.
+ */
+export function diffNodes<N extends Node>(
+  prev: N[],
+  next: N[],
+): { changed: N[]; added: N[]; removedIds: string[] } {
+  const prevById = new Map<string, N>();
+  for (const n of prev) prevById.set(n.id, n);
+
+  const changed: N[] = [];
+  const added: N[] = [];
+
+  for (const n of next) {
+    const p = prevById.get(n.id);
+    if (!p) added.push(n);
+    else if (p !== n) changed.push(n); // reference inequality = changed
+  }
+
+  const nextIds = new Set(next.map((n) => n.id));
+  const removedIds: string[] = [];
+  for (const id of prevById.keys()) {
+    if (!nextIds.has(id)) removedIds.push(id);
+  }
+
+  return { changed, added, removedIds };
+}
+
+/**
+ * Diff two edge arrays using reference identity.
+ */
+export function diffEdges(
+  prev: Edge[],
+  next: Edge[],
+): { changed: Edge[]; added: Edge[]; removedIds: string[] } {
+  const prevById = new Map<string, Edge>();
+  for (const e of prev) prevById.set(e.id, e);
+
+  const changed: Edge[] = [];
+  const added: Edge[] = [];
+
+  for (const e of next) {
+    const p = prevById.get(e.id);
+    if (!p) added.push(e);
+    else if (p !== e) changed.push(e);
+  }
+
+  const nextIds = new Set(next.map((e) => e.id));
+  const removedIds: string[] = [];
+  for (const id of prevById.keys()) {
+    if (!nextIds.has(id)) removedIds.push(id);
+  }
+
+  return { changed, added, removedIds };
+}
+
+// ─── Inbound: Yjs → React (incremental patch) ─────────────────────────
+
+/**
+ * Incrementally patch the nodes array based on Y.Doc change events.
+ * Only reconstructs nodes that actually changed, preserving local
+ * state (selected, dragging) on patched nodes.
+ */
+export function patchNodesFromEvents<N extends Node>(
+  events: Y.YEvent<unknown>[],
+  nodesMap: Y.Map<Y.Map<unknown>>,
+  currentNodes: N[],
+): N[] {
+  let next = currentNodes;
+  const patched = new Set<string>();
+
+  for (const event of events) {
+    const path = event.path;
+
+    if (path.length === 0 && event.target === nodesMap) {
+      // Top-level: nodes added or removed from the nodesMap
+      const keys = (event as Y.YMapEvent<Y.Map<unknown>>).keysChanged;
+      for (const key of keys) {
+        if (patched.has(key)) continue;
+        patched.add(key);
+
+        const entry = nodesMap.get(key);
+        if (entry) {
+          // Added or updated at top level
+          const node = recordToNode(yMapToRecord(entry)) as N;
+          const existing = next.find((n) => n.id === key);
+          if (existing) {
+            node.selected = existing.selected;
+            node.dragging = existing.dragging;
+            next = next.map((n) => (n.id === key ? node : n));
+          } else {
+            next = [...next, node];
+          }
+        } else {
+          // Deleted
+          next = next.filter((n) => n.id !== key);
+        }
+      }
+    } else if (path.length >= 1) {
+      // Nested: a specific node's Y.Map had properties changed
+      const nodeId = path[0] as string;
+      if (patched.has(nodeId)) continue;
+      patched.add(nodeId);
+
+      const entry = nodesMap.get(nodeId);
+      if (!entry) continue;
+
+      const node = recordToNode(yMapToRecord(entry)) as N;
+      const existing = next.find((n) => n.id === nodeId);
+      if (existing) {
+        node.selected = existing.selected;
+        node.dragging = existing.dragging;
+      }
+      next = next.map((n) => (n.id === nodeId ? node : n));
+    }
+  }
+
+  return next;
+}
+
+/**
+ * Incrementally patch the edges array based on Y.Doc change events.
+ */
+export function patchEdgesFromEvents(
+  events: Y.YEvent<unknown>[],
+  edgesMap: Y.Map<Y.Map<unknown>>,
+  currentEdges: Edge[],
+): Edge[] {
+  let next = currentEdges;
+  const patched = new Set<string>();
+
+  for (const event of events) {
+    const path = event.path;
+
+    if (path.length === 0 && event.target === edgesMap) {
+      const keys = (event as Y.YMapEvent<Y.Map<unknown>>).keysChanged;
+      for (const key of keys) {
+        if (patched.has(key)) continue;
+        patched.add(key);
+
+        const entry = edgesMap.get(key);
+        if (entry) {
+          const edge = recordToEdge(yMapToRecord(entry));
+          const existing = next.find((e) => e.id === key);
+          if (existing) {
+            edge.selected = existing.selected;
+            next = next.map((e) => (e.id === key ? edge : e));
+          } else {
+            next = [...next, edge];
+          }
+        } else {
+          next = next.filter((e) => e.id !== key);
+        }
+      }
+    } else if (path.length >= 1) {
+      const edgeId = path[0] as string;
+      if (patched.has(edgeId)) continue;
+      patched.add(edgeId);
+
+      const entry = edgesMap.get(edgeId);
+      if (!entry) continue;
+
+      const edge = recordToEdge(yMapToRecord(entry));
+      const existing = next.find((e) => e.id === edgeId);
+      if (existing) edge.selected = existing.selected;
+      next = next.map((e) => (e.id === edgeId ? edge : e));
+    }
+  }
+
+  return next;
+}
+
+// ─── Bulk operations (kept for initial populate / full sync) ───────────
+
+export {
+  materializeNodes,
+  materializeEdges,
+  syncNodesToYMap,
+  syncEdgesToYMap,
+} from "./sync-bulk";
