@@ -8,40 +8,39 @@
  * users (via CSS class injection).
  */
 
-import { useCallback, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useReactFlow, useViewport } from "@xyflow/react";
 import { useAwareness, type UserPresence } from "./useAwareness";
 
 export function CursorOverlay() {
   const { remoteUsers, setCursor, setSelectedNode } = useAwareness();
   const { screenToFlowPosition } = useReactFlow();
+  const paneRef = useRef<Element | null>(null);
 
-  // Track local mouse position and broadcast
-  const onMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+  // Attach mousemove to the ReactFlow pane element directly
+  useEffect(() => {
+    const pane = document.querySelector(".react-flow__pane");
+    if (!pane) return;
+    paneRef.current = pane;
+
+    const onMove = (e: Event) => {
+      const me = e as MouseEvent;
+      const pos = screenToFlowPosition({ x: me.clientX, y: me.clientY });
       setCursor(pos);
-    },
-    [screenToFlowPosition, setCursor],
-  );
+    };
 
-  const onMouseLeave = useCallback(() => {
-    setCursor(null);
-  }, [setCursor]);
+    const onLeave = () => setCursor(null);
+
+    pane.addEventListener("pointermove", onMove);
+    pane.addEventListener("pointerleave", onLeave);
+    return () => {
+      pane.removeEventListener("pointermove", onMove);
+      pane.removeEventListener("pointerleave", onLeave);
+    };
+  }, [screenToFlowPosition, setCursor]);
 
   return (
     <>
-      {/* Invisible overlay to capture mouse events */}
-      <div
-        onMouseMove={onMouseMove}
-        onMouseLeave={onMouseLeave}
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          zIndex: 50,
-        }}
-      />
       {/* Remote cursors */}
       {remoteUsers.map((user) =>
         user.cursor ? <RemoteCursor key={user.clientId} user={user} /> : null,
@@ -56,7 +55,7 @@ function RemoteCursor({ user }: { user: UserPresence }) {
   const { x, y, zoom } = useViewport();
   if (!user.cursor) return null;
 
-  // Convert flow coordinates to screen-relative position within the viewport
+  // Convert flow coordinates to viewport-relative position
   const screenX = user.cursor.x * zoom + x;
   const screenY = user.cursor.y * zoom + y;
 
@@ -107,7 +106,6 @@ function RemoteCursor({ user }: { user: UserPresence }) {
 }
 
 function SelectionIndicators({ users }: { users: UserPresence[] }) {
-  // Inject/remove CSS for selection rings on nodes
   useEffect(() => {
     const styleId = "collab-selection-indicators";
     let style = document.getElementById(styleId) as HTMLStyleElement | null;
