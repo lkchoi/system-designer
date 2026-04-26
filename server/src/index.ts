@@ -173,9 +173,15 @@ wss.on("connection", async (ws, req) => {
   };
   doc.on("update", onDocUpdate);
 
+  // Keepalive ping every 30s (Cloudflare proxied WebSockets have a 100s idle timeout)
+  const pingInterval = setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) ws.ping();
+  }, 30_000);
+
   // Cleanup on disconnect
   ws.on("close", () => {
     console.log(`[ws] client disconnected from room ${roomId}`);
+    clearInterval(pingInterval);
     doc.off("update", onDocUpdate);
     roomClients.get(roomId)?.delete(ws);
     rooms.disconnect(roomId);
