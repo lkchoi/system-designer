@@ -1,11 +1,7 @@
-import fs from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
 
-const hasLocalCerts =
-  fs.existsSync(".certs/key.pem") && fs.existsSync(".certs/cert.pem");
-const baseURL = hasLocalCerts
-  ? "https://localhost:5173"
-  : "http://localhost:5173";
+const port = 5173;
+const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -34,9 +30,10 @@ export default defineConfig({
     // WebKit omitted — OPFS FileSystemWritableFileStream is unsupported
   ],
   webServer: {
-    command: "bun run dev",
+    command: `bun run dev -- --port ${port}`,
     url: baseURL,
     ignoreHTTPSErrors: true,
     reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
 });
