@@ -21,10 +21,7 @@ export interface ConnectionInfo {
  * given scaffold language. Returns merged slots ready for the language
  * template to render.
  */
-export function resolveConcerns(
-  lang: ScaffoldLang,
-  connections: ConnectionInfo[],
-): MergedSlots {
+export function resolveConcerns(lang: ScaffoldLang, connections: ConnectionInfo[]): MergedSlots {
   const snippets: LangSnippet[] = [];
   const seen = new Set<string>();
 

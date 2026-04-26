@@ -15,28 +15,19 @@ describe("computeLatencyBudget", () => {
   });
 
   it("computes remaining budget", () => {
-    const r = computeLatencyBudget(
-      [{ name: "A", p50Ms: 50, p99Ms: 150 }],
-      200,
-    );
+    const r = computeLatencyBudget([{ name: "A", p50Ms: 50, p99Ms: 150 }], 200);
     expect(r.remainingP50).toBe(150);
     expect(r.remainingP99).toBe(50);
   });
 
   it("detects within budget", () => {
-    const r = computeLatencyBudget(
-      [{ name: "A", p50Ms: 50, p99Ms: 100 }],
-      200,
-    );
+    const r = computeLatencyBudget([{ name: "A", p50Ms: 50, p99Ms: 100 }], 200);
     expect(r.withinBudgetP50).toBe(true);
     expect(r.withinBudgetP99).toBe(true);
   });
 
   it("detects over budget", () => {
-    const r = computeLatencyBudget(
-      [{ name: "A", p50Ms: 50, p99Ms: 250 }],
-      200,
-    );
+    const r = computeLatencyBudget([{ name: "A", p50Ms: 50, p99Ms: 250 }], 200);
     expect(r.withinBudgetP50).toBe(true);
     expect(r.withinBudgetP99).toBe(false);
   });

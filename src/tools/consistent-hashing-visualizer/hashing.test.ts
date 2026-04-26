@@ -83,11 +83,7 @@ describe("computeRedistribution", () => {
   it("adding a node moves some keys", () => {
     const keys = generateKeys(1000);
     const before = buildRing(nodes, 50, keys);
-    const after = buildRing(
-      [...nodes, { id: "D", label: "Node D", color: "#ec4899" }],
-      50,
-      keys,
-    );
+    const after = buildRing([...nodes, { id: "D", label: "Node D", color: "#ec4899" }], 50, keys);
     const result = computeRedistribution(before, after);
     expect(result.moved).toBeGreaterThan(0);
     expect(result.moved).toBeLessThan(1000);

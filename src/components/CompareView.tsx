@@ -1,9 +1,4 @@
-import {
-  ReactFlow,
-  ReactFlowProvider,
-  Background,
-  BackgroundVariant,
-} from "@xyflow/react";
+import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant } from "@xyflow/react";
 import SystemNode from "./SystemNode";
 import StickyNote from "./StickyNote";
 import TextNode from "./TextNode";

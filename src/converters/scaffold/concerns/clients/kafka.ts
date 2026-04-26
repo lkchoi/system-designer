@@ -12,7 +12,9 @@ export const kafkaConcern: ClientConcern = {
       ],
       init: [],
       shutdown: [],
-      healthChecks: ['const admin = kafka.admin(); await admin.connect(); await admin.disconnect();'],
+      healthChecks: [
+        "const admin = kafka.admin(); await admin.connect(); await admin.disconnect();",
+      ],
     },
     python: {
       deps: { "confluent-kafka": "2.6.1" },

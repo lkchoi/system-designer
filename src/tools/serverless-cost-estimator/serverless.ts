@@ -61,11 +61,9 @@ export function computeServerlessCost(inputs: ServerlessInputs): ServerlessResul
   const computeCost = billableGbSeconds * pricing.gbSecondPrice;
   const requestCost = (billableRequests / 1_000_000) * pricing.requestPricePer1M;
 
-  const freeComputeSavings =
-    Math.min(gbSeconds, pricing.freeGbSeconds) * pricing.gbSecondPrice;
+  const freeComputeSavings = Math.min(gbSeconds, pricing.freeGbSeconds) * pricing.gbSecondPrice;
   const freeRequestSavings =
-    (Math.min(invocationsPerMonth, pricing.freeRequests) / 1_000_000) *
-    pricing.requestPricePer1M;
+    (Math.min(invocationsPerMonth, pricing.freeRequests) / 1_000_000) * pricing.requestPricePer1M;
 
   return {
     computeCost,

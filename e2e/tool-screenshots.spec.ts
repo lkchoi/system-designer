@@ -12,8 +12,12 @@ async function dropOnCanvas(page: Page, type: string, clientX: number, clientY: 
       const el = document.querySelector(".react-flow__renderer")!;
       const dt = new DataTransfer();
       dt.setData("application/arkon", t);
-      el.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
-      el.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
+      el.dispatchEvent(
+        new DragEvent("dragover", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }),
+      );
+      el.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }),
+      );
     },
     { x: clientX, y: clientY, t: type },
   );
@@ -61,7 +65,6 @@ async function screenshotModal(page: Page, filename: string, titleText?: string)
 test.describe.configure({ mode: "parallel" });
 
 test.describe("tool screenshots", () => {
-
   test("capacity calculator", async ({ page }) => {
     await page.goto("/");
     await page.locator(".react-flow__viewport").waitFor();
@@ -133,7 +136,8 @@ test.describe("tool screenshots", () => {
     await openToolFromPanel(page, "JWT Inspector");
     await page.waitForTimeout(200);
     // Paste a sample JWT
-    const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE4OTM0NTYwMDB9.signature";
+    const jwt =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphbmUgRG9lIiwiZW1haWwiOiJqYW5lQGV4YW1wbGUuY29tIiwicm9sZSI6ImFkbWluIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE4OTM0NTYwMDB9.signature";
     await page.locator("textarea[placeholder*='eyJhbG']").fill(jwt);
     await page.waitForTimeout(300);
     await screenshotModal(page, "tool-jwt-inspector.png", "JWT Inspector");
@@ -246,7 +250,11 @@ test.describe("tool screenshots", () => {
     // Click "Add node" to show redistribution preview
     await page.locator("button:has-text('+ Add node')").click();
     await page.waitForTimeout(300);
-    await screenshotModal(page, "tool-consistent-hashing-visualizer.png", "Consistent Hashing Visualizer");
+    await screenshotModal(
+      page,
+      "tool-consistent-hashing-visualizer.png",
+      "Consistent Hashing Visualizer",
+    );
     await page.keyboard.press("Escape");
   });
 

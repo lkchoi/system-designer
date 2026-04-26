@@ -1,12 +1,6 @@
 import { useState } from "react";
 import type { Node } from "@xyflow/react";
-import type {
-  SystemNodeData,
-  Endpoint,
-  QueryParam,
-  ResourceLink,
-  EffectiveStress,
-} from "../types";
+import type { SystemNodeData, Endpoint, QueryParam, ResourceLink, EffectiveStress } from "../types";
 import type { Mode, PanelPosition } from "../App";
 import { displayType } from "../data";
 import { registry } from "../registry";
@@ -359,24 +353,24 @@ export default function PropertiesPanel({
                   </svg>
                   Sort
                 </button>
-              <button
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 hover:bg-accent-bg"
-                onClick={addEndpoint}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                <button
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 hover:bg-accent-bg"
+                  onClick={addEndpoint}
                 >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Add
-              </button>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add
+                </button>
               </div>
             </div>
             {(data.endpoints ?? []).length === 0 ? (
@@ -470,7 +464,10 @@ export default function PropertiesPanel({
                           <button
                             className="text-[10px] text-accent hover:text-text-bright transition-colors duration-150"
                             onClick={() => {
-                              const params = [...(ep.queryParams ?? []), { name: "", required: false }];
+                              const params = [
+                                ...(ep.queryParams ?? []),
+                                { name: "", required: false },
+                              ];
                               updateEndpoint(ep.id, { queryParams: params });
                             }}
                           >
@@ -553,7 +550,8 @@ export default function PropertiesPanel({
                                 key={code}
                                 className={`text-[10px] font-mono px-1.5 py-0.5 rounded transition-all duration-150 border ${active ? "bg-accent/20 border-accent text-accent" : "bg-surface-2 border-border text-text-dim hover:text-text"}`}
                                 onClick={() => {
-                                  const current = ep.responseCodes ?? defaultResponseCodes(ep.method);
+                                  const current =
+                                    ep.responseCodes ?? defaultResponseCodes(ep.method);
                                   const next = active
                                     ? current.filter((c) => c !== code)
                                     : [...current, code].sort((a, b) => a - b);

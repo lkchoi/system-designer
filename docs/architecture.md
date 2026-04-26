@@ -43,6 +43,7 @@ Single source of truth for all component types. Each entry defines:
 The registry is extensible at runtime via `registry.register()` for custom component types.
 
 **Key files:**
+
 - `src/registry/builtin-entries.ts` — 18 built-in type definitions
 - `src/registry/ComponentRegistry.ts` — Registry class with `get()`, `canConnect()`, `register()`
 - `src/registry/pricing.ts` — Auto-generated pricing data for 86 technologies
@@ -56,6 +57,7 @@ Two-layer system that enriches edges with metadata and validates technology-leve
 **Layer 2 — Tech rules** (`tech-rules.ts`): ~60 entries mapping `(sourceTech, targetTech)` pairs to protocol overrides, environment variable templates, IaC metadata (IAM actions, CDK grants, security group ports), and blocked pair declarations.
 
 **Lookup API** (`index.ts`):
+
 - `resolveConnection()` — merge component defaults with tech overrides
 - `validateTechConnection()` — check if a tech pair is blocked
 - `getRecommendedTargets()` — ranked connection suggestions
@@ -77,13 +79,14 @@ interface ConverterModule {
   fileExtensions: string[];
   canImport: boolean;
   exportDesign(design: DesignJSON, options?: ExportOptions): ExportResult | Promise<ExportResult>;
-  importDesign?(content: string): DesignJSON;     // only if canImport
+  importDesign?(content: string): DesignJSON; // only if canImport
 }
 ```
 
 **IaC mapping** (`iac-mapping.ts`): Maps `(componentType, technologyId)` to infrastructure resources across all IaC formats — CloudFormation resource types, Terraform resource types, Kubernetes kinds, Docker images, CDK constructs, and Pulumi resources. ~70 entries covering databases, caches, queues, storage, serverless, networking, compute, search, and warehouses. Includes reverse lookups (e.g., `cfnToComponentType()` for import).
 
 **Key files:**
+
 - `src/converters/types.ts` — `ConverterModule`, `ExportResult` interfaces
 - `src/converters/index.ts` — Converter registry, format detection
 - `src/converters/iac-mapping.ts` — (componentType, tech) -> resource mapping
@@ -98,6 +101,7 @@ Scaffold = Runtime x Client[] x Language
 ```
 
 **Client concerns** (`concerns/clients/`): One file per target technology (redis, postgresql, kafka, etc.). Each defines a `LangSnippet` per language (Go, Node.js, Python) with:
+
 - `deps` — package dependencies
 - `imports` — language-native import statements
 - `globals` — top-level variable declarations (client instances)
@@ -114,6 +118,7 @@ Scaffold = Runtime x Client[] x Language
 **Language templates** (`go.ts`, `node.ts`, `python.ts`): Render `MergedSlots` into final source files. Each template defines where slots are injected: deps into dependency files, imports into the import block, globals after imports, init into startup, shutdown into signal handlers, health checks into the `/health` endpoint.
 
 **Data flow:**
+
 ```
 Design edges
   -> docker-compose.ts builds ConnectionInfo[] (calls resolveTechId)
@@ -153,14 +158,14 @@ Each tool is a self-contained directory with a React component, business logic, 
 
 ## Tech stack
 
-| Layer | Technology |
-|-------|-----------|
-| UI | React 19, TypeScript 6 |
-| Canvas | React Flow (@xyflow/react) |
-| Styling | Tailwind CSS 4 |
+| Layer       | Technology                  |
+| ----------- | --------------------------- |
+| UI          | React 19, TypeScript 6      |
+| Canvas      | React Flow (@xyflow/react)  |
+| Styling     | Tailwind CSS 4              |
 | Persistence | sql.js (SQLite WASM) + OPFS |
-| Build | Vite 8 |
-| Test | Vitest |
-| Lint | oxlint |
-| Format | oxfmt |
-| Deploy | Cloudflare Pages (wrangler) |
+| Build       | Vite 8                      |
+| Test        | Vitest                      |
+| Lint        | oxlint                      |
+| Format      | oxfmt                       |
+| Deploy      | Cloudflare Pages (wrangler) |

@@ -55,23 +55,17 @@ function design(
 describe("urlsFor", () => {
   it("postgres → postgres:// URL", () => {
     const result = urlsFor("database", "postgresql", "orders-db", [5432]);
-    expect(result).toEqual([
-      { label: "orders-db", url: "postgres://admin@localhost:5432/app" },
-    ]);
+    expect(result).toEqual([{ label: "orders-db", url: "postgres://admin@localhost:5432/app" }]);
   });
 
   it("mysql → mysql:// URL", () => {
     const result = urlsFor("database", "mysql", "users-db", [3306]);
-    expect(result).toEqual([
-      { label: "users-db", url: "mysql://root@localhost:3306" },
-    ]);
+    expect(result).toEqual([{ label: "users-db", url: "mysql://root@localhost:3306" }]);
   });
 
   it("mongodb → mongodb:// URL", () => {
     const result = urlsFor("database", "mongodb", "docs-db", [27017]);
-    expect(result).toEqual([
-      { label: "docs-db", url: "mongodb://localhost:27017" },
-    ]);
+    expect(result).toEqual([{ label: "docs-db", url: "mongodb://localhost:27017" }]);
   });
 
   it("unknown database tech → plain host:port", () => {
@@ -81,16 +75,12 @@ describe("urlsFor", () => {
 
   it("cache → redis:// URL", () => {
     const result = urlsFor("cache", "redis", "app-cache", [6379]);
-    expect(result).toEqual([
-      { label: "app-cache", url: "redis://localhost:6379" },
-    ]);
+    expect(result).toEqual([{ label: "app-cache", url: "redis://localhost:6379" }]);
   });
 
   it("kafka → host:port (kafka)", () => {
     const result = urlsFor("message-queue", "kafka", "events", [9092]);
-    expect(result).toEqual([
-      { label: "events", url: "localhost:9092 (kafka)" },
-    ]);
+    expect(result).toEqual([{ label: "events", url: "localhost:9092 (kafka)" }]);
   });
 
   it("rabbitmq with management port → amqp URL + mgmt URL", () => {
@@ -103,9 +93,7 @@ describe("urlsFor", () => {
 
   it("rabbitmq without management port → just amqp URL", () => {
     const result = urlsFor("message-queue", "rabbitmq", "broker", [5672]);
-    expect(result).toEqual([
-      { label: "broker", url: "amqp://guest:guest@localhost:5672" },
-    ]);
+    expect(result).toEqual([{ label: "broker", url: "amqp://guest:guest@localhost:5672" }]);
   });
 
   it("storage with console port → api URL + console URL", () => {
@@ -118,9 +106,7 @@ describe("urlsFor", () => {
 
   it("search-engine → http:// URL", () => {
     const result = urlsFor("search-engine", "elasticsearch", "search", [9200]);
-    expect(result).toEqual([
-      { label: "search", url: "http://localhost:9200" },
-    ]);
+    expect(result).toEqual([{ label: "search", url: "http://localhost:9200" }]);
   });
 
   it("service → http:// URL", () => {

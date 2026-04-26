@@ -17,9 +17,7 @@ export const elasticsearchConcern: ClientConcern = {
     python: {
       deps: { elasticsearch: "8.17.0" },
       imports: ["import os", "from elasticsearch import Elasticsearch"],
-      globals: [
-        '_es = Elasticsearch(os.environ.get("ES_URL", "http://localhost:9200"))',
-      ],
+      globals: ['_es = Elasticsearch(os.environ.get("ES_URL", "http://localhost:9200"))'],
       init: [],
       shutdown: ["_es.close()"],
       healthChecks: ["_es.ping()"],
@@ -30,15 +28,13 @@ export const elasticsearchConcern: ClientConcern = {
       globals: ["var esClient *elasticsearch.Client"],
       init: [
         "{",
-        "\tes, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{os.Getenv(\"ES_URL\")}})",
+        '\tes, err := elasticsearch.NewClient(elasticsearch.Config{Addresses: []string{os.Getenv("ES_URL")}})',
         '\tif err != nil { log.Fatalf("elasticsearch: %v", err) }',
         "\tesClient = es",
         "}",
       ],
       shutdown: [],
-      healthChecks: [
-        'func() error { _, err := esClient.Ping(); return err }()',
-      ],
+      healthChecks: ["func() error { _, err := esClient.Ping(); return err }()"],
     },
   },
 };

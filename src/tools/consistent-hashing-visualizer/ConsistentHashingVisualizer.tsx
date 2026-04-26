@@ -70,9 +70,10 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
 
   // Show a subset of vnodes on the ring to avoid clutter
   const maxRingDots = 60;
-  const visibleVnodes = ring.vnodes.length <= maxRingDots
-    ? ring.vnodes
-    : ring.vnodes.filter((_, i) => i % Math.ceil(ring.vnodes.length / maxRingDots) === 0);
+  const visibleVnodes =
+    ring.vnodes.length <= maxRingDots
+      ? ring.vnodes
+      : ring.vnodes.filter((_, i) => i % Math.ceil(ring.vnodes.length / maxRingDots) === 0);
 
   return (
     <div
@@ -94,7 +95,16 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
             className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
             onClick={onClose}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
@@ -183,9 +193,10 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
                   const next = ring.vnodes[(i + 1) % ring.vnodes.length];
                   const startAngle = vn.position * 360 - 90;
                   const endAngle = next.position * 360 - 90;
-                  const sweep = i === ring.vnodes.length - 1
-                    ? 360 - (vn.position - next.position) * 360
-                    : (next.position - vn.position) * 360;
+                  const sweep =
+                    i === ring.vnodes.length - 1
+                      ? 360 - (vn.position - next.position) * 360
+                      : (next.position - vn.position) * 360;
                   if (sweep <= 0 || sweep > 359) return null;
                   const r = RING_R + 8;
                   const startRad = (startAngle * Math.PI) / 180;
@@ -287,9 +298,7 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
                   </button>
                   <button
                     className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-150 ${pendingAction === "remove" ? "bg-accent text-white" : "bg-surface-2 text-text-dim border border-border hover:text-text-bright"}`}
-                    onClick={() =>
-                      setPendingAction(pendingAction === "remove" ? null : "remove")
-                    }
+                    onClick={() => setPendingAction(pendingAction === "remove" ? null : "remove")}
                     disabled={nodeCount <= 1}
                   >
                     - Remove node
@@ -300,7 +309,8 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
                     <div className="flex items-center justify-between py-[2px]">
                       <span className="text-[12px] text-text">Keys moved</span>
                       <span className="font-mono text-[12px] font-semibold text-text-bright">
-                        {redistribution.moved.toLocaleString()} / {redistribution.total.toLocaleString()}
+                        {redistribution.moved.toLocaleString()} /{" "}
+                        {redistribution.total.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex items-center justify-between py-[2px]">
@@ -310,8 +320,13 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
                       </span>
                     </div>
                     <div className="text-[11px] text-text-dim mt-1">
-                      Ideal: {(100 / (pendingAction === "add" ? nodeCount + 1 : nodeCount - 1)).toFixed(1)}%
-                      (K/N = {Math.round(keyCount / (pendingAction === "add" ? nodeCount + 1 : nodeCount - 1))} keys)
+                      Ideal:{" "}
+                      {(100 / (pendingAction === "add" ? nodeCount + 1 : nodeCount - 1)).toFixed(1)}
+                      % (K/N ={" "}
+                      {Math.round(
+                        keyCount / (pendingAction === "add" ? nodeCount + 1 : nodeCount - 1),
+                      )}{" "}
+                      keys)
                     </div>
                   </div>
                 )}

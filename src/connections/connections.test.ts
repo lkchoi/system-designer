@@ -244,9 +244,7 @@ describe("data integrity", () => {
   });
 
   it("every connectsTo pair in the registry has a matching component rule", () => {
-    const ruleKeys = new Set(
-      COMPONENT_RULES.map((r) => `${r.source}:${r.target}`),
-    );
+    const ruleKeys = new Set(COMPONENT_RULES.map((r) => `${r.source}:${r.target}`));
     const missing: string[] = [];
     for (const entry of BUILTIN_ENTRIES) {
       for (const target of entry.connectsTo) {
@@ -254,7 +252,10 @@ describe("data integrity", () => {
         if (!ruleKeys.has(key)) missing.push(key);
       }
     }
-    expect(missing, `connectsTo pairs missing from COMPONENT_RULES:\n  ${missing.join("\n  ")}`).toEqual([]);
+    expect(
+      missing,
+      `connectsTo pairs missing from COMPONENT_RULES:\n  ${missing.join("\n  ")}`,
+    ).toEqual([]);
   });
 
   it("every component rule has a matching connectsTo entry in the registry", () => {
@@ -269,6 +270,9 @@ describe("data integrity", () => {
       const key = `${rule.source}:${rule.target}`;
       if (!connectsToKeys.has(key)) orphaned.push(key);
     }
-    expect(orphaned, `COMPONENT_RULES without matching connectsTo:\n  ${orphaned.join("\n  ")}`).toEqual([]);
+    expect(
+      orphaned,
+      `COMPONENT_RULES without matching connectsTo:\n  ${orphaned.join("\n  ")}`,
+    ).toEqual([]);
   });
 });

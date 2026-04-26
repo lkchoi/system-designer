@@ -84,7 +84,16 @@ import {
 import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
-import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl, checkServerHealth, getBetaKey, activateBetaFromUrl } from "./collab";
+import {
+  CollabProvider,
+  useCollabState,
+  useCollab,
+  getRoomIdFromUrl,
+  getShareUrl,
+  checkServerHealth,
+  getBetaKey,
+  activateBetaFromUrl,
+} from "./collab";
 import { CursorOverlay, useAwareness } from "./collab/CursorOverlay";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
@@ -768,7 +777,6 @@ function Canvas({
     [stressEffects, partitionedEdges, slowEdges, stressConfig],
   );
 
-
   const hotkeyActions = useMemo<Record<string, () => void>>(
     () => ({
       "mode-plan": () => setMode("plan"),
@@ -904,7 +912,6 @@ function Canvas({
     },
     [nodes],
   );
-
 
   const startResize = useCallback(
     (e: React.PointerEvent, axis: "x" | "y", onMove: (delta: number) => void) => {
@@ -1511,38 +1518,98 @@ function Canvas({
                       <line x1="12" y1="3" x2="12" y2="15" />
                     </svg>
                   </button>
-                  <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
+                  <div className="relative group hidden xl:flex items-center gap-4">
+                    <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                      </svg>
+                      {nodes.length} nodes
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                      </svg>
+                      {connectionCount} connections
+                    </span>
+                  </div>
+                  <div className="relative xl:hidden">
+                    <button
+                      className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright peer"
+                      title={`${nodes.length} nodes, ${connectionCount} connections`}
                     >
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-                    </svg>
-                    {nodes.length} nodes
-                  </span>
-                  <span className="flex items-center gap-1.5 text-[13px] text-text-dim">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
-                    </svg>
-                    {connectionCount} connections
-                  </span>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="19" cy="12" r="1" />
+                        <circle cx="5" cy="12" r="1" />
+                      </svg>
+                    </button>
+                    <div className="absolute right-0 top-[calc(100%+4px)] bg-surface border border-border rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.4)] p-3 min-w-[160px] hidden peer-hover:flex hover:flex flex-col gap-2 z-50">
+                      <span className="flex items-center gap-1.5 text-[13px] text-text-dim whitespace-nowrap">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                        </svg>
+                        {nodes.length} nodes
+                      </span>
+                      <span className="flex items-center gap-1.5 text-[13px] text-text-dim whitespace-nowrap">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                        </svg>
+                        {connectionCount} connections
+                      </span>
+                    </div>
+                  </div>
                   {collab.roomId ? (
                     <>
-                      <span className={`flex items-center gap-1.5 text-[13px] ${collab.status === "connected" ? "text-green-400" : collab.status === "connecting" ? "text-yellow-400" : "text-red-400"}`}>
-                        <span className={`w-2 h-2 rounded-full ${collab.status === "connected" ? "bg-green-400" : collab.status === "connecting" ? "bg-yellow-400 animate-pulse" : "bg-red-400"}`} />
-                        {collab.status === "connected" ? "Live" : collab.status === "connecting" ? "Connecting..." : "Disconnected"}
+                      <span
+                        className={`flex items-center gap-1.5 text-[13px] ${collab.status === "connected" ? "text-green-400" : collab.status === "connecting" ? "text-yellow-400" : "text-red-400"}`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full ${collab.status === "connected" ? "bg-green-400" : collab.status === "connecting" ? "bg-yellow-400 animate-pulse" : "bg-red-400"}`}
+                        />
+                        {collab.status === "connected"
+                          ? "Live"
+                          : collab.status === "connecting"
+                            ? "Connecting..."
+                            : "Disconnected"}
                       </span>
                       <button
                         className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-surface-2 border border-border text-text text-[13px] font-medium transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
@@ -1552,7 +1619,16 @@ function Canvas({
                         }}
                         title="Copy share link"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                           <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                         </svg>
@@ -1570,35 +1646,47 @@ function Canvas({
                       <button
                         className={`flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 ${serverReachable === false ? "bg-surface-2 border border-border text-text-dim cursor-not-allowed" : "bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20"}`}
                         disabled={serverReachable === false}
-                        title={serverReachable === false ? "Collab server is not reachable" : undefined}
+                        title={
+                          serverReachable === false ? "Collab server is not reachable" : undefined
+                        }
                         onClick={async () => {
                           setShareError(null);
                           try {
-                            const roomId = await collab.shareDesign(currentDesign?.name ?? "Untitled");
+                            const roomId = await collab.shareDesign(
+                              currentDesign?.name ?? "Untitled",
+                            );
                             const url = getShareUrl(roomId);
                             navigator.clipboard.writeText(url);
                             const newUrl = new URL(window.location.href);
                             newUrl.searchParams.set("room", roomId);
                             window.history.replaceState({}, "", newUrl.toString());
                           } catch (e) {
-                            const msg = e instanceof Error && e.message.includes("beta key")
-                              ? "Beta access revoked"
-                              : "Could not connect to collab server";
+                            const msg =
+                              e instanceof Error && e.message.includes("beta key")
+                                ? "Beta access revoked"
+                                : "Could not connect to collab server";
                             setShareError(msg);
                             checkServerHealth().then(setServerReachable);
                           }
                         }}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
                           <polyline points="16 6 12 2 8 6" />
                           <line x1="12" y1="2" x2="12" y2="15" />
                         </svg>
                         {serverReachable === null ? "Share..." : "Share"}
                       </button>
-                      {shareError && (
-                        <span className="text-[12px] text-red-400">{shareError}</span>
-                      )}
+                      {shareError && <span className="text-[12px] text-red-400">{shareError}</span>}
                     </>
                   ) : null}
                   <button
@@ -2034,11 +2122,7 @@ export default function App() {
   if (compareIds) {
     return (
       <Suspense fallback={null}>
-        <CompareView
-          designs={designs}
-          compareIds={compareIds}
-          onExit={() => setCompareIds(null)}
-        />
+        <CompareView designs={designs} compareIds={compareIds} onExit={() => setCompareIds(null)} />
       </Suspense>
     );
   }

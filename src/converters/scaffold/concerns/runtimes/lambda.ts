@@ -11,10 +11,7 @@ export const lambdaRuntime: RuntimeConcern = {
   snippet: {
     go: {
       deps: { "github.com/aws/aws-lambda-go": "v1.47.0" },
-      imports: [
-        '"github.com/aws/aws-lambda-go/lambda"',
-        '"github.com/aws/aws-lambda-go/events"',
-      ],
+      imports: ['"github.com/aws/aws-lambda-go/lambda"', '"github.com/aws/aws-lambda-go/events"'],
       globals: [],
       init: [],
       shutdown: [],

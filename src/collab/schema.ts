@@ -43,8 +43,10 @@ export function nodeToRecord(node: Node): Record<string, unknown> {
   if (node.measured?.height != null) rec["measured.height"] = node.measured.height;
 
   // Top-level dimensions (set by ReactFlow's NodeResizer)
-  if ((node as Record<string, unknown>).width != null) rec.width = (node as Record<string, unknown>).width;
-  if ((node as Record<string, unknown>).height != null) rec.height = (node as Record<string, unknown>).height;
+  if ((node as Record<string, unknown>).width != null)
+    rec.width = (node as Record<string, unknown>).width;
+  if ((node as Record<string, unknown>).height != null)
+    rec.height = (node as Record<string, unknown>).height;
 
   // Style dimensions (used by containers and resizable nodes)
   const style = node.style as Record<string, unknown> | undefined;

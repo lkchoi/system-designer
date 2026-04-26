@@ -12,10 +12,10 @@ export interface DnsResult {
 }
 
 const CHANGE_FREQ_TTLS: Record<string, number> = {
-  rarely: 86400,   // 24h
-  daily: 3600,     // 1h
-  hourly: 300,     // 5min
-  minutes: 60,     // 1min
+  rarely: 86400, // 24h
+  daily: 3600, // 1h
+  hourly: 300, // 5min
+  minutes: 60, // 1min
 };
 
 export function computeDnsTtl(inputs: DnsInputs): DnsResult {

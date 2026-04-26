@@ -30,10 +30,7 @@ function makeNode(
   };
 }
 
-function designWith(
-  nodes: Node<SystemNodeData>[],
-  name = "TestDesign",
-): DesignJSON {
+function designWith(nodes: Node<SystemNodeData>[], name = "TestDesign"): DesignJSON {
   return {
     version: 1,
     name,
@@ -44,11 +41,7 @@ function designWith(
   };
 }
 
-function ep(
-  method: string,
-  path: string,
-  opts: Partial<Endpoint> = {},
-): Endpoint {
+function ep(method: string, path: string, opts: Partial<Endpoint> = {}): Endpoint {
   return { id: `ep-${method}-${path}`, method, path, ...opts };
 }
 
@@ -152,7 +145,7 @@ describe("buildOpenApiYaml", () => {
     expect(yaml).toContain("required: true");
     expect(yaml).toContain("name: page");
     expect(yaml).toContain("required: false");
-    expect(yaml).toContain('in: query');
+    expect(yaml).toContain("in: query");
   });
 
   it("omits parameters when queryParams have blank names", () => {

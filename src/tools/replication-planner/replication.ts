@@ -72,7 +72,11 @@ function binomialCoeff(n: number, k: number): number {
   return result;
 }
 
-export const CONSISTENCY_LEVELS: { id: "one" | "quorum" | "all"; label: string; description: string }[] = [
+export const CONSISTENCY_LEVELS: {
+  id: "one" | "quorum" | "all";
+  label: string;
+  description: string;
+}[] = [
   { id: "one", label: "ONE", description: "Any single replica responds" },
   { id: "quorum", label: "QUORUM", description: "Majority of replicas respond" },
   { id: "all", label: "ALL", description: "All replicas must respond" },

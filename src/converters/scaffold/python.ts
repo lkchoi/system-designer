@@ -6,7 +6,10 @@ import { EMPTY_SLOTS } from "./concerns/types";
 
 const PORT = 8000;
 
-export function scaffoldPythonService(req: ScaffoldRequest, slots: MergedSlots = EMPTY_SLOTS): ScaffoldResult {
+export function scaffoldPythonService(
+  req: ScaffoldRequest,
+  slots: MergedSlots = EMPTY_SLOTS,
+): ScaffoldResult {
   const dir = `services/${req.serviceName}`;
   const files: BundleFile[] = [
     { path: `${dir}/Dockerfile`, content: dockerfile() },
@@ -38,12 +41,7 @@ CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
 }
 
 function requirements(slots: MergedSlots): string {
-  const base = [
-    "fastapi==0.115.5",
-    "uvicorn[standard]==0.32.1",
-    "pytest==8.3.4",
-    "httpx==0.28.1",
-  ];
+  const base = ["fastapi==0.115.5", "uvicorn[standard]==0.32.1", "pytest==8.3.4", "httpx==0.28.1"];
   const extra = Object.entries(slots.deps).map(([pkg, ver]) => `${pkg}==${ver}`);
   return [...base, ...extra].join("\n") + "\n";
 }
@@ -87,21 +85,22 @@ def ${fnName}():
   const concernImports = slots.imports.filter((i) => !baseImports.has(i));
   const extraImports = concernImports.length > 0 ? "\n" + concernImports.join("\n") : "";
 
-  const concernGlobals = slots.globals.length > 0
-    ? "\n" + slots.globals.join("\n")
-    : "";
+  const concernGlobals = slots.globals.length > 0 ? "\n" + slots.globals.join("\n") : "";
 
-  const concernInit = slots.init.length > 0
-    ? `\n\n@app.on_event("startup")\ndef _init_connections():\n    ${slots.init.join("\n    ")}`
-    : "";
+  const concernInit =
+    slots.init.length > 0
+      ? `\n\n@app.on_event("startup")\ndef _init_connections():\n    ${slots.init.join("\n    ")}`
+      : "";
 
-  const concernShutdown = slots.shutdown.length > 0
-    ? `\n\n@app.on_event("shutdown")\ndef _shutdown_connections():\n    ${slots.shutdown.join("\n    ")}`
-    : "";
+  const concernShutdown =
+    slots.shutdown.length > 0
+      ? `\n\n@app.on_event("shutdown")\ndef _shutdown_connections():\n    ${slots.shutdown.join("\n    ")}`
+      : "";
 
-  const healthBody = slots.healthChecks.length > 0
-    ? `try:\n        ${slots.healthChecks.join("\n        ")}\n        return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}\n    except Exception as e:\n        return {"ok": False, "error": str(e)}`
-    : 'return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}';
+  const healthBody =
+    slots.healthChecks.length > 0
+      ? `try:\n        ${slots.healthChecks.join("\n        ")}\n        return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}\n    except Exception as e:\n        return {"ok": False, "error": str(e)}`
+      : 'return {"ok": True, "uptime_seconds": time.monotonic() - _started_at}';
 
   return `"""Auto-scaffolded FastAPI service. Implement business logic here.
 

@@ -95,7 +95,9 @@ export const openapiConverter: ConverterModule = {
   canImport: false,
 
   exportDesign(design: DesignJSON) {
-    const yaml = buildOpenApiYaml(design) ?? toYaml({ openapi: "3.0.3", info: { title: design.name, version: "1.0.0" }, paths: {} });
+    const yaml =
+      buildOpenApiYaml(design) ??
+      toYaml({ openapi: "3.0.3", info: { title: design.name, version: "1.0.0" }, paths: {} });
     return {
       content: yaml,
       filename: `${design.name}-openapi.yaml`,

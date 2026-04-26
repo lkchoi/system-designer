@@ -25,7 +25,7 @@ To add a new component type, add one entry to `src/registry/builtin-entries.ts`.
 
 ## Connection Mapping + Scaffold Concerns
 
-Two subsystems that work together: **connections/** declares *what* connects to what, **scaffold/concerns/** declares *how* to generate code for each connection.
+Two subsystems that work together: **connections/** declares _what_ connects to what, **scaffold/concerns/** declares _how_ to generate code for each connection.
 
 ### Data flow
 
@@ -67,11 +67,11 @@ Add one line to `TECH_ALIASES` in `clients/index.ts` (e.g., `tidb: "mysql"`).
 
 ### What's wired vs. deferred
 
-| Feature | Status |
-|---------|--------|
-| Scaffold SDK injection (docker-compose export) | Wired |
-| Edge auto-suggestion (App.tsx onConnect) | Wired |
-| Tech-level validation (App.tsx isValidConnection) | Data exists, not wired |
-| Connection recommendations (sidebar) | Data exists, not wired |
+| Feature                                              | Status                 |
+| ---------------------------------------------------- | ---------------------- |
+| Scaffold SDK injection (docker-compose export)       | Wired                  |
+| Edge auto-suggestion (App.tsx onConnect)             | Wired                  |
+| Tech-level validation (App.tsx isValidConnection)    | Data exists, not wired |
+| Connection recommendations (sidebar)                 | Data exists, not wired |
 | IaC connection generation (IAM/SG in CFn/CDK/TF/K8s) | Data exists, not wired |
-| Runtime concern merging (lambda entrypoint) | Data exists, not wired |
+| Runtime concern merging (lambda entrypoint)          | Data exists, not wired |

@@ -6,7 +6,10 @@ import { EMPTY_SLOTS } from "./concerns/types";
 
 const PORT = 8080;
 
-export function scaffoldGoService(req: ScaffoldRequest, slots: MergedSlots = EMPTY_SLOTS): ScaffoldResult {
+export function scaffoldGoService(
+  req: ScaffoldRequest,
+  slots: MergedSlots = EMPTY_SLOTS,
+): ScaffoldResult {
   const dir = `services/${req.serviceName}`;
   const mod = goModuleName(req.serviceName);
   const files: BundleFile[] = [
@@ -80,13 +83,15 @@ function mainGo(serviceName: string, endpoints: Endpoint[], slots: MergedSlots):
 
   const concernGlobals = slots.globals.length > 0 ? "\n" + slots.globals.join("\n") + "\n" : "";
 
-  const concernInit = slots.init.length > 0
-    ? "\n\t// Initialize connections\n\t" + slots.init.join("\n\t") + "\n"
-    : "";
+  const concernInit =
+    slots.init.length > 0
+      ? "\n\t// Initialize connections\n\t" + slots.init.join("\n\t") + "\n"
+      : "";
 
-  const concernShutdown = slots.shutdown.length > 0
-    ? `\n\t// Graceful shutdown\n\tgo func() {\n\t\tsigCh := make(chan os.Signal, 1)\n\t\tsignal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)\n\t\t<-sigCh\n\t\tlog.Println("shutting down...")\n\t\t${slots.shutdown.join("\n\t\t")}\n\t\tos.Exit(0)\n\t}()\n`
-    : "";
+  const concernShutdown =
+    slots.shutdown.length > 0
+      ? `\n\t// Graceful shutdown\n\tgo func() {\n\t\tsigCh := make(chan os.Signal, 1)\n\t\tsignal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)\n\t\t<-sigCh\n\t\tlog.Println("shutting down...")\n\t\t${slots.shutdown.join("\n\t\t")}\n\t\tos.Exit(0)\n\t}()\n`
+      : "";
 
   // Add signal imports if shutdown concerns exist.
   if (slots.shutdown.length > 0) {
@@ -94,15 +99,16 @@ function mainGo(serviceName: string, endpoints: Endpoint[], slots: MergedSlots):
     if (!allImports.includes('"syscall"')) allImports.push('"syscall"');
   }
 
-  const healthBody = slots.healthChecks.length > 0
-    ? `errs := []error{}
+  const healthBody =
+    slots.healthChecks.length > 0
+      ? `errs := []error{}
 		${slots.healthChecks.map((hc) => `if err := ${hc}; err != nil { errs = append(errs, err) }`).join("\n\t\t")}
 		if len(errs) > 0 {
 			writeJSON(w, http.StatusServiceUnavailable, map[string]any{"ok": false, "errors": len(errs)})
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true, "uptime_sec": time.Since(startedAt).Seconds()})`
-    : `writeJSON(w, http.StatusOK, map[string]any{
+      : `writeJSON(w, http.StatusOK, map[string]any{
 			"ok":         true,
 			"uptime_sec": time.Since(startedAt).Seconds(),
 		})`;

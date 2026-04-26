@@ -177,14 +177,8 @@ test.describe("db layer", () => {
     await setupDB(page);
 
     const result = await page.evaluate(() => {
-      const {
-        createDesign,
-        saveDesignState,
-        saveFlowPath,
-        deleteDesign,
-        getDesign,
-        listDesigns,
-      } = (window as any).__db;
+      const { createDesign, saveDesignState, saveFlowPath, deleteDesign, getDesign, listDesigns } =
+        (window as any).__db;
 
       const d = createDesign("To Delete");
       saveDesignState(
@@ -212,8 +206,9 @@ test.describe("db layer", () => {
     await setupDB(page);
 
     const result = await page.evaluate(() => {
-      const { createDesign, saveDesignState, saveFlowPath, loadDesignState, getDesign } =
-        (window as any).__db;
+      const { createDesign, saveDesignState, saveFlowPath, loadDesignState, getDesign } = (
+        window as any
+      ).__db;
       const { exportDesign, importDesign } = (window as any).__io;
 
       const src = createDesign("Export Me");

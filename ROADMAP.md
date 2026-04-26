@@ -68,13 +68,13 @@ Topic/queue designer for Kafka, RabbitMQ, SQS, Pub/Sub. Define partitions, consu
 
 ### Future editor tools (lower priority)
 
-| Tool | Component type | Purpose |
-|------|---------------|---------|
-| Cache Strategy Editor | cache | Key patterns, TTL policies, eviction strategies, invalidation triggers |
-| CDN Rules Editor | cdn, load-balancer | Routing rules, cache headers, origin failover, rate limits |
-| IAM Policy Builder | serverless, storage | Roles, policies, least-privilege permissions |
-| Rate Limiter Calculator | api-gateway, firewall | Token bucket / sliding window config from QPS + burst tolerance |
-| Cache Invalidation Strategy Picker | cache | Decision tree: write-through vs write-behind vs cache-aside based on read/write ratio |
+| Tool                               | Component type        | Purpose                                                                               |
+| ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------- |
+| Cache Strategy Editor              | cache                 | Key patterns, TTL policies, eviction strategies, invalidation triggers                |
+| CDN Rules Editor                   | cdn, load-balancer    | Routing rules, cache headers, origin failover, rate limits                            |
+| IAM Policy Builder                 | serverless, storage   | Roles, policies, least-privilege permissions                                          |
+| Rate Limiter Calculator            | api-gateway, firewall | Token bucket / sliding window config from QPS + burst tolerance                       |
+| Cache Invalidation Strategy Picker | cache                 | Decision tree: write-through vs write-behind vs cache-aside based on read/write ratio |
 
 ---
 
@@ -121,12 +121,12 @@ Real-time multiplayer editing using Yjs CRDTs. In-progress on a separate branch.
 
 `src/connections/` has ~125 rules (65 component-level, 60 technology-level) and a full lookup API. Edge auto-suggestion is wired; four features remain.
 
-| Feature | API | Integration point |
-|---------|-----|-------------------|
-| Tech-level validation | `validateTechConnection()` | `App.tsx` `isValidConnection` — block incompatible tech pairs (e.g., CF Workers → PostgreSQL) with reason tooltip |
-| Connection recommendations | `getRecommendedTargets()` | Sidebar — suggest targets sorted by commonality when a component is added |
-| IaC enrichment | `getIaCMetadata()` | CloudFormation, CDK, Terraform, Pulumi exporters — emit IAM policies, security groups, CDK grants from tech-level rules |
-| Runtime concern activation | `getRuntimeConcern()` | `scaffold/concerns/resolve.ts` — merge Lambda runtime snippets into scaffold output |
+| Feature                    | API                        | Integration point                                                                                                       |
+| -------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Tech-level validation      | `validateTechConnection()` | `App.tsx` `isValidConnection` — block incompatible tech pairs (e.g., CF Workers → PostgreSQL) with reason tooltip       |
+| Connection recommendations | `getRecommendedTargets()`  | Sidebar — suggest targets sorted by commonality when a component is added                                               |
+| IaC enrichment             | `getIaCMetadata()`         | CloudFormation, CDK, Terraform, Pulumi exporters — emit IAM policies, security groups, CDK grants from tech-level rules |
+| Runtime concern activation | `getRuntimeConcern()`      | `scaffold/concerns/resolve.ts` — merge Lambda runtime snippets into scaffold output                                     |
 
 ### wiring.ts consolidation
 
@@ -140,7 +140,7 @@ The gap between "draw an architecture" and "run an architecture" is the central 
 
 ### Design rationale and constraints
 
-Designs capture *what* but not *why*. An architect revisiting a diagram in six months sees boxes and arrows but no context for the decisions behind them. The tool needs a way to attach decision records to nodes and edges — "chose Kafka over SQS because we need ordering guarantees across 100K msg/s" — and surface them in context during reviews and exports.
+Designs capture _what_ but not _why_. An architect revisiting a diagram in six months sees boxes and arrows but no context for the decisions behind them. The tool needs a way to attach decision records to nodes and edges — "chose Kafka over SQS because we need ordering guarantees across 100K msg/s" — and surface them in context during reviews and exports.
 
 Non-functional requirements (p99 < 200ms, 99.95% SLA, $X/month budget) should be first-class objects that the tool can validate against. The latency budget calculator, SLA calculator, and capacity calculator already exist as standalone utilities — connecting their outputs to stated constraints would close the loop between "what we designed" and "does it meet our requirements."
 

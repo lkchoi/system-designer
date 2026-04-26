@@ -77,7 +77,9 @@ const server = http.createServer(async (req, res) => {
     try {
       const parsed = JSON.parse(body);
       if (parsed.designName) designName = String(parsed.designName);
-    } catch { /* use default */ }
+    } catch {
+      /* use default */
+    }
 
     const meta = rooms.create(designName);
     res.writeHead(201, { "Content-Type": "application/json" });
@@ -111,8 +113,7 @@ wss.on("connection", async (ws, req) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
   // y-websocket puts the room name in the path: ws://host/ROOM_ID
   // Fall back to query param for flexibility.
-  const roomId =
-    url.pathname.slice(1).replace(/\/$/, "") || url.searchParams.get("room");
+  const roomId = url.pathname.slice(1).replace(/\/$/, "") || url.searchParams.get("room");
 
   if (!roomId || !rooms.exists(roomId)) {
     console.log(`[ws] rejected: room "${roomId}" not found (url: ${req.url})`);
@@ -141,11 +142,12 @@ wss.on("connection", async (ws, req) => {
 
   // Handle incoming messages
   ws.on("message", (data: Buffer | ArrayBuffer | Buffer[]) => {
-    const buf = data instanceof ArrayBuffer
-      ? new Uint8Array(data)
-      : Array.isArray(data)
-        ? Buffer.concat(data)
-        : new Uint8Array(data);
+    const buf =
+      data instanceof ArrayBuffer
+        ? new Uint8Array(data)
+        : Array.isArray(data)
+          ? Buffer.concat(data)
+          : new Uint8Array(data);
 
     const decoder = decoding.createDecoder(buf);
     const messageType = decoding.readVarUint(decoder);

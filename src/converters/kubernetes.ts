@@ -218,9 +218,7 @@ function importFromK8s(content: string): DesignJSON {
     const name = metadata?.name ?? "resource";
 
     // Try to recover componentType from label
-    const labelType = metadata?.labels?.["arkon/component-type"] as
-      | ComponentType
-      | undefined;
+    const labelType = metadata?.labels?.["arkon/component-type"] as ComponentType | undefined;
 
     const componentType = labelType ?? match?.componentType ?? "service";
     const technologyId = match?.technologyId ?? "";

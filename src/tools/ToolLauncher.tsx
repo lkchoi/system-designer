@@ -44,13 +44,7 @@ export default function ToolLauncher({ componentType }: Props) {
           {tools.map((tool) => {
             if (tool.id !== openToolId) return null;
             const Component = tool.component;
-            return (
-              <Component
-                key={tool.id}
-                open
-                onClose={() => setOpenToolId(null)}
-              />
-            );
+            return <Component key={tool.id} open onClose={() => setOpenToolId(null)} />;
           })}
         </Suspense>
       )}

@@ -51,10 +51,30 @@ export function testRegex(pattern: string, flags: string, input: string): RegexR
 }
 
 export const COMMON_PATTERNS: { label: string; pattern: string; description: string }[] = [
-  { label: "Email", pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}", description: "Basic email validation" },
-  { label: "IPv4", pattern: "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b", description: "IPv4 address" },
-  { label: "UUID", pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", description: "UUID v4 format" },
+  {
+    label: "Email",
+    pattern: "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}",
+    description: "Basic email validation",
+  },
+  {
+    label: "IPv4",
+    pattern: "\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b",
+    description: "IPv4 address",
+  },
+  {
+    label: "UUID",
+    pattern: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    description: "UUID v4 format",
+  },
   { label: "URL path", pattern: "\\/[a-zA-Z0-9/_-]+", description: "URL path segment" },
-  { label: "ISO date", pattern: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}", description: "ISO 8601 datetime" },
-  { label: "Semver", pattern: "\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?", description: "Semantic version" },
+  {
+    label: "ISO date",
+    pattern: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}",
+    description: "ISO 8601 datetime",
+  },
+  {
+    label: "Semver",
+    pattern: "\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?",
+    description: "Semantic version",
+  },
 ];

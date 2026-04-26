@@ -18,7 +18,9 @@ const CATEGORY_ORDER = [
 ] as const;
 
 function KeyBadge({ def }: { def: HotkeyDef }) {
-  const parts = formatKey(def.key, { mod: def.mod, shift: def.shift }).split(/(?=[⌘⇧])|(?<=⌘|⇧)|\+/);
+  const parts = formatKey(def.key, { mod: def.mod, shift: def.shift }).split(
+    /(?=[⌘⇧])|(?<=⌘|⇧)|\+/,
+  );
   return (
     <span className="flex items-center gap-[3px] shrink-0">
       {parts.map((part, i) => (
@@ -130,7 +132,11 @@ export default function HotkeyHelpOverlay({ open, onClose }: Props) {
 
         <div className="px-7 py-3 border-t border-border shrink-0 flex items-center justify-between">
           <span className="text-[11px] text-text-dim">
-            Press <kbd className="font-mono text-[10px] font-semibold text-text-bright bg-surface-3 border border-border rounded-[3px] px-1 py-0.5 mx-0.5">?</kbd> to toggle this overlay
+            Press{" "}
+            <kbd className="font-mono text-[10px] font-semibold text-text-bright bg-surface-3 border border-border rounded-[3px] px-1 py-0.5 mx-0.5">
+              ?
+            </kbd>{" "}
+            to toggle this overlay
           </span>
           <button
             className="text-[11px] text-text-dim transition-colors duration-150 hover:text-text-bright"

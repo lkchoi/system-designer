@@ -43,14 +43,8 @@ for (const rule of TECH_RULES) {
 
 // ─── Lookup helpers ────────────────────────────────────────────────────
 
-function findTechRule(
-  sourceTech: string,
-  targetTech: string,
-): TechConnectionRule | undefined {
-  return (
-    techIndex.get(`${sourceTech}:${targetTech}`) ??
-    wildcardTechIndex.get(targetTech)
-  );
+function findTechRule(sourceTech: string, targetTech: string): TechConnectionRule | undefined {
+  return techIndex.get(`${sourceTech}:${targetTech}`) ?? wildcardTechIndex.get(targetTech);
 }
 
 // ─── Public API ────────────────────────────────────────────────────────
@@ -145,8 +139,7 @@ export function getRecommendedTargets(
 ): ComponentConnectionRule[] {
   const existing = existingTypes ? new Set(existingTypes) : undefined;
   return COMPONENT_RULES.filter(
-    (r) =>
-      r.source === sourceType && (!existing || existing.has(r.target)),
+    (r) => r.source === sourceType && (!existing || existing.has(r.target)),
   ).sort((a, b) => b.commonality - a.commonality);
 }
 

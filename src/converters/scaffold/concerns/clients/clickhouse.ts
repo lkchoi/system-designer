@@ -12,7 +12,7 @@ export const clickhouseConcern: ClientConcern = {
       ],
       init: [],
       shutdown: ["await clickhouse.close();"],
-      healthChecks: ['await clickhouse.ping();'],
+      healthChecks: ["await clickhouse.ping();"],
     },
     python: {
       deps: { "clickhouse-connect": "0.8.9" },

@@ -32,9 +32,8 @@ export function computePartitions(inputs: PartitionInputs): PartitionResult {
 
   // Partitions needed to handle producer throughput
   // Assuming ~1 MB/s per partition write throughput (Kafka default)
-  const minPartitionsByThroughput = consumerThroughputMBps > 0
-    ? Math.ceil(throughputMBps / consumerThroughputMBps)
-    : 1;
+  const minPartitionsByThroughput =
+    consumerThroughputMBps > 0 ? Math.ceil(throughputMBps / consumerThroughputMBps) : 1;
 
   // At least one partition per consumer for max parallelism
   const minPartitionsByConsumers = Math.max(1, consumerCount);

@@ -3,10 +3,7 @@ import { ulid } from "ulid";
 import type { SavedFlow } from "../types";
 import { saveFlowPath, deleteFlowPath } from "../db";
 
-export function useFlowPath(
-  designId: string,
-  initialFlowPaths: SavedFlow[],
-) {
+export function useFlowPath(designId: string, initialFlowPaths: SavedFlow[]) {
   const [flowPath, setFlowPath] = useState<string[]>([]);
   const [isPathMode, setIsPathMode] = useState(false);
   const [savedFlows, setSavedFlows] = useState<SavedFlow[]>(initialFlowPaths);

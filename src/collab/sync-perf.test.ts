@@ -6,13 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import * as Y from "yjs";
 import type { Node, Edge } from "@xyflow/react";
-import {
-  diffNodes,
-  diffEdges,
-  syncChangedNodes,
-  patchNodesFromEvents,
-  yMapToRecord,
-} from "./sync";
+import { diffNodes, diffEdges, syncChangedNodes, patchNodesFromEvents, yMapToRecord } from "./sync";
 import { nodesToYMap } from "./schema";
 import { recordToNode } from "./schema";
 
@@ -46,9 +40,7 @@ describe("diffNodes — reference identity", () => {
 
   it("detects exactly 1 changed node when only 1 reference differs", () => {
     const nodes = makeNodes(500);
-    const next = nodes.map((n, i) =>
-      i === 42 ? { ...n, position: { x: 999, y: 999 } } : n,
-    );
+    const next = nodes.map((n, i) => (i === 42 ? { ...n, position: { x: 999, y: 999 } } : n));
     const { changed, added, removedIds } = diffNodes(nodes, next);
     expect(changed).toHaveLength(1);
     expect(changed[0].id).toBe("n42");
@@ -213,9 +205,7 @@ describe("patchNodesFromEvents — incremental materialization", () => {
   it("preserves local selected state on patched nodes", () => {
     const doc = new Y.Doc();
     const ymap = doc.getMap("nodes") as Y.Map<Y.Map<unknown>>;
-    const nodes = makeNodes(10).map((n, i) =>
-      i === 3 ? { ...n, selected: true } : n,
-    );
+    const nodes = makeNodes(10).map((n, i) => (i === 3 ? { ...n, selected: true } : n));
     nodesToYMap(nodes, ymap);
 
     let capturedEvents: Y.YEvent<unknown>[] = [];
@@ -239,9 +229,7 @@ describe("patchNodesFromEvents — incremental materialization", () => {
 
 describe("diffEdges — reference identity", () => {
   it("detects exactly 1 changed edge", () => {
-    const edges = Array.from({ length: 100 }, (_, i) =>
-      makeEdge(`e${i}`, `n${i}`, `n${i + 1}`),
-    );
+    const edges = Array.from({ length: 100 }, (_, i) => makeEdge(`e${i}`, `n${i}`, `n${i + 1}`));
     const next = edges.map((e, i) =>
       i === 50 ? { ...e, data: { ...e.data, label: "updated" } } : e,
     );

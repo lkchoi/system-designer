@@ -13,7 +13,7 @@ export const s3Concern: ClientConcern = {
       init: [],
       shutdown: [],
       healthChecks: [
-        'await s3.send(new ListObjectsV2Command({ Bucket: process.env.S3_BUCKET, MaxKeys: 1 }));',
+        "await s3.send(new ListObjectsV2Command({ Bucket: process.env.S3_BUCKET, MaxKeys: 1 }));",
       ],
     },
     python: {

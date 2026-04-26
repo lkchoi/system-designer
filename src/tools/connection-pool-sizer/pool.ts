@@ -16,13 +16,8 @@ export interface PoolResult {
 }
 
 export function computePool(inputs: PoolInputs): PoolResult {
-  const {
-    concurrentRequests,
-    avgQueryMs,
-    serviceInstances,
-    maxConnectionsPerDb,
-    overheadPercent,
-  } = inputs;
+  const { concurrentRequests, avgQueryMs, serviceInstances, maxConnectionsPerDb, overheadPercent } =
+    inputs;
 
   // Each request holds a connection for avgQueryMs
   // Connections needed = concurrentRequests * (avgQueryMs / 1000) at any instant

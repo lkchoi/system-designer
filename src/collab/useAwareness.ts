@@ -96,23 +96,17 @@ export function useAwareness() {
   }, [provider]);
 
   // Update local cursor position (throttled)
-  const setCursor = useCallback(
-    (pos: { x: number; y: number } | null) => {
-      const now = Date.now();
-      if (now - lastCursorUpdate.current < CURSOR_THROTTLE_MS) return;
-      lastCursorUpdate.current = now;
-      awarenessRef.current?.setLocalStateField("cursor", pos);
-    },
-    [],
-  );
+  const setCursor = useCallback((pos: { x: number; y: number } | null) => {
+    const now = Date.now();
+    if (now - lastCursorUpdate.current < CURSOR_THROTTLE_MS) return;
+    lastCursorUpdate.current = now;
+    awarenessRef.current?.setLocalStateField("cursor", pos);
+  }, []);
 
   // Update local selected node
-  const setSelectedNode = useCallback(
-    (nodeId: string | null) => {
-      awarenessRef.current?.setLocalStateField("selectedNodeId", nodeId);
-    },
-    [],
-  );
+  const setSelectedNode = useCallback((nodeId: string | null) => {
+    awarenessRef.current?.setLocalStateField("selectedNodeId", nodeId);
+  }, []);
 
   return {
     remoteUsers,

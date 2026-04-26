@@ -118,10 +118,7 @@ export function materializeNodes<N extends Node>(
   return nodes;
 }
 
-export function materializeEdges(
-  ymap: Y.Map<Y.Map<unknown>>,
-  currentEdges: Edge[],
-): Edge[] {
+export function materializeEdges(ymap: Y.Map<Y.Map<unknown>>, currentEdges: Edge[]): Edge[] {
   const localState = new Map<string, Partial<Edge>>();
   for (const e of currentEdges) {
     localState.set(e.id, { selected: e.selected } as Partial<Edge>);

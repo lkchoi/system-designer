@@ -34,10 +34,7 @@ export function useUndoRedo<N extends Node>(
     const previous = past[past.length - 1];
     pastRef.current = past.slice(0, -1);
     const { nodes: n, edges: e } = stateRef.current;
-    futureRef.current = [
-      ...futureRef.current,
-      { nodes: [...n], edges: [...e] },
-    ];
+    futureRef.current = [...futureRef.current, { nodes: [...n], edges: [...e] }];
     setNodes(previous.nodes);
     setEdges(previous.edges);
   }, [setNodes, setEdges]);
@@ -48,10 +45,7 @@ export function useUndoRedo<N extends Node>(
     const next = future[future.length - 1];
     futureRef.current = future.slice(0, -1);
     const { nodes: n, edges: e } = stateRef.current;
-    pastRef.current = [
-      ...pastRef.current,
-      { nodes: [...n], edges: [...e] },
-    ];
+    pastRef.current = [...pastRef.current, { nodes: [...n], edges: [...e] }];
     setNodes(next.nodes);
     setEdges(next.edges);
   }, [setNodes, setEdges]);

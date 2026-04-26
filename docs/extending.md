@@ -79,7 +79,7 @@ export const myFormatConverter: ConverterModule = {
   id: "my-format",
   label: "My Format",
   description: "Description shown in export dialog",
-  category: "iac",                    // "diagram" | "iac" | "api"
+  category: "iac", // "diagram" | "iac" | "api"
   fileExtensions: [".yaml"],
   canImport: false,
 
@@ -120,36 +120,36 @@ The format immediately appears in the export dialog. If `canImport: true`, also 
 import type { ClientConcern } from "../types";
 
 export const myTechConcern: ClientConcern = {
-  targetTechId: "my-tech",           // must match the technology ID in iac-mapping.ts
-  envVars: ["MY_TECH_URL"],          // env vars this concern reads (from wiring.ts)
+  targetTechId: "my-tech", // must match the technology ID in iac-mapping.ts
+  envVars: ["MY_TECH_URL"], // env vars this concern reads (from wiring.ts)
   snippet: {
     node: {
       deps: { "my-tech-client": "^2.0.0" },
       imports: ['import { Client } from "my-tech-client";'],
-      globals: ['const myTech = new Client(process.env.MY_TECH_URL);'],
+      globals: ["const myTech = new Client(process.env.MY_TECH_URL);"],
       init: [],
-      shutdown: ['await myTech.close();'],
-      healthChecks: ['await myTech.ping();'],
+      shutdown: ["await myTech.close();"],
+      healthChecks: ["await myTech.ping();"],
     },
     python: {
       deps: { "my-tech-client": "2.0.0" },
-      imports: ['import os', 'import my_tech_client'],
+      imports: ["import os", "import my_tech_client"],
       globals: ['_my_tech = my_tech_client.connect(os.environ["MY_TECH_URL"])'],
       init: [],
-      shutdown: ['_my_tech.close()'],
-      healthChecks: ['_my_tech.ping()'],
+      shutdown: ["_my_tech.close()"],
+      healthChecks: ["_my_tech.ping()"],
     },
     go: {
       deps: { "github.com/example/my-tech-go": "v2.0.0" },
       imports: ['"github.com/example/my-tech-go"'],
-      globals: ['var myTechClient *mytech.Client'],
+      globals: ["var myTechClient *mytech.Client"],
       init: [
         'client, err := mytech.Connect(os.Getenv("MY_TECH_URL"))',
         'if err != nil { log.Fatalf("my-tech: %v", err) }',
-        'myTechClient = client',
+        "myTechClient = client",
       ],
-      shutdown: ['myTechClient.Close()'],
-      healthChecks: ['myTechClient.Ping(context.Background())'],
+      shutdown: ["myTechClient.Close()"],
+      healthChecks: ["myTechClient.Ping(context.Background())"],
     },
   },
 };
@@ -166,14 +166,14 @@ When a scaffolded service has an outgoing edge to a node with `technology: "my-t
 
 **Slot reference:**
 
-| Slot | Where it renders (Go) | Where it renders (Node.js) | Where it renders (Python) |
-|------|----------------------|--------------------------|--------------------------|
-| `deps` | `go.mod` require block | `package.json` dependencies | `requirements.txt` |
-| `imports` | `import (...)` block | Top of `index.js` | Top of `main.py` |
-| `globals` | After import, before `newMux()` | After imports | After `app = FastAPI(...)` |
-| `init` | Inside `main()`, before `ListenAndServe` | Inside `if (import.meta.url ...)` guard | `@app.on_event("startup")` handler |
-| `shutdown` | `go func()` with signal handler | `process.on("SIGTERM", ...)` | `@app.on_event("shutdown")` handler |
-| `healthChecks` | Inside `/health` handler, returns 503 on error | Inside `/health` handler, try/catch | Inside `/health` handler, try/except |
+| Slot           | Where it renders (Go)                          | Where it renders (Node.js)              | Where it renders (Python)            |
+| -------------- | ---------------------------------------------- | --------------------------------------- | ------------------------------------ |
+| `deps`         | `go.mod` require block                         | `package.json` dependencies             | `requirements.txt`                   |
+| `imports`      | `import (...)` block                           | Top of `index.js`                       | Top of `main.py`                     |
+| `globals`      | After import, before `newMux()`                | After imports                           | After `app = FastAPI(...)`           |
+| `init`         | Inside `main()`, before `ListenAndServe`       | Inside `if (import.meta.url ...)` guard | `@app.on_event("startup")` handler   |
+| `shutdown`     | `go func()` with signal handler                | `process.on("SIGTERM", ...)`            | `@app.on_event("shutdown")` handler  |
+| `healthChecks` | Inside `/health` handler, returns 503 on error | Inside `/health` handler, try/catch     | Inside `/health` handler, try/except |
 
 ## Add a tool
 

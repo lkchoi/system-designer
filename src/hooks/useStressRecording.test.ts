@@ -9,7 +9,9 @@ function setup() {
   const onUpdateNodeData = vi.fn();
   const onUpdateEdgeData = vi.fn();
   const resetStress = vi.fn();
-  const setStressConfig = vi.fn((updater: (prev: StressConfig) => StressConfig) => updater(defaultConfig));
+  const setStressConfig = vi.fn((updater: (prev: StressConfig) => StressConfig) =>
+    updater(defaultConfig),
+  );
 
   const hook = renderHook(() =>
     useStressRecording(onUpdateNodeData, onUpdateEdgeData, resetStress, setStressConfig),

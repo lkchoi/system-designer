@@ -22,10 +22,7 @@ import {
   patchNodesFromEvents,
   patchEdgesFromEvents,
 } from "./sync";
-import {
-  materializeNodes,
-  materializeEdges,
-} from "./sync-bulk";
+import { materializeNodes, materializeEdges } from "./sync-bulk";
 import { nodesToYMap, edgesToYMap } from "./schema";
 
 /** Throttle interval for position-only updates during drag (ms). */
@@ -110,80 +107,74 @@ export function useCollabState<N extends Node>(
 
   // ─── Wrapped setNodes (STABLE IDENTITY, incremental diff) ──────────
 
-  const setNodes: React.Dispatch<React.SetStateAction<N[]>> = useCallback(
-    (action) => {
-      const currentDoc = docRef.current;
-      const currentNodesMap = nodesMapRef.current;
+  const setNodes: React.Dispatch<React.SetStateAction<N[]>> = useCallback((action) => {
+    const currentDoc = docRef.current;
+    const currentNodesMap = nodesMapRef.current;
 
-      if (!currentDoc || !currentNodesMap) {
-        setNodesRaw(action);
-        return;
-      }
+    if (!currentDoc || !currentNodesMap) {
+      setNodesRaw(action);
+      return;
+    }
 
-      const prev = nodesRef.current;
-      const next = typeof action === "function" ? (action as (prev: N[]) => N[])(prev) : action;
+    const prev = nodesRef.current;
+    const next = typeof action === "function" ? (action as (prev: N[]) => N[])(prev) : action;
 
-      // Update React state immediately (optimistic)
-      setNodesRaw(next);
+    // Update React state immediately (optimistic)
+    setNodesRaw(next);
 
-      // Incremental diff: only nodes with changed reference identity
-      const now = Date.now();
-      const isRapidUpdate = now - lastNodeSyncRef.current < DRAG_THROTTLE_MS;
+    // Incremental diff: only nodes with changed reference identity
+    const now = Date.now();
+    const isRapidUpdate = now - lastNodeSyncRef.current < DRAG_THROTTLE_MS;
 
-      if (isRapidUpdate) {
-        // Buffer: accumulate prev/next for the throttled flush
-        if (!pendingPrevRef.current) pendingPrevRef.current = prev;
-        pendingNextRef.current = next;
+    if (isRapidUpdate) {
+      // Buffer: accumulate prev/next for the throttled flush
+      if (!pendingPrevRef.current) pendingPrevRef.current = prev;
+      pendingNextRef.current = next;
 
-        if (pendingNodeSyncRef.current) clearTimeout(pendingNodeSyncRef.current);
-        pendingNodeSyncRef.current = setTimeout(() => {
-          pendingNodeSyncRef.current = null;
-          lastNodeSyncRef.current = Date.now();
-          const p = pendingPrevRef.current!;
-          const n = pendingNextRef.current!;
-          pendingPrevRef.current = null;
-          pendingNextRef.current = null;
+      if (pendingNodeSyncRef.current) clearTimeout(pendingNodeSyncRef.current);
+      pendingNodeSyncRef.current = setTimeout(() => {
+        pendingNodeSyncRef.current = null;
+        lastNodeSyncRef.current = Date.now();
+        const p = pendingPrevRef.current!;
+        const n = pendingNextRef.current!;
+        pendingPrevRef.current = null;
+        pendingNextRef.current = null;
 
-          const { changed, added, removedIds } = diffNodes(p, n);
-          inLocalTxRef.current = true;
-          syncChangedNodes(changed, added, removedIds, nodesMapRef.current!);
-          inLocalTxRef.current = false;
-        }, DRAG_THROTTLE_MS);
-      } else {
-        lastNodeSyncRef.current = now;
-        const { changed, added, removedIds } = diffNodes(prev, next);
+        const { changed, added, removedIds } = diffNodes(p, n);
         inLocalTxRef.current = true;
-        syncChangedNodes(changed, added, removedIds, currentNodesMap);
+        syncChangedNodes(changed, added, removedIds, nodesMapRef.current!);
         inLocalTxRef.current = false;
-      }
-    },
-    [],
-  );
+      }, DRAG_THROTTLE_MS);
+    } else {
+      lastNodeSyncRef.current = now;
+      const { changed, added, removedIds } = diffNodes(prev, next);
+      inLocalTxRef.current = true;
+      syncChangedNodes(changed, added, removedIds, currentNodesMap);
+      inLocalTxRef.current = false;
+    }
+  }, []);
 
   // ─── Wrapped setEdges (STABLE IDENTITY, incremental diff) ──────────
 
-  const setEdges: React.Dispatch<React.SetStateAction<Edge[]>> = useCallback(
-    (action) => {
-      const currentDoc = docRef.current;
-      const currentEdgesMap = edgesMapRef.current;
+  const setEdges: React.Dispatch<React.SetStateAction<Edge[]>> = useCallback((action) => {
+    const currentDoc = docRef.current;
+    const currentEdgesMap = edgesMapRef.current;
 
-      if (!currentDoc || !currentEdgesMap) {
-        setEdgesRaw(action);
-        return;
-      }
+    if (!currentDoc || !currentEdgesMap) {
+      setEdgesRaw(action);
+      return;
+    }
 
-      const prev = edgesRef.current;
-      const next = typeof action === "function" ? (action as (prev: Edge[]) => Edge[])(prev) : action;
+    const prev = edgesRef.current;
+    const next = typeof action === "function" ? (action as (prev: Edge[]) => Edge[])(prev) : action;
 
-      setEdgesRaw(next);
+    setEdgesRaw(next);
 
-      const { changed, added, removedIds } = diffEdges(prev, next);
-      inLocalTxRef.current = true;
-      syncChangedEdges(changed, added, removedIds, currentEdgesMap);
-      inLocalTxRef.current = false;
-    },
-    [],
-  );
+    const { changed, added, removedIds } = diffEdges(prev, next);
+    inLocalTxRef.current = true;
+    syncChangedEdges(changed, added, removedIds, currentEdgesMap);
+    inLocalTxRef.current = false;
+  }, []);
 
   // ─── Cleanup pending sync on unmount ───────────────────────────────
 
@@ -191,8 +182,16 @@ export function useCollabState<N extends Node>(
     return () => {
       if (pendingNodeSyncRef.current) {
         clearTimeout(pendingNodeSyncRef.current);
-        if (nodesMapRef.current && docRef.current && pendingPrevRef.current && pendingNextRef.current) {
-          const { changed, added, removedIds } = diffNodes(pendingPrevRef.current, pendingNextRef.current);
+        if (
+          nodesMapRef.current &&
+          docRef.current &&
+          pendingPrevRef.current &&
+          pendingNextRef.current
+        ) {
+          const { changed, added, removedIds } = diffNodes(
+            pendingPrevRef.current,
+            pendingNextRef.current,
+          );
           syncChangedNodes(changed, added, removedIds, nodesMapRef.current);
         }
       }

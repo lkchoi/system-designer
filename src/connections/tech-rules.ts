@@ -410,12 +410,7 @@ export const TECH_RULES: readonly TechConnectionRule[] = [
       AWS_REGION: "{REGION}",
     },
     iac: {
-      iamActions: [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket",
-      ],
+      iamActions: ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
       cdkGrant: "grantReadWrite",
       pulumiGrant: "grantReadWrite",
     },
@@ -583,11 +578,7 @@ export const TECH_RULES: readonly TechConnectionRule[] = [
       BQ_DATASET: "{DATASET}",
     },
     iac: {
-      iamActions: [
-        "bigquery.tables.getData",
-        "bigquery.tables.updateData",
-        "bigquery.jobs.create",
-      ],
+      iamActions: ["bigquery.tables.getData", "bigquery.tables.updateData", "bigquery.jobs.create"],
     },
   },
   {

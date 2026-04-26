@@ -45,10 +45,7 @@ export function countNines(availability: number): string {
   return `${availability.toFixed(Math.max(2, nineCount + 2))}%`;
 }
 
-export function computeSla(
-  components: SlaComponent[],
-  mode: "series" | "parallel",
-): SlaResult {
+export function computeSla(components: SlaComponent[], mode: "series" | "parallel"): SlaResult {
   const composite = mode === "series" ? composeSeries(components) : composeParallel(components);
   const downtimeFraction = 1 - composite / 100;
   const downtimeMinutesPerMonth = downtimeFraction * MINUTES_PER_MONTH;

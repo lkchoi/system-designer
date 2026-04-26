@@ -16,8 +16,7 @@ interface RoomState {
   doc: Y.Doc;
 }
 
-const ROOM_TTL_MS =
-  parseInt(process.env.ROOM_TTL_HOURS ?? "24", 10) * 60 * 60 * 1000;
+const ROOM_TTL_MS = parseInt(process.env.ROOM_TTL_HOURS ?? "24", 10) * 60 * 60 * 1000;
 
 export class RoomManager {
   private rooms = new Map<string, RoomState>();
@@ -109,7 +108,9 @@ export class RoomManager {
         room.doc.destroy();
         this.rooms.delete(id);
         await deleteDoc(id);
-        console.log(`[rooms] cleaned up room ${id} (inactive ${Math.round((now - room.meta.lastActiveAt) / 3600000)}h)`);
+        console.log(
+          `[rooms] cleaned up room ${id} (inactive ${Math.round((now - room.meta.lastActiveAt) / 3600000)}h)`,
+        );
       }
     }
   }

@@ -26,21 +26,21 @@ See [Getting Started](docs/getting-started.md) for a walkthrough.
 
 ### User guides
 
-| Document | Description |
-|----------|-------------|
-| [Getting Started](docs/getting-started.md) | Build your first design, export, and run it locally |
-| [Components](docs/components.md) | All 18 component types with technologies, plan fields, and connection rules |
-| [Export Formats](docs/export-formats.md) | What each format produces, when to use it, and limitations |
-| [Patterns](docs/patterns.md) | 12 architectural patterns with node/edge descriptions |
-| [Tools](docs/tools.md) | 14 context-aware tools with inputs, outputs, and applicability |
+| Document                                   | Description                                                                 |
+| ------------------------------------------ | --------------------------------------------------------------------------- |
+| [Getting Started](docs/getting-started.md) | Build your first design, export, and run it locally                         |
+| [Components](docs/components.md)           | All 18 component types with technologies, plan fields, and connection rules |
+| [Export Formats](docs/export-formats.md)   | What each format produces, when to use it, and limitations                  |
+| [Patterns](docs/patterns.md)               | 12 architectural patterns with node/edge descriptions                       |
+| [Tools](docs/tools.md)                     | 14 context-aware tools with inputs, outputs, and applicability              |
 
 ### Developer guides
 
-| Document | Description |
-|----------|-------------|
-| [Architecture](docs/architecture.md) | System overview: registry, connections, converters, scaffold concerns |
-| [Extending](docs/extending.md) | How to add component types, technologies, export formats, client concerns, tools, and patterns |
-| [Testing](docs/testing.md) | Test architecture, coverage matrix, manual test scenarios |
+| Document                             | Description                                                                                    |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| [Architecture](docs/architecture.md) | System overview: registry, connections, converters, scaffold concerns                          |
+| [Extending](docs/extending.md)       | How to add component types, technologies, export formats, client concerns, tools, and patterns |
+| [Testing](docs/testing.md)           | Test architecture, coverage matrix, manual test scenarios                                      |
 
 ## Develop
 

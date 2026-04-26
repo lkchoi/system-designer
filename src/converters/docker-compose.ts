@@ -216,7 +216,12 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
     if (dep.data.componentType === "service" || dep.data.componentType === "serverless") {
       const sourceNode = design.nodes.find((n) => n.id === dep.nodeId);
       if (sourceNode) {
-        const serviceEnv = buildServiceEnv(sourceNode, edgeIndex, design.nodes, serviceNameByNodeId);
+        const serviceEnv = buildServiceEnv(
+          sourceNode,
+          edgeIndex,
+          design.nodes,
+          serviceNameByNodeId,
+        );
         if (Object.keys(serviceEnv).length > 0) envParts.push(serviceEnv);
       }
     }

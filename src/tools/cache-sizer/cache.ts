@@ -17,14 +17,8 @@ export interface CacheResult {
 }
 
 export function computeCache(inputs: CacheInputs): CacheResult {
-  const {
-    objectCount,
-    avgObjectSizeBytes,
-    ttlSeconds,
-    hitRate,
-    writeRate,
-    overheadPercent,
-  } = inputs;
+  const { objectCount, avgObjectSizeBytes, ttlSeconds, hitRate, writeRate, overheadPercent } =
+    inputs;
 
   const rawBytes = objectCount * avgObjectSizeBytes;
   const rawMemoryMB = rawBytes / (1024 * 1024);

@@ -1,10 +1,5 @@
 import { useState, useMemo } from "react";
-import {
-  computeSla,
-  formatDowntime,
-  COMMON_SLAS,
-  type SlaComponent,
-} from "./sla";
+import { computeSla, formatDowntime, COMMON_SLAS, type SlaComponent } from "./sla";
 
 interface Props {
   open: boolean;
@@ -25,7 +20,10 @@ export default function SlaCalculator({ open, onClose }: Props) {
   );
 
   const addComponent = () => {
-    setComponents((prev) => [...prev, { name: `Component ${prev.length + 1}`, availability: 99.9 }]);
+    setComponents((prev) => [
+      ...prev,
+      { name: `Component ${prev.length + 1}`, availability: 99.9 },
+    ]);
   };
 
   const removeComponent = (index: number) => {
@@ -33,9 +31,7 @@ export default function SlaCalculator({ open, onClose }: Props) {
   };
 
   const updateComponent = (index: number, partial: Partial<SlaComponent>) => {
-    setComponents((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, ...partial } : c)),
-    );
+    setComponents((prev) => prev.map((c, i) => (i === index ? { ...c, ...partial } : c)));
   };
 
   if (!open) return null;
@@ -48,7 +44,9 @@ export default function SlaCalculator({ open, onClose }: Props) {
       <div
         className="bg-surface border border-border rounded-xl w-[520px] max-w-[90vw] max-h-[85vh] flex flex-col shadow-[0_16px_50px_rgba(0,0,0,0.5)]"
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") onClose();
+        }}
       >
         <div className="flex items-center justify-between px-6 pt-5 shrink-0">
           <div className="flex items-center gap-4">
@@ -72,7 +70,16 @@ export default function SlaCalculator({ open, onClose }: Props) {
             className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
             onClick={onClose}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
           </button>
@@ -112,7 +119,14 @@ export default function SlaCalculator({ open, onClose }: Props) {
                   className="w-7 h-7 flex items-center justify-center rounded-md text-text-dim shrink-0 transition-all duration-150 hover:bg-surface-2 hover:text-[#ef4444]"
                   onClick={() => removeComponent(i)}
                 >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
                     <path d="M18 6L6 18M6 6l12 12" />
                   </svg>
                 </button>
@@ -124,7 +138,16 @@ export default function SlaCalculator({ open, onClose }: Props) {
             className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium text-accent bg-transparent transition-all duration-150 mt-2 hover:bg-accent-bg"
             onClick={addComponent}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
             Add Component

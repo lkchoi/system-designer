@@ -17,9 +17,7 @@ describe("ExportDialog", () => {
   };
 
   it("renders nothing when closed", () => {
-    const { container } = render(
-      <ExportDialog {...defaultProps} open={false} />,
-    );
+    const { container } = render(<ExportDialog {...defaultProps} open={false} />);
     expect(container.innerHTML).toBe("");
   });
 

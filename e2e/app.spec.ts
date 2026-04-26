@@ -12,8 +12,12 @@ async function dropOnCanvas(page: Page, type: string, clientX: number, clientY: 
       const el = document.querySelector(".react-flow__renderer")!;
       const dt = new DataTransfer();
       dt.setData("application/arkon", t);
-      el.dispatchEvent(new DragEvent("dragover", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
-      el.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }));
+      el.dispatchEvent(
+        new DragEvent("dragover", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }),
+      );
+      el.dispatchEvent(
+        new DragEvent("drop", { dataTransfer: dt, clientX: x, clientY: y, bubbles: true }),
+      );
     },
     { x: clientX, y: clientY, t: type },
   );

@@ -28,7 +28,9 @@ describe("analyzeShardKey", () => {
     const result = analyzeShardKey(candidate);
     expect(result.hotSpotRisk).toBeGreaterThan(50);
     expect(result.warnings.length).toBeGreaterThan(0);
-    expect(result.warnings.some((w) => w.includes("Temporal") || w.includes("Monotonic"))).toBe(true);
+    expect(result.warnings.some((w) => w.includes("Temporal") || w.includes("Monotonic"))).toBe(
+      true,
+    );
   });
 
   it("flags low cardinality", () => {
@@ -84,8 +86,20 @@ describe("analyzeShardKey", () => {
 
   it("overall score is between 0 and 100", () => {
     const candidates: ShardKeyCandidate[] = [
-      { name: "a", cardinality: "low", distribution: "skewed", queryPattern: "scatter", growthPattern: "monotonic" },
-      { name: "b", cardinality: "high", distribution: "uniform", queryPattern: "point", growthPattern: "random" },
+      {
+        name: "a",
+        cardinality: "low",
+        distribution: "skewed",
+        queryPattern: "scatter",
+        growthPattern: "monotonic",
+      },
+      {
+        name: "b",
+        cardinality: "high",
+        distribution: "uniform",
+        queryPattern: "point",
+        growthPattern: "random",
+      },
     ];
     for (const c of candidates) {
       const r = analyzeShardKey(c);

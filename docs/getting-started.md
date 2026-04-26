@@ -50,12 +50,12 @@ The generated `README.md` inside the bundle lists all service URLs and credentia
 
 The mode selector in the toolbar switches the properties panel's behavior:
 
-| Mode | Key | Purpose |
-|------|-----|---------|
-| Plan | `1` | Configure technologies, endpoints, plan fields |
-| Stress | `2` | Simulate failures and CAP theorem tradeoffs |
-| Monitor | `3` | Set node status, view health metrics |
-| Price | `4` | Analyze cost based on selected technologies |
+| Mode    | Key | Purpose                                        |
+| ------- | --- | ---------------------------------------------- |
+| Plan    | `1` | Configure technologies, endpoints, plan fields |
+| Stress  | `2` | Simulate failures and CAP theorem tradeoffs    |
+| Monitor | `3` | Set node status, view health metrics           |
+| Price   | `4` | Analyze cost based on selected technologies    |
 
 ### Patterns
 
@@ -73,18 +73,18 @@ Designs are saved automatically to your browser's local storage (SQLite via OPFS
 
 Press `?` to see all shortcuts. Key bindings:
 
-| Shortcut | Action |
-|----------|--------|
-| `1` `2` `3` `4` | Switch modes |
-| `Cmd+E` | Export |
-| `Cmd+I` | Import |
-| `Cmd+Z` | Undo |
-| `Cmd+Shift+Z` | Redo |
-| `S` | Add sticky note |
-| `T` | Add text node |
-| `F` | Toggle flow path |
-| `B` | Toggle sidebar |
-| `C` | Capacity Calculator |
-| `R` | Cron Translator |
-| `/` | Filter sidebar |
-| `?` | Show all shortcuts |
+| Shortcut        | Action              |
+| --------------- | ------------------- |
+| `1` `2` `3` `4` | Switch modes        |
+| `Cmd+E`         | Export              |
+| `Cmd+I`         | Import              |
+| `Cmd+Z`         | Undo                |
+| `Cmd+Shift+Z`   | Redo                |
+| `S`             | Add sticky note     |
+| `T`             | Add text node       |
+| `F`             | Toggle flow path    |
+| `B`             | Toggle sidebar      |
+| `C`             | Capacity Calculator |
+| `R`             | Cron Translator     |
+| `/`             | Filter sidebar      |
+| `?`             | Show all shortcuts  |

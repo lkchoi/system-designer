@@ -18,11 +18,7 @@ describe("instantiatePattern", () => {
   describe("container-wrapped mode (no anchor)", () => {
     it("creates a container node plus child nodes for cache-aside", () => {
       counter = 0;
-      const { nodes, edges } = instantiatePattern(
-        "cache-aside",
-        { x: 500, y: 500 },
-        generateLabel,
-      );
+      const { nodes, edges } = instantiatePattern("cache-aside", { x: 500, y: 500 }, generateLabel);
       // cache-aside has 3 pattern nodes → container + 3 children
       expect(nodes).toHaveLength(4);
       expect(nodes[0].type).toBe("container");
@@ -99,12 +95,7 @@ describe("instantiatePattern", () => {
         componentType: "service" as ComponentType,
         position: { x: 200, y: 200 },
       };
-      const { nodes } = instantiatePattern(
-        "cache-aside",
-        { x: 0, y: 0 },
-        generateLabel,
-        anchor,
-      );
+      const { nodes } = instantiatePattern("cache-aside", { x: 0, y: 0 }, generateLabel, anchor);
       // Should create only 2 new nodes (cache and database), not the service
       expect(nodes).toHaveLength(2);
       const nodeIds = nodes.map((n) => n.id);
@@ -118,12 +109,7 @@ describe("instantiatePattern", () => {
         componentType: "service" as ComponentType,
         position: { x: 200, y: 200 },
       };
-      const { nodes } = instantiatePattern(
-        "cache-aside",
-        { x: 0, y: 0 },
-        generateLabel,
-        anchor,
-      );
+      const { nodes } = instantiatePattern("cache-aside", { x: 0, y: 0 }, generateLabel, anchor);
       expect(nodes.every((n) => n.type === "system")).toBe(true);
     });
 
@@ -134,12 +120,7 @@ describe("instantiatePattern", () => {
         componentType: "service" as ComponentType,
         position: { x: 200, y: 200 },
       };
-      const { edges } = instantiatePattern(
-        "cache-aside",
-        { x: 0, y: 0 },
-        generateLabel,
-        anchor,
-      );
+      const { edges } = instantiatePattern("cache-aside", { x: 0, y: 0 }, generateLabel, anchor);
       // Both edges should source from the anchor
       const sources = edges.map((e) => e.source);
       expect(sources.every((s) => s === "existing-svc")).toBe(true);
@@ -150,11 +131,7 @@ describe("instantiatePattern", () => {
     for (const pattern of BUILTIN_PATTERNS) {
       it(`${pattern.id} produces valid nodes and edges`, () => {
         counter = 0;
-        const { nodes, edges } = instantiatePattern(
-          pattern.id,
-          { x: 0, y: 0 },
-          generateLabel,
-        );
+        const { nodes, edges } = instantiatePattern(pattern.id, { x: 0, y: 0 }, generateLabel);
         // Container + children
         expect(nodes.length).toBe(pattern.nodes.length + 1);
         expect(edges.length).toBe(pattern.edges.length);

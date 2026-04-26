@@ -292,9 +292,4 @@ export function patchEdgesFromEvents(
 
 // ─── Bulk operations (kept for initial populate / full sync) ───────────
 
-export {
-  materializeNodes,
-  materializeEdges,
-  syncNodesToYMap,
-  syncEdgesToYMap,
-} from "./sync-bulk";
+export { materializeNodes, materializeEdges, syncNodesToYMap, syncEdgesToYMap } from "./sync-bulk";

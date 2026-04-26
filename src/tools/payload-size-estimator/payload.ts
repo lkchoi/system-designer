@@ -75,9 +75,9 @@ export function estimatePayloadSize(fields: PayloadField[]): PayloadResult {
     protobufBytes,
     msgpackBytes,
     gzipJsonBytes,
-    savingsProtobuf: jsonBytes > 0 ? ((1 - protobufBytes / jsonBytes) * 100) : 0,
-    savingsMsgpack: jsonBytes > 0 ? ((1 - msgpackBytes / jsonBytes) * 100) : 0,
-    savingsGzip: jsonBytes > 0 ? ((1 - gzipJsonBytes / jsonBytes) * 100) : 0,
+    savingsProtobuf: jsonBytes > 0 ? (1 - protobufBytes / jsonBytes) * 100 : 0,
+    savingsMsgpack: jsonBytes > 0 ? (1 - msgpackBytes / jsonBytes) * 100 : 0,
+    savingsGzip: jsonBytes > 0 ? (1 - gzipJsonBytes / jsonBytes) * 100 : 0,
   };
 }
 

@@ -6,7 +6,10 @@ import { EMPTY_SLOTS } from "./concerns/types";
 
 const PORT = 8080;
 
-export function scaffoldNodeService(req: ScaffoldRequest, slots: MergedSlots = EMPTY_SLOTS): ScaffoldResult {
+export function scaffoldNodeService(
+  req: ScaffoldRequest,
+  slots: MergedSlots = EMPTY_SLOTS,
+): ScaffoldResult {
   const dir = `services/${req.serviceName}`;
   const files: BundleFile[] = [
     { path: `${dir}/Dockerfile`, content: dockerfile() },
@@ -73,15 +76,16 @@ function indexJs(serviceName: string, endpoints: Endpoint[], slots: MergedSlots)
   const hasConcerns = slots.imports.length > 0 || slots.globals.length > 0;
   const concernImports = slots.imports.length > 0 ? "\n" + slots.imports.join("\n") : "";
   const concernGlobals = slots.globals.length > 0 ? "\n" + slots.globals.join("\n") : "";
-  const concernInit = slots.init.length > 0
-    ? "\n  // Initialize connections\n  " + slots.init.join("\n  ")
-    : "";
-  const concernShutdown = slots.shutdown.length > 0
-    ? `\n\nprocess.on("SIGTERM", async () => {\n  ${slots.shutdown.join("\n  ")}\n  process.exit(0);\n});`
-    : "";
-  const healthBody = slots.healthChecks.length > 0
-    ? `try {\n        ${slots.healthChecks.join("\n        ")}\n        return json(res, 200, { ok: true, uptimeMs: Date.now() - startedAt });\n      } catch (e) {\n        return json(res, 503, { ok: false, error: e.message });\n      }`
-    : "return json(res, 200, { ok: true, uptimeMs: Date.now() - startedAt });";
+  const concernInit =
+    slots.init.length > 0 ? "\n  // Initialize connections\n  " + slots.init.join("\n  ") : "";
+  const concernShutdown =
+    slots.shutdown.length > 0
+      ? `\n\nprocess.on("SIGTERM", async () => {\n  ${slots.shutdown.join("\n  ")}\n  process.exit(0);\n});`
+      : "";
+  const healthBody =
+    slots.healthChecks.length > 0
+      ? `try {\n        ${slots.healthChecks.join("\n        ")}\n        return json(res, 200, { ok: true, uptimeMs: Date.now() - startedAt });\n      } catch (e) {\n        return json(res, 503, { ok: false, error: e.message });\n      }`
+      : "return json(res, 200, { ok: true, uptimeMs: Date.now() - startedAt });";
 
   return `// Auto-scaffolded service. Implement business logic here.
 // The container's env vars are wired up automatically by the bundle generator

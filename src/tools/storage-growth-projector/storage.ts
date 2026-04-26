@@ -41,7 +41,7 @@ export function projectStorage(inputs: StorageInputs): StorageResult {
     // If retention is infinite (0 = no deletion), accumulate
     const cumulativeRawGB =
       retentionDays === 0
-        ? projections.reduce((sum, p) => sum + p.rawGB / (retentionDays || (month * 30 || 30)), 0) *
+        ? projections.reduce((sum, p) => sum + p.rawGB / (retentionDays || month * 30 || 30), 0) *
             30 +
           monthlyIngest
         : rawGB;

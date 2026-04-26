@@ -29,9 +29,7 @@ describe("estimatePayloadSize", () => {
   });
 
   it("gzip is smaller than raw JSON", () => {
-    const fields: PayloadField[] = [
-      { name: "name", type: "string", avgLength: 50 },
-    ];
+    const fields: PayloadField[] = [{ name: "name", type: "string", avgLength: 50 }];
     const r = estimatePayloadSize(fields);
     expect(r.gzipJsonBytes).toBeLessThan(r.jsonBytes);
     expect(r.savingsGzip).toBeGreaterThan(0);
@@ -43,9 +41,7 @@ describe("estimatePayloadSize", () => {
   });
 
   it("handles nested type", () => {
-    const r = estimatePayloadSize([
-      { name: "items", type: "nested", count: 10 },
-    ]);
+    const r = estimatePayloadSize([{ name: "items", type: "nested", count: 10 }]);
     expect(r.jsonBytes).toBeGreaterThan(0);
   });
 });

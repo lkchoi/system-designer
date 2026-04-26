@@ -80,7 +80,10 @@ describe("useFlowPath", () => {
     expect(result.current.saveName).toBe("");
     expect(result.current.saveDesc).toBe("");
     expect(result.current.showSaveForm).toBe(false);
-    expect(saveFlowPath).toHaveBeenCalledWith("d1", expect.objectContaining({ name: "Login Flow" }));
+    expect(saveFlowPath).toHaveBeenCalledWith(
+      "d1",
+      expect.objectContaining({ name: "Login Flow" }),
+    );
   });
 
   it("saveFlow does nothing when name is empty", () => {

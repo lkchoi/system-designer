@@ -87,7 +87,12 @@ describe("nodeToRecord / recordToNode", () => {
   it("restores JSON-parsed complex data fields", () => {
     const rec = nodeToRecord(sampleSystemNode);
     const restored = recordToNode(rec);
-    expect(restored.data.metrics).toEqual({ cpu: 45, memory: 60, requestsPerSec: 1200, latency: 12 });
+    expect(restored.data.metrics).toEqual({
+      cpu: 45,
+      memory: 60,
+      requestsPerSec: 1200,
+      latency: 12,
+    });
     expect(restored.data.endpoints).toEqual([{ id: "ep1", method: "GET", path: "/health" }]);
   });
 

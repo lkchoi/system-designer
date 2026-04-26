@@ -112,10 +112,7 @@ describe("SystemNode", () => {
   });
 
   it("shows OFFLINE overlay when stressFailure is down in stress mode", () => {
-    renderSystemNode(
-      { data: { stressFailure: "down" } },
-      { mode: "stress" },
-    );
+    renderSystemNode({ data: { stressFailure: "down" } }, { mode: "stress" });
     expect(screen.getByText("OFFLINE")).toBeInTheDocument();
   });
 

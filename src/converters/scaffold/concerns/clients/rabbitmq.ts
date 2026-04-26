@@ -8,13 +8,9 @@ export const rabbitmqConcern: ClientConcern = {
       deps: { amqplib: "^0.10.5" },
       imports: ['import amqp from "amqplib";'],
       globals: ["let amqpConn;"],
-      init: [
-        'amqpConn = await amqp.connect(process.env.RABBITMQ_URL ?? "amqp://localhost");',
-      ],
+      init: ['amqpConn = await amqp.connect(process.env.RABBITMQ_URL ?? "amqp://localhost");'],
       shutdown: ["if (amqpConn) await amqpConn.close();"],
-      healthChecks: [
-        'const ch = await amqpConn.createChannel(); await ch.close();',
-      ],
+      healthChecks: ["const ch = await amqpConn.createChannel(); await ch.close();"],
     },
     python: {
       deps: { pika: "1.3.2" },
@@ -28,7 +24,7 @@ export const rabbitmqConcern: ClientConcern = {
     },
     go: {
       deps: { "github.com/rabbitmq/amqp091-go": "v1.10.0" },
-      imports: ["amqp \"github.com/rabbitmq/amqp091-go\""],
+      imports: ['amqp "github.com/rabbitmq/amqp091-go"'],
       globals: ["var amqpConn *amqp.Connection"],
       init: [
         "{",
@@ -38,7 +34,9 @@ export const rabbitmqConcern: ClientConcern = {
         "}",
       ],
       shutdown: ["amqpConn.Close()"],
-      healthChecks: ["func() error { if amqpConn.IsClosed() { return fmt.Errorf(\"closed\") }; return nil }()"],
+      healthChecks: [
+        'func() error { if amqpConn.IsClosed() { return fmt.Errorf("closed") }; return nil }()',
+      ],
     },
   },
 };

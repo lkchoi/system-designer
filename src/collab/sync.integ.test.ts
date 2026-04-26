@@ -249,7 +249,13 @@ describe("undo manager isolation", () => {
     const node = makeNode("n1", "API");
     doc1.transact(() => {
       const entry = new Y.Map<unknown>();
-      for (const [k, v] of Object.entries({ id: "n1", type: "system", "position.x": 100, "position.y": 100, "data.label": "API" })) {
+      for (const [k, v] of Object.entries({
+        id: "n1",
+        type: "system",
+        "position.x": 100,
+        "position.y": 100,
+        "data.label": "API",
+      })) {
         entry.set(k, v);
       }
       nodesMap1.set("n1", entry);
@@ -260,7 +266,13 @@ describe("undo manager isolation", () => {
     // Client 2 adds another node
     doc2.transact(() => {
       const entry = new Y.Map<unknown>();
-      for (const [k, v] of Object.entries({ id: "n2", type: "system", "position.x": 200, "position.y": 200, "data.label": "DB" })) {
+      for (const [k, v] of Object.entries({
+        id: "n2",
+        type: "system",
+        "position.x": 200,
+        "position.y": 200,
+        "data.label": "DB",
+      })) {
         entry.set(k, v);
       }
       nodesMap2.set("n2", entry);

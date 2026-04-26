@@ -65,9 +65,7 @@ export function buildRing(nodes: RingNode[], vnodeCount: number, keys: string[])
   const counts = [...distribution.values()];
   const mean = counts.length > 0 ? counts.reduce((a, b) => a + b, 0) / counts.length : 0;
   const variance =
-    counts.length > 0
-      ? counts.reduce((sum, c) => sum + (c - mean) ** 2, 0) / counts.length
-      : 0;
+    counts.length > 0 ? counts.reduce((sum, c) => sum + (c - mean) ** 2, 0) / counts.length : 0;
   const standardDeviation = Math.sqrt(variance);
 
   return { vnodes, keys: placements, distribution, standardDeviation };

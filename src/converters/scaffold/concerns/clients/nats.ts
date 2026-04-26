@@ -12,7 +12,9 @@ export const natsConcern: ClientConcern = {
         'natsConn = await natsConnect({ servers: process.env.NATS_URL ?? "nats://localhost:4222" });',
       ],
       shutdown: ["if (natsConn) await natsConn.drain();"],
-      healthChecks: ['natsConn.status === "connected" || (() => { throw new Error("nats not connected"); })();'],
+      healthChecks: [
+        'natsConn.status === "connected" || (() => { throw new Error("nats not connected"); })();',
+      ],
     },
     python: {
       deps: { "nats-py": "2.9.0" },
@@ -36,7 +38,9 @@ export const natsConcern: ClientConcern = {
         "}",
       ],
       shutdown: ["natsConn.Drain()"],
-      healthChecks: ["func() error { if !natsConn.IsConnected() { return fmt.Errorf(\"nats disconnected\") }; return nil }()"],
+      healthChecks: [
+        'func() error { if !natsConn.IsConnected() { return fmt.Errorf("nats disconnected") }; return nil }()',
+      ],
     },
   },
 };

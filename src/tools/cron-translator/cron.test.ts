@@ -144,9 +144,7 @@ describe("cronToNatural", () => {
   });
 
   it("range of hours", () => {
-    expect(cronToNatural("0 9-17 * * *").text).toBe(
-      "Every hour from 9:00 AM to 5:00 PM",
-    );
+    expect(cronToNatural("0 9-17 * * *").text).toBe("Every hour from 9:00 AM to 5:00 PM");
   });
 
   it("with weekday", () => {
@@ -161,15 +159,11 @@ describe("cronToNatural", () => {
 
   it("with month", () => {
     expect(cronToNatural("0 0 1 1 *").text).toBe("At 12:00 AM on the 1st in January");
-    expect(cronToNatural("0 0 * 3-6 *").text).toBe(
-      "At 12:00 AM from March to June",
-    );
+    expect(cronToNatural("0 0 * 3-6 *").text).toBe("At 12:00 AM from March to June");
   });
 
   it("with multiple day-of-week values", () => {
-    expect(cronToNatural("0 9 * * 1,3,5").text).toBe(
-      "At 9:00 AM on Monday, Wednesday and Friday",
-    );
+    expect(cronToNatural("0 9 * * 1,3,5").text).toBe("At 9:00 AM on Monday, Wednesday and Friday");
   });
 
   it("fallback for step+step", () => {
@@ -266,15 +260,11 @@ describe("naturalToCron", () => {
   it("with DOW suffix", () => {
     expect(naturalToCron("at 9:00 am on weekdays").cron).toBe("0 9 * * 1-5");
     expect(naturalToCron("at 9:00 am on monday").cron).toBe("0 9 * * 1");
-    expect(naturalToCron("every 5 minutes on monday through friday").cron).toBe(
-      "*/5 * * * 1-5",
-    );
+    expect(naturalToCron("every 5 minutes on monday through friday").cron).toBe("*/5 * * * 1-5");
   });
 
   it("with DOW list suffix", () => {
-    expect(naturalToCron("at 9:00 am on monday, wednesday and friday").cron).toBe(
-      "0 9 * * 1,3,5",
-    );
+    expect(naturalToCron("at 9:00 am on monday, wednesday and friday").cron).toBe("0 9 * * 1,3,5");
   });
 
   it("with DOM suffix", () => {

@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  composeSeries,
-  composeParallel,
-  countNines,
-  computeSla,
-  formatDowntime,
-} from "./sla";
+import { composeSeries, composeParallel, countNines, computeSla, formatDowntime } from "./sla";
 
 describe("composeSeries", () => {
   it("returns 100 for empty array", () => {

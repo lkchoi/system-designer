@@ -5,9 +5,7 @@ import HotkeyHelpOverlay from "./HotkeyHelpOverlay";
 
 describe("HotkeyHelpOverlay", () => {
   it("renders nothing when closed", () => {
-    const { container } = render(
-      <HotkeyHelpOverlay open={false} onClose={() => {}} />,
-    );
+    const { container } = render(<HotkeyHelpOverlay open={false} onClose={() => {}} />);
     expect(container.innerHTML).toBe("");
   });
 
@@ -18,7 +16,15 @@ describe("HotkeyHelpOverlay", () => {
 
   it("renders all hotkey categories", () => {
     render(<HotkeyHelpOverlay open onClose={() => {}} />);
-    for (const category of ["Mode", "Canvas", "Flow Path", "Panels", "Quick Add", "Tools", "Help"]) {
+    for (const category of [
+      "Mode",
+      "Canvas",
+      "Flow Path",
+      "Panels",
+      "Quick Add",
+      "Tools",
+      "Help",
+    ]) {
       expect(screen.getByText(category)).toBeInTheDocument();
     }
   });

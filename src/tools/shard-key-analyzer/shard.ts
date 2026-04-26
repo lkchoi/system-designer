@@ -46,9 +46,10 @@ export function analyzeShardKey(candidate: ShardKeyCandidate): ShardKeyScore {
   const distHotspot = DISTRIBUTION_HOTSPOT[candidate.distribution];
   const growthHotspot = GROWTH_HOTSPOT[candidate.growthPattern];
   const cardinalityPenalty = candidate.cardinality === "low" ? 30 : 0;
-  const hotSpotRisk = Math.min(100, Math.round(
-    distHotspot * 0.4 + growthHotspot * 0.4 + cardinalityPenalty * 0.2,
-  ));
+  const hotSpotRisk = Math.min(
+    100,
+    Math.round(distHotspot * 0.4 + growthHotspot * 0.4 + cardinalityPenalty * 0.2),
+  );
 
   // Cross-shard query risk
   const crossShardQueryRisk = QUERY_CROSS_SHARD[candidate.queryPattern];
@@ -59,9 +60,7 @@ export function analyzeShardKey(candidate: ShardKeyCandidate): ShardKeyScore {
 
   // Overall: weighted average
   const overallScore = Math.round(
-    (100 - hotSpotRisk) * 0.35 +
-    (100 - crossShardQueryRisk) * 0.35 +
-    scalabilityScore * 0.3,
+    (100 - hotSpotRisk) * 0.35 + (100 - crossShardQueryRisk) * 0.35 + scalabilityScore * 0.3,
   );
 
   // Warnings
@@ -69,19 +68,29 @@ export function analyzeShardKey(candidate: ShardKeyCandidate): ShardKeyScore {
     warnings.push("Low cardinality limits maximum shard count — data cannot be split finely");
   }
   if (candidate.distribution === "skewed") {
-    warnings.push("Skewed distribution causes hot shards — a few keys will receive disproportionate traffic");
+    warnings.push(
+      "Skewed distribution causes hot shards — a few keys will receive disproportionate traffic",
+    );
   }
   if (candidate.distribution === "temporal") {
-    warnings.push("Temporal distribution routes recent writes to a single shard — consider adding a random suffix");
+    warnings.push(
+      "Temporal distribution routes recent writes to a single shard — consider adding a random suffix",
+    );
   }
   if (candidate.growthPattern === "monotonic") {
-    warnings.push("Monotonically increasing keys (e.g. auto-increment, timestamp) cause write-hot-spot on the last shard");
+    warnings.push(
+      "Monotonically increasing keys (e.g. auto-increment, timestamp) cause write-hot-spot on the last shard",
+    );
   }
   if (candidate.queryPattern === "scatter") {
-    warnings.push("Scatter queries touch all shards — consider denormalizing or adding a secondary index");
+    warnings.push(
+      "Scatter queries touch all shards — consider denormalizing or adding a secondary index",
+    );
   }
   if (candidate.queryPattern === "range" && candidate.distribution === "uniform") {
-    warnings.push("Range queries on a hash-distributed key require scanning all shards — consider range-based sharding instead");
+    warnings.push(
+      "Range queries on a hash-distributed key require scanning all shards — consider range-based sharding instead",
+    );
   }
 
   // Recommendation

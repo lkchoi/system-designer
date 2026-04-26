@@ -7,10 +7,10 @@ export const redisConcern: ClientConcern = {
     node: {
       deps: { ioredis: "^5.4.1" },
       imports: ['import Redis from "ioredis";'],
-      globals: ['const redis = new Redis(process.env.REDIS_URL);'],
+      globals: ["const redis = new Redis(process.env.REDIS_URL);"],
       init: [],
       shutdown: ["await redis.quit();"],
-      healthChecks: ['await redis.ping();'],
+      healthChecks: ["await redis.ping();"],
     },
     python: {
       deps: { redis: "5.2.1" },

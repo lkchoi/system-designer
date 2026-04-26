@@ -8,11 +8,11 @@ export const mongodbConcern: ClientConcern = {
       deps: { mongodb: "^6.12.0" },
       imports: ['import { MongoClient } from "mongodb";'],
       globals: [
-        "const mongoClient = new MongoClient(process.env.MONGO_URL ?? \"mongodb://localhost:27017\");",
+        'const mongoClient = new MongoClient(process.env.MONGO_URL ?? "mongodb://localhost:27017");',
       ],
       init: ["await mongoClient.connect();"],
       shutdown: ["await mongoClient.close();"],
-      healthChecks: ['await mongoClient.db().command({ ping: 1 });'],
+      healthChecks: ["await mongoClient.db().command({ ping: 1 });"],
     },
     python: {
       deps: { pymongo: "4.10.1" },

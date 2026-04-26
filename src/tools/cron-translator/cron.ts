@@ -398,9 +398,7 @@ export function naturalToCron(input: string): NaturalToCronResult {
     minField = "0";
     hourField = "0";
     if (domField === "*") domField = "1";
-  } else if (
-    (m = s.match(/^(?:monthly|every\s+month)\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?$/))
-  ) {
+  } else if ((m = s.match(/^(?:monthly|every\s+month)\s+on\s+the\s+(\d{1,2})(?:st|nd|rd|th)?$/))) {
     minField = "0";
     hourField = "0";
     domField = m[1];

@@ -9,11 +9,7 @@ import { createContext, useContext, useState, useCallback, useRef } from "react"
 import * as Y from "yjs";
 import type { ReactNode } from "react";
 import type { WebsocketProvider } from "y-websocket";
-import {
-  connectToRoom,
-  type ConnectionStatus,
-  type CollabConnection,
-} from "./connection";
+import { connectToRoom, type ConnectionStatus, type CollabConnection } from "./connection";
 import { createRoom, clearRoomFromUrl } from "./roomApi";
 
 export interface CollabContextValue {
