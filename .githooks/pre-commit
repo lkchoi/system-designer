@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# Pre-commit checks: lint, format, typecheck, unit tests, docs freshness.
+set -euo pipefail
+
+# Only check staged files for lint/format (full test suite still runs)
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+has_ts=false
+has_docs_trigger=false
+
+for f in $staged; do
+  case "$f" in
+    *.ts|*.tsx) has_ts=true ;;
+  esac
+  case "$f" in
+    src/tools/*|src/registry/*|src/types.ts|src/hotkeys.ts|src/converters/*) has_docs_trigger=true ;;
+  esac
+done
+
+# --- 1. Lint ---
+if $has_ts; then
+  echo "→ Linting..."
+  bunx oxlint . --quiet || {
+    echo ""
+    echo "ERROR: Lint errors found. Fix them before committing."
+    exit 1
+  }
+fi
+
+# --- 2. Format check ---
+if $has_ts; then
+  echo "→ Checking format..."
+  # oxfmt doesn't have a --check flag, so format and check for changes
+  bunx oxfmt .
+  if ! git diff --quiet -- '*.ts' '*.tsx'; then
+    echo ""
+    echo "ERROR: Files were reformatted by oxfmt. Stage the changes and retry."
+    echo ""
+    git diff --name-only -- '*.ts' '*.tsx'
+    exit 1
+  fi
+fi
+
+# --- 3. Type check ---
+if $has_ts; then
+  echo "→ Type checking..."
+  bunx tsc --noEmit || {
+    echo ""
+    echo "ERROR: TypeScript type errors found."
+    exit 1
+  }
+fi
+
+# --- 4. Unit tests ---
+if $has_ts; then
+  echo "→ Running unit tests..."
+  bunx vitest run src/ --exclude '.claude/**' --reporter=dot || {
+    echo ""
+    echo "ERROR: Unit tests failed."
+    exit 1
+  }
+fi
+
+# --- 5. Docs freshness check ---
+if $has_docs_trigger; then
+  echo "→ Checking docs freshness..."
+
+  # Tool count in docs/tools.md should match registry
+  tool_count_docs=$(grep -c '^## ' docs/tools.md 2>/dev/null || echo 0)
+  tool_count_code=$(grep -c "^  {" src/tools/index.ts 2>/dev/null || echo 0)
+
+  if [ "$tool_count_docs" -ne "$tool_count_code" ]; then
+    echo ""
+    echo "WARNING: docs/tools.md lists $tool_count_docs tools but src/tools/index.ts has $tool_count_code."
+    echo "Consider updating docs/tools.md."
+    echo ""
+    # Warning only, don't block the commit
+  fi
+
+  # Check if hotkeys.ts changed but HotkeyHelpOverlay wasn't updated
+  if echo "$staged" | grep -q 'src/hotkeys.ts'; then
+    if ! echo "$staged" | grep -q 'HotkeyHelpOverlay\|docs/'; then
+      echo "NOTE: src/hotkeys.ts changed — verify the hotkey overlay and docs are up to date."
+    fi
+  fi
+
+  # Check if a new tool directory was added but docs/tools.md wasn't updated
+  new_tool_dirs=$(echo "$staged" | grep '^src/tools/[^/]*/[^/]*$' | sed 's|src/tools/\([^/]*\)/.*|\1|' | sort -u)
+  if [ -n "$new_tool_dirs" ]; then
+    for dir in $new_tool_dirs; do
+      if ! grep -qi "$dir" docs/tools.md 2>/dev/null; then
+        echo "NOTE: New tool directory src/tools/$dir/ — consider adding it to docs/tools.md."
+      fi
+    done
+  fi
+fi
+
+echo "✓ All pre-commit checks passed."

@@ -16,7 +16,8 @@
     "pricing:fetch": "npx tsx scripts/pricing/run.ts",
     "pricing:list": "npx tsx scripts/pricing/run.ts --list",
     "export": "bun run scripts/export-design.ts",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
