@@ -182,7 +182,7 @@ export function diffEdges(
  * state (selected, dragging) on patched nodes.
  */
 export function patchNodesFromEvents<N extends Node>(
-  events: Y.YEvent<unknown>[],
+  events: Y.YEvent<Y.AbstractType<any>>[],
   nodesMap: Y.Map<Y.Map<unknown>>,
   currentNodes: N[],
 ): N[] {
@@ -242,7 +242,7 @@ export function patchNodesFromEvents<N extends Node>(
  * Incrementally patch the edges array based on Y.Doc change events.
  */
 export function patchEdgesFromEvents(
-  events: Y.YEvent<unknown>[],
+  events: Y.YEvent<Y.AbstractType<any>>[],
   edgesMap: Y.Map<Y.Map<unknown>>,
   currentEdges: Edge[],
 ): Edge[] {

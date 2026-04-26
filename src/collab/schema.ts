@@ -97,8 +97,8 @@ export function recordToNode(rec: Record<string, unknown>): Node {
 
   if (rec["style.width"] != null || rec["style.height"] != null) {
     node.style = {
-      ...(rec["style.width"] != null ? { width: rec["style.width"] } : {}),
-      ...(rec["style.height"] != null ? { height: rec["style.height"] } : {}),
+      ...(rec["style.width"] != null ? { width: rec["style.width"] as number } : {}),
+      ...(rec["style.height"] != null ? { height: rec["style.height"] as number } : {}),
     };
   }
 

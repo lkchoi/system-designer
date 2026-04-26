@@ -192,7 +192,6 @@ export default function ConsistentHashingVisualizer({ open, onClose }: Props) {
                 ring.vnodes.map((vn, i) => {
                   const next = ring.vnodes[(i + 1) % ring.vnodes.length];
                   const startAngle = vn.position * 360 - 90;
-                  const endAngle = next.position * 360 - 90;
                   const sweep =
                     i === ring.vnodes.length - 1
                       ? 360 - (vn.position - next.position) * 360

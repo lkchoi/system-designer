@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { excalidrawConverter } from "./excalidraw";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -72,12 +73,12 @@ describe("excalidraw converter — export", () => {
     source: string;
     elements: Array<Record<string, unknown>>;
   } {
-    const json = excalidrawConverter.exportDesign(design).content as string;
+    const json = (excalidrawConverter.exportDesign(design) as ExportResult).content as string;
     return JSON.parse(json);
   }
 
   it("returns .excalidraw filename with application/json mimeType", () => {
-    const result = excalidrawConverter.exportDesign(SAMPLE_DESIGN);
+    const result = excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("TestDesign.excalidraw");
     expect(result.mimeType).toBe("application/json");
   });
@@ -160,7 +161,8 @@ describe("excalidraw converter — export", () => {
 
 describe("excalidraw converter — import", () => {
   it("round-trips a design through export then import", () => {
-    const exported = excalidrawConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = excalidrawConverter.importDesign!(exported);
     expect(imported.name).toBe("Imported from Excalidraw");
     expect(imported.nodes.length).toBeGreaterThan(0);
@@ -168,35 +170,40 @@ describe("excalidraw converter — import", () => {
   });
 
   it("recovers system nodes from rectangles", () => {
-    const exported = excalidrawConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = excalidrawConverter.importDesign!(exported);
     const systemNodes = imported.nodes.filter((n) => n.type === "system");
     expect(systemNodes.length).toBeGreaterThanOrEqual(2);
   });
 
   it("recovers container nodes from dashed rectangles", () => {
-    const exported = excalidrawConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = excalidrawConverter.importDesign!(exported);
     const containers = imported.nodes.filter((n) => n.type === "container");
     expect(containers.length).toBe(1);
   });
 
   it("recovers sticky notes from colored rectangles", () => {
-    const exported = excalidrawConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = excalidrawConverter.importDesign!(exported);
     const stickies = imported.nodes.filter((n) => n.type === "sticky");
     expect(stickies.length).toBe(1);
   });
 
   it("recovers text nodes from standalone text elements", () => {
-    const exported = excalidrawConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = excalidrawConverter.importDesign!(exported);
     const textNodes = imported.nodes.filter((n) => n.type === "text");
     expect(textNodes.length).toBe(1);
   });
 
   it("recovers edges from arrows with bindings", () => {
-    const exported = excalidrawConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (excalidrawConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = excalidrawConverter.importDesign!(exported);
     expect(imported.edges.length).toBe(1);
     expect(imported.edges[0].source).toBe("svc");

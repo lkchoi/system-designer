@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { cloudformationConverter } from "./cloudformation";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -101,26 +102,29 @@ const SAMPLE_DESIGN: DesignJSON = {
 
 describe("cloudformation converter — export", () => {
   it("returns a YAML filename with text/yaml mimeType", () => {
-    const result = cloudformationConverter.exportDesign(SAMPLE_DESIGN);
+    const result = cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("OrdersPlatform-template.yaml");
     expect(result.mimeType).toBe("text/yaml");
   });
 
   it("includes AWSTemplateFormatVersion and Description", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("AWSTemplateFormatVersion: '2010-09-09'");
     expect(yaml).toContain("Generated from system design: OrdersPlatform");
   });
 
   it("generates AWS::RDS::DBInstance for a PostgreSQL database", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::RDS::DBInstance");
     expect(yaml).toContain("Engine: postgres");
     expect(yaml).toContain("DBInstanceClass: db.t3.medium");
   });
 
   it("generates AWS::DynamoDB::Table with shard key as range key", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::DynamoDB::Table");
     expect(yaml).toContain("BillingMode: PAY_PER_REQUEST");
     expect(yaml).toContain("AttributeName: userId");
@@ -128,41 +132,48 @@ describe("cloudformation converter — export", () => {
   });
 
   it("generates AWS::S3::Bucket", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::S3::Bucket");
   });
 
   it("generates AWS::Lambda::Function", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::Lambda::Function");
     expect(yaml).toContain("Runtime: nodejs20.x");
     expect(yaml).toContain("MemorySize: 256");
   });
 
   it("generates AWS::SQS::Queue", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::SQS::Queue");
     expect(yaml).toContain("VisibilityTimeout: 30");
   });
 
   it("generates AWS::ElastiCache::CacheCluster for Redis", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::ElastiCache::CacheCluster");
     expect(yaml).toContain("Engine: redis");
   });
 
   it("generates AWS::ApiGateway::RestApi", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("Type: AWS::ApiGateway::RestApi");
   });
 
   it("injects description as a comment above the resource", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("# Primary OLTP store");
   });
 
   it("stores arkon metadata on resources", () => {
-    const yaml = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("arkon:nodeId: db");
     expect(yaml).toContain("arkon:componentType: database");
   });
@@ -189,7 +200,7 @@ describe("cloudformation converter — export", () => {
       viewport: { x: 0, y: 0, zoom: 1 },
       flowPaths: [],
     };
-    const yaml = cloudformationConverter.exportDesign(design).content as string;
+    const yaml = (cloudformationConverter.exportDesign(design) as ExportResult).content as string;
     expect(yaml).toContain("Engine: mysql");
   });
 
@@ -202,7 +213,7 @@ describe("cloudformation converter — export", () => {
       viewport: { x: 0, y: 0, zoom: 1 },
       flowPaths: [],
     };
-    const yaml = cloudformationConverter.exportDesign(empty).content as string;
+    const yaml = (cloudformationConverter.exportDesign(empty) as ExportResult).content as string;
     expect(yaml).toContain("AWSTemplateFormatVersion");
     expect(yaml).toContain("Resources: {}");
   });
@@ -210,14 +221,16 @@ describe("cloudformation converter — export", () => {
 
 describe("cloudformation converter — import", () => {
   it("round-trips a design through export then import", () => {
-    const exported = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = cloudformationConverter.importDesign!(exported);
     expect(imported.name).toBe("Imported from CloudFormation");
     expect(imported.nodes.length).toBeGreaterThan(0);
   });
 
   it("recovers node IDs from metadata", () => {
-    const exported = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = cloudformationConverter.importDesign!(exported);
     const nodeIds = imported.nodes.map((n) => n.id);
     expect(nodeIds).toContain("db");
@@ -225,7 +238,8 @@ describe("cloudformation converter — import", () => {
   });
 
   it("maps CFN resource type back to correct componentType", () => {
-    const exported = cloudformationConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (cloudformationConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = cloudformationConverter.importDesign!(exported);
     const s3Node = imported.nodes.find((n) => n.id === "bucket");
     expect(s3Node).toBeDefined();

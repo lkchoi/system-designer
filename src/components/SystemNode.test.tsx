@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SystemNode from "./SystemNode";
+// @ts-expect-error — mock export from __mocks__/@xyflow/react
 import { __mockReactFlow } from "@xyflow/react";
 import { renderWithProviders } from "../test-utils";
 import type { SystemNodeData } from "../types";
@@ -130,6 +131,7 @@ describe("SystemNode", () => {
           effectiveCapacity: 30,
           queueDepth: 500,
           reason: "backpressure" as const,
+          explanation: "Backpressure from downstream",
         },
       ],
     ]);

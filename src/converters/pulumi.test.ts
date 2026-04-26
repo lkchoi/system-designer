@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { pulumiConverter } from "./pulumi";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -76,7 +77,7 @@ const SAMPLE_DESIGN: DesignJSON = {
 
 describe("pulumi converter", () => {
   it("returns a .ts filename", () => {
-    const result = pulumiConverter.exportDesign(SAMPLE_DESIGN);
+    const result = pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("OrdersPlatform-index.ts");
     expect(result.mimeType).toBe("text/typescript");
   });
@@ -86,45 +87,45 @@ describe("pulumi converter", () => {
   });
 
   it("imports pulumi and aws packages", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain('import * as aws from "@pulumi/aws"');
     expect(ts).toContain('import * as pulumi from "@pulumi/pulumi"');
   });
 
   it("generates an rds.Instance for PostgreSQL", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain('new aws.rds.Instance("OrdersDB"');
     expect(ts).toContain('engine: "postgres"');
     expect(ts).toContain('engineVersion: "16"');
   });
 
   it("generates a dynamodb.Table with custom hash key", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain('new aws.dynamodb.Table("SessionTable"');
     expect(ts).toContain('hashKey: "userId"');
   });
 
   it("generates an s3.Bucket", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain('new aws.s3.Bucket("Uploads"');
     expect(ts).toContain('bucketPrefix: "uploads"');
   });
 
   it("generates a lambda.Function", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain('new aws.lambda.Function("ImageResizer"');
     expect(ts).toContain('runtime: "nodejs20.x"');
     expect(ts).toContain("memorySize: 256");
   });
 
   it("generates an elasticache.Cluster for Redis", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain('new aws.elasticache.Cluster("Sessions"');
     expect(ts).toContain('engine: "redis"');
   });
 
   it("adds description as a comment", () => {
-    const ts = pulumiConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const ts = (pulumiConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(ts).toContain("// Primary store");
   });
 
@@ -137,7 +138,7 @@ describe("pulumi converter", () => {
       viewport: { x: 0, y: 0, zoom: 1 },
       flowPaths: [],
     };
-    const ts = pulumiConverter.exportDesign(empty).content as string;
+    const ts = (pulumiConverter.exportDesign(empty) as ExportResult).content as string;
     expect(ts).toContain("@pulumi/pulumi");
     expect(ts).not.toContain("new aws.");
   });

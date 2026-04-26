@@ -11,7 +11,7 @@ function setup() {
   const resetStress = vi.fn();
   const setStressConfig = vi.fn((updater: (prev: StressConfig) => StressConfig) =>
     updater(defaultConfig),
-  );
+  ) as unknown as React.Dispatch<React.SetStateAction<StressConfig>>;
 
   const hook = renderHook(() =>
     useStressRecording(onUpdateNodeData, onUpdateEdgeData, resetStress, setStressConfig),

@@ -13,7 +13,7 @@ import { useReactFlow, useViewport } from "@xyflow/react";
 import { useAwareness, type UserPresence } from "./useAwareness";
 
 export function CursorOverlay() {
-  const { remoteUsers, setCursor, setSelectedNode } = useAwareness();
+  const { remoteUsers, setCursor } = useAwareness();
   const { screenToFlowPosition } = useReactFlow();
   const paneRef = useRef<Element | null>(null);
 

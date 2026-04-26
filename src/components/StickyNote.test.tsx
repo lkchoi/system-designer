@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import StickyNote from "./StickyNote";
+// @ts-expect-error — mock export from __mocks__/@xyflow/react
 import { __mockReactFlow } from "@xyflow/react";
 import { STICKY_COLORS } from "../types";
 

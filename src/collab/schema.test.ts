@@ -138,11 +138,11 @@ describe("edgeToRecord / recordToEdge", () => {
     expect(restored.source).toBe("node-1");
     expect(restored.target).toBe("node-2");
     expect(restored.type).toBe("labeled");
-    expect(restored.data.label).toBe("queries");
-    expect(restored.data.protocol).toBe("HTTP");
-    expect(restored.data.format).toBe("JSON");
-    expect(restored.data.partitioned).toBe(false);
-    expect(restored.data.simulatedLatency).toBe(0);
+    expect(restored.data!.label).toBe("queries");
+    expect(restored.data!.protocol).toBe("HTTP");
+    expect(restored.data!.format).toBe("JSON");
+    expect(restored.data!.partitioned).toBe(false);
+    expect(restored.data!.simulatedLatency).toBe(0);
   });
 
   it("handles edge with sourceHandle/targetHandle", () => {
@@ -215,7 +215,7 @@ describe("edgesToYMap / yMapToEdges", () => {
 
     expect(restored).toHaveLength(1);
     expect(restored[0].id).toBe("edge-1");
-    expect(restored[0].data.protocol).toBe("HTTP");
+    expect(restored[0].data!.protocol).toBe("HTTP");
   });
 });
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import TextNode from "./TextNode";
+// @ts-expect-error — mock export from __mocks__/@xyflow/react
 import { __mockReactFlow } from "@xyflow/react";
 
 vi.mock("@xyflow/react");

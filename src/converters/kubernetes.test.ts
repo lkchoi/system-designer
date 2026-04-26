@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { kubernetesConverter } from "./kubernetes";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -90,70 +91,79 @@ const SAMPLE_DESIGN: DesignJSON = {
 
 describe("kubernetes converter — export", () => {
   it("returns a YAML filename and text/yaml mimeType", () => {
-    const result = kubernetesConverter.exportDesign(SAMPLE_DESIGN);
+    const result = kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("OrdersPlatform-manifests.yaml");
     expect(result.mimeType).toBe("text/yaml");
   });
 
   it("creates a Namespace document from the design name", () => {
-    const result = kubernetesConverter.exportDesign(SAMPLE_DESIGN);
+    const result = kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     const yaml = result.content as string;
     expect(yaml).toContain("kind: Namespace");
     expect(yaml).toContain("name: ordersplatform");
   });
 
   it("generates a StatefulSet for a database node", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("kind: StatefulSet");
     expect(yaml).toContain("image: postgres:17-alpine");
     expect(yaml).toContain("name: ordersdb");
   });
 
   it("generates a Deployment for a service node", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toMatch(/kind: Deployment/);
     expect(yaml).toContain("image: node:22-alpine");
     expect(yaml).toContain("name: api");
   });
 
   it("generates a Deployment for a cache node", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("image: redis:8-alpine");
     expect(yaml).toContain("name: sessions");
   });
 
   it("pairs each workload with a ClusterIP Service", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("kind: Service");
     expect(yaml).toContain("type: ClusterIP");
   });
 
   it("generates an Ingress for an api-gateway node", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("kind: Ingress");
     expect(yaml).toContain("name: edge-gateway");
   });
 
   it("generates a CronJob for a cron node with its schedule", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("kind: CronJob");
     expect(yaml).toContain("schedule: 0 3 * * *");
     expect(yaml).toContain("name: cleanup-job");
   });
 
   it("generates a NetworkPolicy for a firewall node", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("kind: NetworkPolicy");
     expect(yaml).toContain("name: waf-policy");
   });
 
   it("adds description as an annotation", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("description: Public REST surface");
   });
 
   it("includes arkon/component-type labels on workloads", () => {
-    const yaml = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const yaml = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(yaml).toContain("arkon/component-type: service");
     expect(yaml).toContain("arkon/component-type: database");
   });
@@ -167,7 +177,7 @@ describe("kubernetes converter — export", () => {
       viewport: { x: 0, y: 0, zoom: 1 },
       flowPaths: [],
     };
-    const yaml = kubernetesConverter.exportDesign(empty).content as string;
+    const yaml = (kubernetesConverter.exportDesign(empty) as ExportResult).content as string;
     expect(yaml).toContain("kind: Namespace");
     // Only the namespace doc, no workloads
     expect(yaml).not.toContain("kind: Deployment");
@@ -208,7 +218,7 @@ describe("kubernetes converter — export", () => {
       viewport: { x: 0, y: 0, zoom: 1 },
       flowPaths: [],
     };
-    const yaml = kubernetesConverter.exportDesign(design).content as string;
+    const yaml = (kubernetesConverter.exportDesign(design) as ExportResult).content as string;
     expect(yaml).toContain("name: api\n");
     expect(yaml).toContain("name: api-2\n");
   });
@@ -235,14 +245,15 @@ describe("kubernetes converter — export", () => {
       viewport: { x: 0, y: 0, zoom: 1 },
       flowPaths: [],
     };
-    const yaml = kubernetesConverter.exportDesign(design).content as string;
+    const yaml = (kubernetesConverter.exportDesign(design) as ExportResult).content as string;
     expect(yaml).toContain("replicas: 3");
   });
 });
 
 describe("kubernetes converter — import", () => {
   it("round-trips a design through export then import", () => {
-    const exported = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = kubernetesConverter.importDesign!(exported);
     expect(imported.name).toBe("Imported from Kubernetes");
     // Should recover nodes for workloads (not namespace or service docs)
@@ -250,7 +261,8 @@ describe("kubernetes converter — import", () => {
   });
 
   it("recovers component type from arkon label", () => {
-    const exported = kubernetesConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (kubernetesConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = kubernetesConverter.importDesign!(exported);
     const dbNode = imported.nodes.find((n) => n.id === "ordersdb");
     expect(dbNode).toBeDefined();

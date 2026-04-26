@@ -1,11 +1,11 @@
 import yaml from "js-yaml";
-import type { ConverterModule } from "./types";
+import type { ConverterModule, ExportResult } from "./types";
 import type { DesignJSON } from "../db/io";
 import { cloudformationConverter } from "./cloudformation";
 
 function exportToLocalStack(design: DesignJSON): string {
   // Generate CloudFormation template
-  const cfnResult = cloudformationConverter.exportDesign(design);
+  const cfnResult = cloudformationConverter.exportDesign(design) as ExportResult;
   const cfnContent =
     typeof cfnResult.content === "string" ? cfnResult.content : "<binary cfn output>";
 

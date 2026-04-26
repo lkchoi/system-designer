@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { nomadConverter } from "./nomad";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -63,12 +64,12 @@ const SAMPLE_DESIGN: DesignJSON = {
 
 describe("nomad converter", () => {
   function parse(design: DesignJSON): Record<string, unknown> {
-    const json = nomadConverter.exportDesign(design).content as string;
+    const json = (nomadConverter.exportDesign(design) as ExportResult).content as string;
     return JSON.parse(json);
   }
 
   it("returns a .nomad.json filename", () => {
-    const result = nomadConverter.exportDesign(SAMPLE_DESIGN);
+    const result = nomadConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("OrdersPlatform.nomad.json");
     expect(result.mimeType).toBe("application/json");
   });
@@ -103,7 +104,7 @@ describe("nomad converter", () => {
   });
 
   it("uses the correct docker image", () => {
-    const json = nomadConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const json = (nomadConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(json).toContain("node:22-alpine");
     expect(json).toContain("postgres:17-alpine");
     expect(json).toContain("redis:8-alpine");
@@ -118,7 +119,7 @@ describe("nomad converter", () => {
   });
 
   it("uses database-specific port for database nodes", () => {
-    const json = nomadConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const json = (nomadConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     const spec = JSON.parse(json);
     const job = spec.job as Record<string, unknown[]>;
     const entry = job["ordersplatform"][0] as { group: Record<string, unknown[]> };
@@ -139,7 +140,7 @@ describe("nomad converter", () => {
   });
 
   it("adds description as task meta", () => {
-    const json = nomadConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const json = (nomadConverter.exportDesign(SAMPLE_DESIGN) as ExportResult).content as string;
     expect(json).toContain("REST service");
   });
 

@@ -5,7 +5,6 @@ import { scaffoldNodeService } from "./node";
 import { scaffoldPythonService } from "./python";
 import { scaffoldGoService } from "./go";
 import type { ConnectionInfo } from "./concerns/resolve";
-import type { MergedSlots } from "./concerns/types";
 import { resolveConcerns } from "./concerns/resolve";
 import type { ScaffoldLang } from "./concerns/types";
 

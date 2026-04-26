@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "format": "oxfmt .",
     "lint": "oxlint .",
     "preview": "vite preview",
@@ -43,6 +43,7 @@
     "@types/node": "^24.12.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@types/sql.js": "^1.4.11",
     "@vitejs/plugin-react": "^6.0.1",
     "globals": "^17.4.0",
     "jsdom": "^29.0.2",

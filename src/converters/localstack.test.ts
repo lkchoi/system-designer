@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { localstackConverter } from "./localstack";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -50,7 +51,7 @@ const SAMPLE_DESIGN: DesignJSON = {
 
 describe("localstack converter", () => {
   it("returns a .yaml filename", () => {
-    const result = localstackConverter.exportDesign(SAMPLE_DESIGN);
+    const result = localstackConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("OrdersPlatform-localstack.yaml");
     expect(result.mimeType).toBe("text/yaml");
   });
@@ -60,33 +61,38 @@ describe("localstack converter", () => {
   });
 
   it("includes a LocalStack docker-compose service", () => {
-    const content = localstackConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const content = (localstackConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(content).toContain("localstack/localstack:latest");
     expect(content).toContain("4566:4566");
   });
 
   it("includes an init deploy script that creates a CFN stack", () => {
-    const content = localstackConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const content = (localstackConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(content).toContain("awslocal cloudformation create-stack");
     expect(content).toContain("--stack-name OrdersPlatform");
   });
 
   it("includes the embedded CloudFormation template", () => {
-    const content = localstackConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const content = (localstackConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     // The CFN template should contain resources from the design
     expect(content).toContain("AWS::Lambda::Function");
     expect(content).toContain("AWS::S3::Bucket");
   });
 
   it("includes file markers for the three output sections", () => {
-    const content = localstackConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const content = (localstackConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(content).toContain("--- docker-compose.yaml ---");
     expect(content).toContain("--- init/template.yaml ---");
     expect(content).toContain("--- init/deploy.sh ---");
   });
 
   it("lists required AWS services in the environment", () => {
-    const content = localstackConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const content = (localstackConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     expect(content).toContain("SERVICES:");
     expect(content).toContain("s3");
     expect(content).toContain("lambda");

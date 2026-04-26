@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Node } from "@xyflow/react";
-import type { SystemNodeData, Endpoint, QueryParam, ResourceLink, EffectiveStress } from "../types";
+import type { SystemNodeData, Endpoint, ResourceLink, EffectiveStress } from "../types";
 import type { Mode, PanelPosition } from "../App";
 import { displayType } from "../data";
 import { registry } from "../registry";

@@ -64,7 +64,6 @@ import type {
   EffectiveStress,
   StressFailure,
   StressConfig,
-  StressScenario,
 } from "./types";
 import { computeStressEffects } from "./stressEngine";
 import { instantiatePattern } from "./patterns";
@@ -177,7 +176,7 @@ function Canvas({
     initialState.edges,
   );
   const collab = useCollab();
-  const { remoteUsers, setSelectedNode: setAwarenessSelectedNode } = useAwareness();
+  const { setSelectedNode: setAwarenessSelectedNode } = useAwareness();
   const [betaActive] = useState(() => !!getBetaKey());
   const [serverReachable, setServerReachable] = useState<boolean | null>(null); // null = checking
   const [shareError, setShareError] = useState<string | null>(null);
@@ -1322,7 +1321,7 @@ function Canvas({
                           onClick={() => {
                             const name = prompt("Scenario name:");
                             if (name) stopRecording(name);
-                            else setIsRecording(false);
+                            else stopRecording("");
                           }}
                         >
                           <span className="w-2 h-2 rounded-full bg-white" />

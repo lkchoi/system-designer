@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { terraformConverter } from "./terraform";
 import type { DesignJSON } from "../db/io";
+import type { ExportResult } from "./types";
 
 const SAMPLE_DESIGN: DesignJSON = {
   version: 1,
@@ -88,12 +89,12 @@ const SAMPLE_DESIGN: DesignJSON = {
 
 describe("terraform converter — export", () => {
   function parse(design: DesignJSON): Record<string, unknown> {
-    const json = terraformConverter.exportDesign(design).content as string;
+    const json = (terraformConverter.exportDesign(design) as ExportResult).content as string;
     return JSON.parse(json);
   }
 
   it("returns a .tf.json filename", () => {
-    const result = terraformConverter.exportDesign(SAMPLE_DESIGN);
+    const result = terraformConverter.exportDesign(SAMPLE_DESIGN) as ExportResult;
     expect(result.filename).toBe("OrdersPlatform.tf.json");
     expect(result.mimeType).toBe("application/json");
   });
@@ -207,14 +208,16 @@ describe("terraform converter — export", () => {
 
 describe("terraform converter — import", () => {
   it("round-trips a design through export then import", () => {
-    const exported = terraformConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (terraformConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = terraformConverter.importDesign!(exported);
     expect(imported.name).toBe("Imported from Terraform");
     expect(imported.nodes.length).toBeGreaterThan(0);
   });
 
   it("maps terraform resource type back to correct componentType", () => {
-    const exported = terraformConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (terraformConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = terraformConverter.importDesign!(exported);
     const dbNode = imported.nodes.find((n) => n.id === "ordersdb");
     expect(dbNode).toBeDefined();
@@ -222,7 +225,8 @@ describe("terraform converter — import", () => {
   });
 
   it("converts underscores to hyphens in imported labels", () => {
-    const exported = terraformConverter.exportDesign(SAMPLE_DESIGN).content as string;
+    const exported = (terraformConverter.exportDesign(SAMPLE_DESIGN) as ExportResult)
+      .content as string;
     const imported = terraformConverter.importDesign!(exported);
     const node = imported.nodes.find((n) => n.id === "ordersdb");
     expect((node!.data as { label: string }).label).toBe("ordersdb");

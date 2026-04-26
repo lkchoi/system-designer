@@ -1,12 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  parseField,
-  cronToNatural,
-  naturalToCron,
-  getNextRuns,
-  parseTimeStr,
-  type ParsedField,
-} from "./cron";
+import { parseField, cronToNatural, naturalToCron, getNextRuns, parseTimeStr } from "./cron";
 
 // --------- parseField ---------
 

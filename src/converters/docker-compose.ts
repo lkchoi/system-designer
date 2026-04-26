@@ -1,4 +1,5 @@
 import yaml from "js-yaml";
+import type { Node } from "@xyflow/react";
 import type { ConverterModule, ExportOptions, ExportResult } from "./types";
 import type { DesignJSON } from "../db/io";
 import type { ComponentType, SystemNodeData } from "../types";
@@ -217,7 +218,7 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
       const sourceNode = design.nodes.find((n) => n.id === dep.nodeId);
       if (sourceNode) {
         const serviceEnv = buildServiceEnv(
-          sourceNode,
+          sourceNode as Node<SystemNodeData>,
           edgeIndex,
           design.nodes,
           serviceNameByNodeId,

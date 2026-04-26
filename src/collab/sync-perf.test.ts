@@ -3,12 +3,11 @@
  * Verifies that changing one node doesn't trigger O(n) work.
  */
 
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as Y from "yjs";
 import type { Node, Edge } from "@xyflow/react";
-import { diffNodes, diffEdges, syncChangedNodes, patchNodesFromEvents, yMapToRecord } from "./sync";
+import { diffNodes, diffEdges, syncChangedNodes, patchNodesFromEvents } from "./sync";
 import { nodesToYMap } from "./schema";
-import { recordToNode } from "./schema";
 
 function makeNode(id: string, x = 0, y = 0): Node {
   return {
@@ -127,7 +126,7 @@ describe("patchNodesFromEvents — incremental materialization", () => {
     nodesToYMap(nodes, ymap);
 
     // Capture events from a targeted change
-    let capturedEvents: Y.YEvent<unknown>[] = [];
+    let capturedEvents: Y.YEvent<Y.AbstractType<any>>[] = [];
     ymap.observeDeep((events) => {
       capturedEvents = events;
     });
@@ -161,7 +160,7 @@ describe("patchNodesFromEvents — incremental materialization", () => {
     const nodes = makeNodes(10);
     nodesToYMap(nodes, ymap);
 
-    let capturedEvents: Y.YEvent<unknown>[] = [];
+    let capturedEvents: Y.YEvent<Y.AbstractType<any>>[] = [];
     ymap.observeDeep((events) => {
       capturedEvents = events;
     });
@@ -188,7 +187,7 @@ describe("patchNodesFromEvents — incremental materialization", () => {
     const nodes = makeNodes(10);
     nodesToYMap(nodes, ymap);
 
-    let capturedEvents: Y.YEvent<unknown>[] = [];
+    let capturedEvents: Y.YEvent<Y.AbstractType<any>>[] = [];
     ymap.observeDeep((events) => {
       capturedEvents = events;
     });
@@ -208,7 +207,7 @@ describe("patchNodesFromEvents — incremental materialization", () => {
     const nodes = makeNodes(10).map((n, i) => (i === 3 ? { ...n, selected: true } : n));
     nodesToYMap(nodes, ymap);
 
-    let capturedEvents: Y.YEvent<unknown>[] = [];
+    let capturedEvents: Y.YEvent<Y.AbstractType<any>>[] = [];
     ymap.observeDeep((events) => {
       capturedEvents = events;
     });

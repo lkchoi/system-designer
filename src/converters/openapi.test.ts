@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import type { Node } from "@xyflow/react";
 import type { DesignJSON } from "../db/io";
 import type { SystemNodeData, Endpoint } from "../types";
+import type { ExportResult } from "./types";
 import { buildOpenApiYaml, openapiConverter } from "./openapi";
 
 function makeNode(
@@ -197,7 +198,7 @@ describe("openapiConverter.exportDesign", () => {
     const gw = makeNode("gw", "api-gateway", {
       endpoints: [ep("GET", "/health")],
     });
-    const result = openapiConverter.exportDesign!(designWith([gw], "MyService"));
+    const result = openapiConverter.exportDesign(designWith([gw], "MyService")) as ExportResult;
 
     expect(result.content).toContain("title: MyService");
     expect(result.filename).toBe("MyService-openapi.yaml");
@@ -206,7 +207,7 @@ describe("openapiConverter.exportDesign", () => {
 
   it("returns a stub spec when no endpoints exist", () => {
     const svc = makeNode("svc", "service");
-    const result = openapiConverter.exportDesign!(designWith([svc], "Empty"));
+    const result = openapiConverter.exportDesign(designWith([svc], "Empty")) as ExportResult;
 
     expect(result.content).toContain("openapi: 3.0.3");
     expect(result.content).toContain("title: Empty");
@@ -229,7 +230,7 @@ describe("toYaml (via buildOpenApiYaml)", () => {
 
   it("renders empty objects as {}", () => {
     const svc = makeNode("svc", "service");
-    const result = openapiConverter.exportDesign!(designWith([svc]));
+    const result = openapiConverter.exportDesign(designWith([svc])) as ExportResult;
     // paths is an empty object rendered on its own line
     expect(result.content).toMatch(/paths:\n\s+\{\}/);
   });

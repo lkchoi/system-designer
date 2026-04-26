@@ -87,7 +87,7 @@ export function useCollabState<N extends Node>(
 
   useEffect(() => {
     if (!nodesMap) return;
-    const handler = (events: Y.YEvent<unknown>[]) => {
+    const handler = (events: Y.YEvent<Y.AbstractType<any>>[]) => {
       if (inLocalTxRef.current) return;
       setNodesRaw((prev) => patchNodesFromEvents(events, nodesMap, prev) as N[]);
     };
@@ -97,7 +97,7 @@ export function useCollabState<N extends Node>(
 
   useEffect(() => {
     if (!edgesMap) return;
-    const handler = (events: Y.YEvent<unknown>[]) => {
+    const handler = (events: Y.YEvent<Y.AbstractType<any>>[]) => {
       if (inLocalTxRef.current) return;
       setEdgesRaw((prev) => patchEdgesFromEvents(events, edgesMap, prev));
     };
