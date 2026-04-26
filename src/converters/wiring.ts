@@ -1,7 +1,33 @@
 import type { Node } from "@xyflow/react";
-import type { DesignJSON } from "../db/io";
 import type { ComponentType, SystemNodeData } from "../types";
 import { getDefaultPorts, resolveTechId } from "./iac-mapping";
+
+/** Minimal edge shape needed for wiring lookups. */
+export interface WiringEdge {
+  source: string;
+  target: string;
+}
+
+/** Minimal node shape needed for wiring lookups. */
+export interface WiringNode {
+  id: string;
+  type?: string;
+  data: unknown;
+}
+
+/** Build an edge index: nodeId → outgoing edges. Single O(E) pass. */
+export function buildEdgeIndex<E extends WiringEdge>(edges: readonly E[]): Map<string, E[]> {
+  const index = new Map<string, E[]>();
+  for (const edge of edges) {
+    let list = index.get(edge.source);
+    if (!list) {
+      list = [];
+      index.set(edge.source, list);
+    }
+    list.push(edge);
+  }
+  return index;
+}
 
 /**
  * Walk a Service node's outgoing edges and produce env vars naming the
@@ -18,15 +44,16 @@ import { getDefaultPorts, resolveTechId } from "./iac-mapping";
  */
 export function buildServiceEnv(
   serviceNode: Node<SystemNodeData>,
-  design: DesignJSON,
+  edgeIndex: ReadonlyMap<string, readonly WiringEdge[]>,
+  nodes: readonly WiringNode[],
   serviceNameByNodeId: Map<string, string>,
 ): Record<string, string> {
   const env: Record<string, string> = {};
   const claimedKinds = new Set<string>();
 
-  const outgoing = design.edges.filter((e) => e.source === serviceNode.id);
+  const outgoing = edgeIndex.get(serviceNode.id) ?? [];
   for (const edge of outgoing) {
-    const target = design.nodes.find((n) => n.id === edge.target);
+    const target = nodes.find((n) => n.id === edge.target);
     if (!target || target.type !== "system") continue;
     const data = target.data as SystemNodeData;
     const targetName = serviceNameByNodeId.get(target.id);

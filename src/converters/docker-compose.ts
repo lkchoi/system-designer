@@ -11,7 +11,7 @@ import {
 } from "./iac-mapping";
 import { getTechnology } from "../technologies";
 import { exportBundle, type BundleFile } from "./bundle";
-import { buildServiceEnv } from "./wiring";
+import { buildServiceEnv, buildEdgeIndex } from "./wiring";
 import { generateSecrets } from "./secrets";
 import { buildLifecycleScripts, urlsFor } from "./lifecycle";
 import { buildReadme } from "./readme";
@@ -144,14 +144,17 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
     });
   }
 
+  // Build edge index: nodeId → outgoing edges (single O(E) pass).
+  // Used by scaffold resolution (1b), service env wiring (3), and depends_on (3).
+  const edgeIndex = buildEdgeIndex(design.edges);
+
   // 1b) Scaffold pass — runs after all names are assigned so connections can
   //     reference target service names.
   for (const dep of deployables) {
     if (!dep.scaffolded) continue;
 
     const connections: ConnectionInfo[] = [];
-    for (const edge of design.edges) {
-      if (edge.source !== dep.nodeId) continue;
+    for (const edge of edgeIndex.get(dep.nodeId) ?? []) {
       const targetNode = design.nodes.find((n) => n.id === edge.target);
       if (!targetNode || targetNode.type !== "system") continue;
       const targetData = targetNode.data as SystemNodeData;
@@ -213,7 +216,7 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
     if (dep.data.componentType === "service" || dep.data.componentType === "serverless") {
       const sourceNode = design.nodes.find((n) => n.id === dep.nodeId);
       if (sourceNode) {
-        const serviceEnv = buildServiceEnv(sourceNode, design, serviceNameByNodeId);
+        const serviceEnv = buildServiceEnv(sourceNode, edgeIndex, design.nodes, serviceNameByNodeId);
         if (Object.keys(serviceEnv).length > 0) envParts.push(serviceEnv);
       }
     }
@@ -237,20 +240,18 @@ async function exportToBundle(design: DesignJSON, options?: ExportOptions): Prom
     const cmd = imageCommandFor(dep);
     if (cmd) entry.command = cmd;
 
+    // depends_on from outgoing edges (folded from former pass 4).
+    const depNames: string[] = [];
+    for (const edge of edgeIndex.get(dep.nodeId) ?? []) {
+      const targetName = serviceNameByNodeId.get(edge.target);
+      if (targetName && targetName !== dep.name && !depNames.includes(targetName)) {
+        depNames.push(targetName);
+      }
+    }
+    if (depNames.length > 0) entry.depends_on = depNames;
+
     if (dep.data.description) serviceDescriptions.set(dep.name, dep.data.description);
     services[dep.name] = entry;
-  }
-
-  // 4) depends_on from edges (only between deployable nodes)
-  for (const edge of design.edges) {
-    const sourceName = serviceNameByNodeId.get(edge.source);
-    const targetName = serviceNameByNodeId.get(edge.target);
-    if (!sourceName || !targetName || !services[sourceName]) continue;
-    const svc = services[sourceName] as Record<string, unknown>;
-    const existing = (svc.depends_on as string[] | undefined) ?? [];
-    if (!existing.includes(targetName)) {
-      svc.depends_on = [...existing, targetName];
-    }
   }
 
   // 4b) Add init sidecars (one-shot services that pre-create buckets, topics,

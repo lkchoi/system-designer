@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { Node } from "@xyflow/react";
-import type { DesignJSON } from "../db/io";
 import type { SystemNodeData } from "../types";
-import { buildServiceEnv } from "./wiring";
+import { buildServiceEnv, buildEdgeIndex } from "./wiring";
 
 function makeNode(
   id: string,
@@ -33,31 +32,22 @@ function makeNode(
   };
 }
 
-function designWith(
+/** Convenience wrapper: builds edge index and calls buildServiceEnv. */
+function wireEnv(
+  serviceNode: Node<SystemNodeData>,
   nodes: Node<SystemNodeData>[],
   edges: { source: string; target: string }[],
-): DesignJSON {
-  return {
-    version: 1,
-    name: "t",
-    nodes: nodes as unknown as DesignJSON["nodes"],
-    edges: edges.map((e, i) => ({
-      id: `e${i}`,
-      source: e.source,
-      target: e.target,
-    })) as unknown as DesignJSON["edges"],
-    viewport: { x: 0, y: 0, zoom: 1 },
-    flowPaths: [],
-  };
+  nameMap: Map<string, string>,
+): Record<string, string> {
+  return buildServiceEnv(serviceNode, buildEdgeIndex(edges), nodes, nameMap);
 }
 
 describe("buildServiceEnv", () => {
   it("returns empty env for a service with no outgoing edges", () => {
     const svc = makeNode("svc", "service", { plan: { technology: "Node.js (Express/Fastify)" } });
     const db = makeNode("db", "database", { plan: { technology: "PostgreSQL" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, db], []),
+    const env = wireEnv(
+      svc, [svc, db], [],
       new Map([
         ["svc", "svc"],
         ["db", "db"],
@@ -71,9 +61,8 @@ describe("buildServiceEnv", () => {
     const db = makeNode("db", "database", {
       plan: { technology: "PostgreSQL", database: "users" },
     });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, db], [{ source: "svc", target: "db" }]),
+    const env = wireEnv(
+      svc, [svc, db], [{ source: "svc", target: "db" }],
       new Map([
         ["svc", "svc"],
         ["db", "orders-db"],
@@ -90,9 +79,8 @@ describe("buildServiceEnv", () => {
   it("wires a redis cache into REDIS_URL", () => {
     const svc = makeNode("svc", "service");
     const cache = makeNode("cache", "cache", { plan: { technology: "Redis" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, cache], [{ source: "svc", target: "cache" }]),
+    const env = wireEnv(
+      svc, [svc, cache], [{ source: "svc", target: "cache" }],
       new Map([
         ["svc", "svc"],
         ["cache", "sessions"],
@@ -104,9 +92,8 @@ describe("buildServiceEnv", () => {
   it("wires kafka into KAFKA_BOOTSTRAP_SERVERS", () => {
     const svc = makeNode("svc", "service");
     const kafka = makeNode("k", "message-queue", { plan: { technology: "Apache Kafka" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, kafka], [{ source: "svc", target: "k" }]),
+    const env = wireEnv(
+      svc, [svc, kafka], [{ source: "svc", target: "k" }],
       new Map([
         ["svc", "svc"],
         ["k", "events"],
@@ -120,9 +107,8 @@ describe("buildServiceEnv", () => {
     const bucket = makeNode("b", "storage", {
       plan: { technology: "Amazon S3", bucketName: "uploads" },
     });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, bucket], [{ source: "svc", target: "b" }]),
+    const env = wireEnv(
+      svc, [svc, bucket], [{ source: "svc", target: "b" }],
       new Map([
         ["svc", "svc"],
         ["b", "assets"],
@@ -139,9 +125,8 @@ describe("buildServiceEnv", () => {
     const bucket = makeNode("b", "storage", {
       plan: { technology: "Amazon S3", bucketName: "s3://my-bucket/some/path" },
     });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, bucket], [{ source: "svc", target: "b" }]),
+    const env = wireEnv(
+      svc, [svc, bucket], [{ source: "svc", target: "b" }],
       new Map([
         ["svc", "svc"],
         ["b", "assets"],
@@ -153,9 +138,8 @@ describe("buildServiceEnv", () => {
   it("falls back to 'default' when bucketName is empty", () => {
     const svc = makeNode("svc", "service");
     const bucket = makeNode("b", "storage", { plan: { technology: "Amazon S3" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, bucket], [{ source: "svc", target: "b" }]),
+    const env = wireEnv(
+      svc, [svc, bucket], [{ source: "svc", target: "b" }],
       new Map([
         ["svc", "svc"],
         ["b", "assets"],
@@ -168,15 +152,13 @@ describe("buildServiceEnv", () => {
     const svc = makeNode("svc", "service");
     const db1 = makeNode("db1", "database", { plan: { technology: "PostgreSQL" } });
     const db2 = makeNode("db2", "database", { plan: { technology: "PostgreSQL" } });
-    const env = buildServiceEnv(
+    const env = wireEnv(
       svc,
-      designWith(
-        [svc, db1, db2],
-        [
-          { source: "svc", target: "db1" },
-          { source: "svc", target: "db2" },
-        ],
-      ),
+      [svc, db1, db2],
+      [
+        { source: "svc", target: "db1" },
+        { source: "svc", target: "db2" },
+      ],
       new Map([
         ["svc", "svc"],
         ["db1", "primary"],
@@ -191,9 +173,8 @@ describe("buildServiceEnv", () => {
     const db = makeNode("db", "database", {
       plan: { technology: "MySQL", database: "orders" },
     });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, db], [{ source: "svc", target: "db" }]),
+    const env = wireEnv(
+      svc, [svc, db], [{ source: "svc", target: "db" }],
       new Map([
         ["svc", "svc"],
         ["db", "mysql-db"],
@@ -212,9 +193,8 @@ describe("buildServiceEnv", () => {
     const db = makeNode("db", "database", {
       plan: { technology: "MongoDB", database: "analytics" },
     });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, db], [{ source: "svc", target: "db" }]),
+    const env = wireEnv(
+      svc, [svc, db], [{ source: "svc", target: "db" }],
       new Map([
         ["svc", "svc"],
         ["db", "docs-db"],
@@ -229,9 +209,8 @@ describe("buildServiceEnv", () => {
   it("wires rabbitmq into RABBITMQ_URL with amqp://", () => {
     const svc = makeNode("svc", "service");
     const mq = makeNode("mq", "message-queue", { plan: { technology: "RabbitMQ" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, mq], [{ source: "svc", target: "mq" }]),
+    const env = wireEnv(
+      svc, [svc, mq], [{ source: "svc", target: "mq" }],
       new Map([
         ["svc", "svc"],
         ["mq", "broker"],
@@ -243,9 +222,8 @@ describe("buildServiceEnv", () => {
   it("wires nats into NATS_URL with nats://", () => {
     const svc = makeNode("svc", "service");
     const mq = makeNode("mq", "message-queue", { plan: { technology: "NATS" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, mq], [{ source: "svc", target: "mq" }]),
+    const env = wireEnv(
+      svc, [svc, mq], [{ source: "svc", target: "mq" }],
       new Map([
         ["svc", "svc"],
         ["mq", "bus"],
@@ -257,9 +235,8 @@ describe("buildServiceEnv", () => {
   it("wires redis as message-queue into REDIS_URL", () => {
     const svc = makeNode("svc", "service");
     const mq = makeNode("mq", "message-queue", { plan: { technology: "Redis" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, mq], [{ source: "svc", target: "mq" }]),
+    const env = wireEnv(
+      svc, [svc, mq], [{ source: "svc", target: "mq" }],
       new Map([
         ["svc", "svc"],
         ["mq", "redis-mq"],
@@ -271,9 +248,8 @@ describe("buildServiceEnv", () => {
   it("wires elasticsearch into ES_URL with http://", () => {
     const svc = makeNode("svc", "service");
     const se = makeNode("se", "search-engine", { plan: { technology: "Elasticsearch" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, se], [{ source: "svc", target: "se" }]),
+    const env = wireEnv(
+      svc, [svc, se], [{ source: "svc", target: "se" }],
       new Map([
         ["svc", "svc"],
         ["se", "search"],
@@ -285,9 +261,8 @@ describe("buildServiceEnv", () => {
   it("wires clickhouse (data-warehouse) into WAREHOUSE_URL", () => {
     const svc = makeNode("svc", "service");
     const wh = makeNode("wh", "data-warehouse", { plan: { technology: "ClickHouse" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, wh], [{ source: "svc", target: "wh" }]),
+    const env = wireEnv(
+      svc, [svc, wh], [{ source: "svc", target: "wh" }],
       new Map([
         ["svc", "svc"],
         ["wh", "analytics-wh"],
@@ -300,15 +275,13 @@ describe("buildServiceEnv", () => {
     const svc = makeNode("svc", "service");
     const dns = makeNode("dns", "dns" as SystemNodeData["componentType"]);
     const client = makeNode("client", "client" as SystemNodeData["componentType"]);
-    const env = buildServiceEnv(
+    const env = wireEnv(
       svc,
-      designWith(
-        [svc, dns, client],
-        [
-          { source: "svc", target: "dns" },
-          { source: "svc", target: "client" },
-        ],
-      ),
+      [svc, dns, client],
+      [
+        { source: "svc", target: "dns" },
+        { source: "svc", target: "client" },
+      ],
       new Map([
         ["svc", "svc"],
         ["dns", "route53"],
@@ -323,9 +296,8 @@ describe("buildServiceEnv", () => {
       env: { DB_HOST: "custom-host", EXTRA: "1" },
     });
     const db = makeNode("db", "database", { plan: { technology: "PostgreSQL" } });
-    const env = buildServiceEnv(
-      svc,
-      designWith([svc, db], [{ source: "svc", target: "db" }]),
+    const env = wireEnv(
+      svc, [svc, db], [{ source: "svc", target: "db" }],
       new Map([
         ["svc", "svc"],
         ["db", "pg"],
