@@ -738,8 +738,8 @@ function Canvas({
     () => ({
       "mode-plan": () => setMode("plan"),
       "mode-stress": () => setMode("stress"),
-      "mode-monitor": () => setMode("monitor"),
-      "mode-price": () => setMode("price"),
+      "mode-monitor": () => {},
+      "mode-price": () => {},
 
       undo: () => undo(),
       redo: () => redo(),
@@ -1200,8 +1200,9 @@ function Canvas({
                       Stress
                     </button>
                     <button
-                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "monitor" ? " text-white bg-accent" : ""}`}
-                      onClick={() => setMode("monitor")}
+                      className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim opacity-40 cursor-not-allowed"
+                      disabled
+                      title="Monitor — requires observability integration (coming soon)"
                     >
                       <svg
                         width="14"
@@ -1218,8 +1219,9 @@ function Canvas({
                       Monitor
                     </button>
                     <button
-                      className={`flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim transition-all duration-150 hover:text-text-bright hover:bg-surface-3${mode === "price" ? " text-white bg-accent" : ""}`}
-                      onClick={() => setMode("price")}
+                      className="flex items-center gap-[5px] px-3.5 py-[5px] rounded-md text-[13px] font-medium text-text-dim opacity-40 cursor-not-allowed"
+                      disabled
+                      title="Price — requires system-level cost model (coming soon)"
                     >
                       <svg
                         width="14"
