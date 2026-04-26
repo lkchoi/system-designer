@@ -23,7 +23,7 @@ export function useUndoRedo<N extends Node>(
     const { nodes: n, edges: e } = stateRef.current;
     pastRef.current = [
       ...pastRef.current.slice(-(MAX_HISTORY - 1)),
-      { nodes: structuredClone(n), edges: structuredClone(e) },
+      { nodes: [...n], edges: [...e] },
     ];
     futureRef.current = [];
   }, []);
@@ -36,7 +36,7 @@ export function useUndoRedo<N extends Node>(
     const { nodes: n, edges: e } = stateRef.current;
     futureRef.current = [
       ...futureRef.current,
-      { nodes: structuredClone(n), edges: structuredClone(e) },
+      { nodes: [...n], edges: [...e] },
     ];
     setNodes(previous.nodes);
     setEdges(previous.edges);
@@ -50,7 +50,7 @@ export function useUndoRedo<N extends Node>(
     const { nodes: n, edges: e } = stateRef.current;
     pastRef.current = [
       ...pastRef.current,
-      { nodes: structuredClone(n), edges: structuredClone(e) },
+      { nodes: [...n], edges: [...e] },
     ];
     setNodes(next.nodes);
     setEdges(next.edges);
