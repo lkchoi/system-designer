@@ -42,6 +42,10 @@ export function nodeToRecord(node: Node): Record<string, unknown> {
   if (node.measured?.width != null) rec["measured.width"] = node.measured.width;
   if (node.measured?.height != null) rec["measured.height"] = node.measured.height;
 
+  // Top-level dimensions (set by ReactFlow's NodeResizer)
+  if ((node as Record<string, unknown>).width != null) rec.width = (node as Record<string, unknown>).width;
+  if ((node as Record<string, unknown>).height != null) rec.height = (node as Record<string, unknown>).height;
+
   // Style dimensions (used by containers and resizable nodes)
   const style = node.style as Record<string, unknown> | undefined;
   if (style?.width != null) rec["style.width"] = style.width;
@@ -77,6 +81,10 @@ export function recordToNode(rec: Record<string, unknown>): Node {
   if (rec.parentId) node.parentId = rec.parentId as string;
   if (rec.zIndex != null) node.zIndex = rec.zIndex as number;
   if (rec.hidden != null) node.hidden = rec.hidden as boolean;
+
+  // Top-level dimensions (from NodeResizer)
+  if (rec.width != null) (node as Record<string, unknown>).width = rec.width;
+  if (rec.height != null) (node as Record<string, unknown>).height = rec.height;
 
   if (rec["measured.width"] != null || rec["measured.height"] != null) {
     node.measured = {
