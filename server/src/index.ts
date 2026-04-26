@@ -21,6 +21,15 @@ import { RoomManager } from "./rooms.js";
 const PORT = parseInt(process.env.PORT ?? "4444", 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN ?? "*";
 
+// Beta keys: comma-separated list. Empty = no gate (open access).
+const BETA_KEYS = new Set(
+  (process.env.BETA_KEYS ?? "")
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean),
+);
+const betaEnabled = BETA_KEYS.size > 0;
+
 const MSG_SYNC = 0;
 const MSG_AWARENESS = 1;
 
@@ -54,6 +63,15 @@ const server = http.createServer(async (req, res) => {
 
   // POST /rooms
   if (req.method === "POST" && url.pathname === "/rooms") {
+    if (betaEnabled) {
+      const key = req.headers["x-beta-key"] as string | undefined;
+      if (!key || !BETA_KEYS.has(key)) {
+        res.writeHead(403, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "invalid beta key" }));
+        return;
+      }
+    }
+
     const body = await readBody(req);
     let designName = "Untitled";
     try {

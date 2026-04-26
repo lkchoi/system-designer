@@ -84,7 +84,7 @@ import {
 import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
-import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl, checkServerHealth } from "./collab";
+import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl, checkServerHealth, getBetaKey, activateBetaFromUrl } from "./collab";
 import { CursorOverlay, useAwareness } from "./collab/CursorOverlay";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
@@ -168,6 +168,7 @@ function Canvas({
   );
   const collab = useCollab();
   const { remoteUsers, setSelectedNode: setAwarenessSelectedNode } = useAwareness();
+  const [betaActive] = useState(() => !!getBetaKey());
   const [serverReachable, setServerReachable] = useState<boolean | null>(null); // null = checking
   const [shareError, setShareError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -238,10 +239,12 @@ function Canvas({
     setViewport(initialState.viewport);
   }, [initialState.viewport, setViewport]);
 
-  // Probe collab server health on mount
+  // Probe collab server health on mount (only if beta-activated)
   useEffect(() => {
-    checkServerHealth().then(setServerReachable);
-  }, []);
+    if (betaActive || collab.roomId) {
+      checkServerHealth().then(setServerReachable);
+    }
+  }, [betaActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-join room if ?room= param is present in URL
   useEffect(() => {
@@ -1562,7 +1565,7 @@ function Canvas({
                         Stop Sharing
                       </button>
                     </>
-                  ) : (
+                  ) : betaActive ? (
                     <>
                       <button
                         className={`flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 ${serverReachable === false ? "bg-surface-2 border border-border text-text-dim cursor-not-allowed" : "bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20"}`}
@@ -1577,9 +1580,11 @@ function Canvas({
                             const newUrl = new URL(window.location.href);
                             newUrl.searchParams.set("room", roomId);
                             window.history.replaceState({}, "", newUrl.toString());
-                          } catch {
-                            setShareError("Could not connect to collab server");
-                            // Re-probe health
+                          } catch (e) {
+                            const msg = e instanceof Error && e.message.includes("beta key")
+                              ? "Beta access revoked"
+                              : "Could not connect to collab server";
+                            setShareError(msg);
                             checkServerHealth().then(setServerReachable);
                           }
                         }}
@@ -1595,7 +1600,7 @@ function Canvas({
                         <span className="text-[12px] text-red-400">{shareError}</span>
                       )}
                     </>
-                  )}
+                  ) : null}
                   <button
                     className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-surface-2 border border-border text-text text-[13px] font-medium transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"
                     onClick={clearCanvas}
@@ -1926,6 +1931,11 @@ export default function App() {
   const [designId, setDesignId] = useState<string | null>(null);
   const [designs, setDesigns] = useState<Design[]>([]);
   const [compareIds, setCompareIds] = useState<[string, string] | null>(null);
+
+  // Activate beta key from ?beta= URL param (before anything else renders)
+  useEffect(() => {
+    activateBetaFromUrl();
+  }, []);
 
   useEffect(() => {
     initDB().then(() => {

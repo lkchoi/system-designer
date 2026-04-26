@@ -3,7 +3,7 @@ export type { CollabContextValue } from "./provider";
 export { useCollabState } from "./useCollabState";
 export { useYjsUndoRedo } from "./useYjsUndoRedo";
 export { LOCAL_ORIGIN } from "./sync";
-export { getRoomIdFromUrl, getShareUrl, checkServerHealth } from "./roomApi";
+export { getRoomIdFromUrl, getShareUrl, checkServerHealth, getBetaKey, activateBetaFromUrl } from "./roomApi";
 export type { ConnectionStatus } from "./connection";
 export { useAwareness } from "./useAwareness";
 export type { UserPresence } from "./useAwareness";

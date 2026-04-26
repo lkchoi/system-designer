@@ -3,6 +3,7 @@
  */
 
 const SERVER_URL = import.meta.env.VITE_COLLAB_SERVER ?? "http://localhost:4444";
+const BETA_KEY_STORAGE = "collab-beta-key";
 
 export interface RoomMeta {
   id: string;
@@ -12,13 +13,22 @@ export interface RoomMeta {
   connections: number;
 }
 
-/** Create a new collaborative room. */
+/** Create a new collaborative room. Sends beta key if present. */
 export async function createRoom(designName: string): Promise<RoomMeta> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const betaKey = getBetaKey();
+  if (betaKey) headers["X-Beta-Key"] = betaKey;
+
   const res = await fetch(`${SERVER_URL}/rooms`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ designName }),
   });
+  if (res.status === 403) {
+    // Key was revoked — clear it
+    clearBetaKey();
+    throw new Error("Beta key is no longer valid");
+  }
   if (!res.ok) throw new Error(`Failed to create room: ${res.status}`);
   return res.json();
 }
@@ -65,4 +75,36 @@ export async function checkServerHealth(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// ─── Beta key management ───────────────────────────────────────────────
+
+/** Get the stored beta key, or null if not activated. */
+export function getBetaKey(): string | null {
+  return localStorage.getItem(BETA_KEY_STORAGE);
+}
+
+/** Store a beta key (called when ?beta= param is detected). */
+export function activateBetaKey(key: string): void {
+  localStorage.setItem(BETA_KEY_STORAGE, key);
+}
+
+/** Clear the stored beta key (called on 403 rejection). */
+export function clearBetaKey(): void {
+  localStorage.removeItem(BETA_KEY_STORAGE);
+}
+
+/**
+ * Check URL for ?beta= param on page load. If present, store the key
+ * and remove it from the URL so it's not visible/shareable in the
+ * address bar.
+ */
+export function activateBetaFromUrl(): boolean {
+  const url = new URL(window.location.href);
+  const key = url.searchParams.get("beta");
+  if (!key) return false;
+  activateBetaKey(key);
+  url.searchParams.delete("beta");
+  window.history.replaceState({}, "", url.toString());
+  return true;
 }
