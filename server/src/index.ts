@@ -103,12 +103,17 @@ const wss = new WebSocketServer({ server });
 
 wss.on("connection", async (ws, req) => {
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
-  const roomId = url.searchParams.get("room");
+  // y-websocket puts the room name in the path: ws://host/ROOM_ID
+  // Fall back to query param for flexibility.
+  const roomId =
+    url.pathname.slice(1).replace(/\/$/, "") || url.searchParams.get("room");
 
   if (!roomId || !rooms.exists(roomId)) {
+    console.log(`[ws] rejected: room "${roomId}" not found (url: ${req.url})`);
     ws.close(4001, "Invalid room");
     return;
   }
+  console.log(`[ws] client connected to room ${roomId}`);
 
   const doc = await rooms.getDoc(roomId);
   if (!doc) {
@@ -196,6 +201,7 @@ wss.on("connection", async (ws, req) => {
 
   // Cleanup on disconnect
   ws.on("close", () => {
+    console.log(`[ws] client disconnected from room ${roomId}`);
     doc.off("update", onDocUpdate);
     awareness.off("change", onAwarenessChange);
     clientRooms.delete(ws);

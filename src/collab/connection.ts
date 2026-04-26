@@ -34,15 +34,16 @@ export function connectToRoom(
   const meta = doc.getMap("meta") as Y.Map<unknown>;
 
   const wsUrl = getWsUrl(roomId);
-  // Extract server base and room param for WebsocketProvider
+  // Extract server base for WebsocketProvider. It appends /ROOM_ID to form
+  // the full URL: ws://host:port/ROOM_ID
   const urlObj = new URL(wsUrl);
   const serverBase = `${urlObj.protocol}//${urlObj.host}`;
 
   onStatus("connecting");
 
+  // WebsocketProvider(serverUrl, roomname, doc) connects to serverUrl/roomname
   const provider = new WebsocketProvider(serverBase, roomId, doc, {
     connect: true,
-    params: { room: roomId },
     maxBackoffTime: 10000,
   });
 
