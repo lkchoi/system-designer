@@ -26,8 +26,8 @@ const MSG_AWARENESS = 1;
 
 const rooms = new RoomManager();
 
-// Track which clients are in which room
-const clientRooms = new Map<WebSocket, string>();
+// Track which clients are in which room (room → clients for O(1) broadcast)
+const roomClients = new Map<string, Set<WebSocket>>();
 
 // ─── HTTP Server ───────────────────────────────────────────────────────
 
@@ -110,7 +110,8 @@ wss.on("connection", async (ws, req) => {
   }
 
   rooms.connect(roomId);
-  clientRooms.set(ws, roomId);
+  if (!roomClients.has(roomId)) roomClients.set(roomId, new Set());
+  roomClients.get(roomId)!.add(ws);
 
   // Send initial sync step 1 to the client
   {
@@ -158,15 +159,17 @@ wss.on("connection", async (ws, req) => {
   ws.on("close", () => {
     console.log(`[ws] client disconnected from room ${roomId}`);
     doc.off("update", onDocUpdate);
-    clientRooms.delete(ws);
+    roomClients.get(roomId)?.delete(ws);
     rooms.disconnect(roomId);
   });
 });
 
 /** Send a message to all WebSocket clients in a room, optionally excluding one. */
 function broadcast(roomId: string, msg: Uint8Array, exclude?: WebSocket): void {
-  for (const [client, rid] of clientRooms) {
-    if (rid === roomId && client !== exclude && client.readyState === WebSocket.OPEN) {
+  const clients = roomClients.get(roomId);
+  if (!clients) return;
+  for (const client of clients) {
+    if (client !== exclude && client.readyState === WebSocket.OPEN) {
       client.send(msg);
     }
   }
