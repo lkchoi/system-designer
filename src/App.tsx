@@ -84,7 +84,7 @@ import {
 import { importDesign, pickAndReadFile } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
-import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl } from "./collab";
+import { CollabProvider, useCollabState, useCollab, getRoomIdFromUrl, getShareUrl, checkServerHealth } from "./collab";
 import { CursorOverlay, useAwareness } from "./collab/CursorOverlay";
 
 type SystemFlowNode = Node<SystemNodeData, "system">;
@@ -168,6 +168,8 @@ function Canvas({
   );
   const collab = useCollab();
   const { remoteUsers, setSelectedNode: setAwarenessSelectedNode } = useAwareness();
+  const [serverReachable, setServerReachable] = useState<boolean | null>(null); // null = checking
+  const [shareError, setShareError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("plan");
@@ -235,6 +237,11 @@ function Canvas({
   useEffect(() => {
     setViewport(initialState.viewport);
   }, [initialState.viewport, setViewport]);
+
+  // Probe collab server health on mount
+  useEffect(() => {
+    checkServerHealth().then(setServerReachable);
+  }, []);
 
   // Auto-join room if ?room= param is present in URL
   useEffect(() => {
@@ -1556,25 +1563,38 @@ function Canvas({
                       </button>
                     </>
                   ) : (
-                    <button
-                      className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-accent/10 border border-accent/30 text-accent text-[13px] font-medium transition-all duration-150 hover:bg-accent/20"
-                      onClick={async () => {
-                        const roomId = await collab.shareDesign(currentDesign?.name ?? "Untitled");
-                        const url = getShareUrl(roomId);
-                        navigator.clipboard.writeText(url);
-                        // Update URL without reload
-                        const newUrl = new URL(window.location.href);
-                        newUrl.searchParams.set("room", roomId);
-                        window.history.replaceState({}, "", newUrl.toString());
-                      }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-                        <polyline points="16 6 12 2 8 6" />
-                        <line x1="12" y1="2" x2="12" y2="15" />
-                      </svg>
-                      Share
-                    </button>
+                    <>
+                      <button
+                        className={`flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 ${serverReachable === false ? "bg-surface-2 border border-border text-text-dim cursor-not-allowed" : "bg-accent/10 border border-accent/30 text-accent hover:bg-accent/20"}`}
+                        disabled={serverReachable === false}
+                        title={serverReachable === false ? "Collab server is not reachable" : undefined}
+                        onClick={async () => {
+                          setShareError(null);
+                          try {
+                            const roomId = await collab.shareDesign(currentDesign?.name ?? "Untitled");
+                            const url = getShareUrl(roomId);
+                            navigator.clipboard.writeText(url);
+                            const newUrl = new URL(window.location.href);
+                            newUrl.searchParams.set("room", roomId);
+                            window.history.replaceState({}, "", newUrl.toString());
+                          } catch {
+                            setShareError("Could not connect to collab server");
+                            // Re-probe health
+                            checkServerHealth().then(setServerReachable);
+                          }
+                        }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                          <polyline points="16 6 12 2 8 6" />
+                          <line x1="12" y1="2" x2="12" y2="15" />
+                        </svg>
+                        {serverReachable === null ? "Share..." : "Share"}
+                      </button>
+                      {shareError && (
+                        <span className="text-[12px] text-red-400">{shareError}</span>
+                      )}
+                    </>
                   )}
                   <button
                     className="flex items-center gap-1.5 px-3.5 py-[7px] rounded-lg bg-surface-2 border border-border text-text text-[13px] font-medium transition-all duration-150 hover:bg-surface-3 hover:text-text-bright"

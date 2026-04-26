@@ -56,3 +56,13 @@ export function clearRoomFromUrl(): void {
   url.searchParams.delete("room");
   window.history.replaceState({}, "", url.toString());
 }
+
+/** Check if the collab server is reachable. */
+export async function checkServerHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${SERVER_URL}/health`, { signal: AbortSignal.timeout(3000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
