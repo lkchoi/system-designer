@@ -131,3 +131,43 @@ Real-time multiplayer editing using Yjs CRDTs. In-progress on a separate branch.
 ### wiring.ts consolidation
 
 Env var generation is duplicated: `wiring.ts` has a hardcoded switch per technology, `tech-rules.ts` has tokenized templates (`{HOST}`, `{PORT}`). Consolidate so `wiring.ts` consumes the templates from `tech-rules.ts`, substituting tokens with resolved values from the design.
+
+---
+
+## Long-term vision
+
+The gap between "draw an architecture" and "run an architecture" is the central problem. The sections above address the near-term (editor tools, state management, collaboration). Below are the deeper capabilities needed to make this a tool architects actually stay in.
+
+### Design rationale and constraints
+
+Designs capture *what* but not *why*. An architect revisiting a diagram in six months sees boxes and arrows but no context for the decisions behind them. The tool needs a way to attach decision records to nodes and edges — "chose Kafka over SQS because we need ordering guarantees across 100K msg/s" — and surface them in context during reviews and exports.
+
+Non-functional requirements (p99 < 200ms, 99.95% SLA, $X/month budget) should be first-class objects that the tool can validate against. The latency budget calculator, SLA calculator, and capacity calculator already exist as standalone utilities — connecting their outputs to stated constraints would close the loop between "what we designed" and "does it meet our requirements."
+
+### System-level cost model
+
+The serverless cost estimator covers one node type. Architects need "this entire architecture costs ~$X/month on AWS" with compute, storage, data transfer, and managed service fees aggregated across all nodes. This requires per-technology pricing data (already partially in the registry) and a cost rollup view in price mode that sums across the design.
+
+### Request flow modeling
+
+Flow paths are ordered node lists. Real request flows have branching (cache hit vs miss), async fan-out, retry loops, and error paths. Sequence diagram-level modeling — with request/response payloads, latency annotations, and failure scenarios — would make flow paths useful for API reviews, onboarding, and incident analysis.
+
+### Deployable infrastructure export
+
+Docker Compose exports run locally. The next level is generating Terraform, CloudFormation, or Pulumi that provisions the design on a real cloud account. The connection mapping layer (`tech-rules.ts`) already has IAM actions, security group ports, and CDK grants — these need to flow into actual IaC output, not stubs.
+
+### Architecture drift detection
+
+Once teams start building, the code diverges from the diagram immediately. Drift detection — comparing the design against live infrastructure (via cloud APIs or IaC state files) or against code (service discovery from repo structure) — would make the diagram a living document rather than a point-in-time snapshot.
+
+### Observability integration
+
+Monitor mode is simulated. Connecting to real observability backends (Datadog, Grafana, CloudWatch) would let the diagram reflect actual system health — node status from health checks, edge latency from traces, throughput from metrics. Stress mode could evolve from manual toggling to replaying real incidents or triggering chaos experiments.
+
+### Security and compliance modeling
+
+Firewall nodes exist but there's no way to model authentication flows, encryption boundaries, network segmentation, or compliance zones (PCI, HIPAA, SOC 2). Security modeling would let architects define trust boundaries and data classification, then validate that the design doesn't route sensitive data through unencrypted paths or store PII outside compliant regions.
+
+### Team ownership and environment modeling
+
+Real systems have organizational structure — service ownership, on-call rotation, repo mapping — and multiple environments (dev/staging/prod) with different instance counts, feature flags, and configurations. Modeling these would connect the architecture to the humans and processes around it.
