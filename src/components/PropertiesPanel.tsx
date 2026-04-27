@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { Node } from "@xyflow/react";
-import type { SystemNodeData, Endpoint, ResourceLink, EffectiveStress } from "../types";
+import type {
+  SystemNodeData,
+  ComponentType,
+  Endpoint,
+  ResourceLink,
+  EffectiveStress,
+} from "../types";
 import type { Mode, PanelPosition } from "../App";
 import { displayType } from "../data";
 import { registry } from "../registry";
 import { ulid } from "ulid";
 import ToolLauncher from "../tools/ToolLauncher";
+import { getRecommendedTargets } from "../connections/index";
 
 interface Props {
   node: Node<SystemNodeData>;
@@ -16,6 +23,7 @@ interface Props {
   onTogglePanelPosition: () => void;
   stressEffect?: EffectiveStress;
   size?: number;
+  existingComponentTypes?: ComponentType[];
 }
 
 const HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -44,6 +52,63 @@ const STRESS_STATE_COLORS: Record<string, string> = {
   down: "bg-[rgba(239,68,68,0.12)] text-[#ef4444]",
 };
 
+function SuggestedConnections({
+  componentType,
+  existingTypes,
+}: {
+  componentType: ComponentType;
+  existingTypes: ComponentType[];
+}) {
+  const suggestions = useMemo(() => {
+    const targets = getRecommendedTargets(componentType, existingTypes);
+    // Filter out self-connections and limit to top 5
+    return targets.filter((t) => t.target !== componentType).slice(0, 5);
+  }, [componentType, existingTypes]);
+
+  if (suggestions.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[13px] font-semibold" style={{ color: "var(--text-dim)" }}>
+        Suggested connections
+      </label>
+      {suggestions.map((s) => {
+        const entry = registry.get(s.target);
+        if (!entry) return null;
+        return (
+          <div
+            key={s.target}
+            className="flex items-center gap-2 text-[12px] py-1 px-1.5 rounded"
+            style={{ color: "var(--text)" }}
+          >
+            <div
+              className="w-5 h-5 rounded flex items-center justify-center shrink-0"
+              style={{ backgroundColor: entry.color + "22" }}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="13"
+                height="13"
+                fill="none"
+                stroke={entry.color}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={entry.icon} />
+              </svg>
+            </div>
+            <span>{entry.label}</span>
+            <span className="ml-auto" style={{ color: "var(--text-dim)" }}>
+              {s.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function PropertiesPanel({
   node,
   mode,
@@ -53,6 +118,7 @@ export default function PropertiesPanel({
   onTogglePanelPosition,
   stressEffect,
   size,
+  existingComponentTypes,
 }: Props) {
   const { data } = node;
   const entry = registry.getOrDefault(data.componentType);
@@ -328,6 +394,13 @@ export default function PropertiesPanel({
         )}
 
         {mode === "plan" && <ToolLauncher componentType={data.componentType} />}
+
+        {mode === "plan" && existingComponentTypes && (
+          <SuggestedConnections
+            componentType={data.componentType}
+            existingTypes={existingComponentTypes}
+          />
+        )}
 
         {mode === "plan" && data.componentType === "api-gateway" && (
           <div className="flex flex-col gap-2">

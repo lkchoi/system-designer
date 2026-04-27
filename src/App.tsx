@@ -330,6 +330,14 @@ function Canvas({
     [nodes, selectedNodeId],
   );
 
+  const existingComponentTypes = useMemo(
+    () =>
+      nodes
+        .filter((n): n is SystemFlowNode => n.type === "system")
+        .map((n) => n.data.componentType),
+    [nodes],
+  );
+
   const selectedEdge = useMemo(
     () =>
       (selectedEdgeId
@@ -1865,6 +1873,7 @@ function Canvas({
                 onTogglePanelPosition={togglePanelPosition}
                 stressEffect={stressEffects.get(selectedNode.id)}
                 size={panelPosition === "bottom" ? panelHeight : panelWidth}
+                existingComponentTypes={existingComponentTypes}
               />
             )}
             {selectedNode && selectedNode.type === "container" && (
@@ -2106,6 +2115,7 @@ export default function App() {
     [refreshDesigns],
   );
 
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
   const handleImport = useCallback(async () => {
     const { getImportFormats } = await import("./converters");
     const importFormats = getImportFormats();
@@ -2116,14 +2126,20 @@ export default function App() {
       if (formatId && formatId !== "native-json") {
         const converter = importFormats.find((c) => c.id === formatId);
         if (converter?.importDesign) {
-          const design = converter.importDesign(content);
+          const { design, warnings } = converter.importDesign(content);
           const result = importDesign(JSON.stringify(design));
+          if (warnings.length > 0) {
+            setImportWarnings(warnings.map((w) => w.message));
+          }
           refreshDesigns();
           setDesignId(result.id);
           return;
         }
       }
       const result = importDesign(content);
+      if (result.warnings.length > 0) {
+        setImportWarnings(result.warnings.map((w) => w.message));
+      }
       refreshDesigns();
       setDesignId(result.id);
     } catch {
@@ -2169,6 +2185,39 @@ export default function App() {
           onImportDesign={handleImport}
           onStartCompare={handleStartCompare}
         />
+        {importWarnings.length > 0 && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-lg bg-yellow-900/90 border border-yellow-600/50 text-yellow-200 rounded-lg shadow-lg px-4 py-3 text-[13px]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-medium mb-1">
+                  Imported with {importWarnings.length} warning
+                  {importWarnings.length > 1 ? "s" : ""}
+                </div>
+                <ul className="list-disc list-inside space-y-0.5 text-yellow-300/80">
+                  {importWarnings.slice(0, 5).map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                  {importWarnings.length > 5 && <li>...and {importWarnings.length - 5} more</li>}
+                </ul>
+              </div>
+              <button
+                className="text-yellow-400 hover:text-yellow-200 shrink-0 mt-0.5"
+                onClick={() => setImportWarnings([])}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
       </CollabProvider>
     </ReactFlowProvider>
   );
