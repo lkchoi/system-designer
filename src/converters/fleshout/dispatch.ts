@@ -15,13 +15,16 @@
 import type { ComponentType } from "../../types";
 import type { Generator, GeneratorContext } from "./types";
 import { serviceLLMGenerator } from "./generators/service-llm";
+import { serverlessLLMGenerator } from "./generators/serverless-llm";
+import { cronLLMGenerator } from "./generators/cron-llm";
 
 // Map componentType → ordered list of candidate generators. The first one
 // whose `supports()` returns true wins.
 const REGISTRY: Partial<Record<ComponentType, Generator[]>> = {
   service: [serviceLLMGenerator],
-  // serverless, cron, webhook, stream-processor, database, etc. registered in
-  // subsequent commits.
+  serverless: [serverlessLLMGenerator],
+  cron: [cronLLMGenerator],
+  // webhook, stream-processor, database, etc. registered in subsequent commits.
 };
 
 export function pickGenerator(ctx: GeneratorContext): Generator | undefined {
