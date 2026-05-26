@@ -19,6 +19,7 @@ import { serverlessLLMGenerator } from "./generators/serverless-llm";
 import { cronLLMGenerator } from "./generators/cron-llm";
 import { webhookLLMGenerator } from "./generators/webhook-llm";
 import { streamLLMGenerator } from "./generators/stream-llm";
+import { sqlSchemaGenerator } from "./generators/sql-schema";
 
 // Map componentType → ordered list of candidate generators. The first one
 // whose `supports()` returns true wins.
@@ -28,7 +29,8 @@ const REGISTRY: Partial<Record<ComponentType, Generator[]>> = {
   cron: [cronLLMGenerator],
   webhook: [webhookLLMGenerator],
   "stream-processor": [streamLLMGenerator],
-  // database, message-queue, cache, storage, api-gateway, etc.
+  database: [sqlSchemaGenerator],
+  // message-queue, cache, storage, api-gateway, etc.
   // registered as deterministic Tier 2 generators land.
 };
 
