@@ -6,7 +6,7 @@
  * Blob) the same fields are encoded as a portable JSON descriptor.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const storageConfigGenerator: Generator = {
   kind: "deterministic",

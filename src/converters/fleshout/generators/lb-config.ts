@@ -5,7 +5,7 @@
  * fields: algorithm, healthCheck, targets, protocol.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const lbConfigGenerator: Generator = {
   kind: "deterministic",

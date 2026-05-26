@@ -3,7 +3,7 @@
  * snippet. Plan: domain, recordTypes, routingPolicy, ttl.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const dnsConfigGenerator: Generator = {
   kind: "deterministic",

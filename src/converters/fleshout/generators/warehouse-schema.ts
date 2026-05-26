@@ -13,7 +13,7 @@
  */
 
 import yaml from "js-yaml";
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 interface Column {
   name: string;

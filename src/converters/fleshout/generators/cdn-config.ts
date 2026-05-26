@@ -3,7 +3,7 @@
  * Plan: origins, cacheRules, edgeLocations.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const cdnConfigGenerator: Generator = {
   kind: "deterministic",

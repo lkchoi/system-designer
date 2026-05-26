@@ -6,7 +6,7 @@
  * rules automatically because they're security-critical.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const firewallConfigGenerator: Generator = {
   kind: "deterministic",

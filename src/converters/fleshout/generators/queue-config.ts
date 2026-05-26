@@ -10,7 +10,7 @@
  * Plan fields used: topics, retention, deliveryMode, partitions.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const queueConfigGenerator: Generator = {
   kind: "deterministic",

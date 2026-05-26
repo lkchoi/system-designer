@@ -8,7 +8,7 @@
  * so the services consuming the cache agree on conventions.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
+import type { Generator, GeneratedFile } from "../types";
 
 export const cacheConfigGenerator: Generator = {
   kind: "deterministic",
