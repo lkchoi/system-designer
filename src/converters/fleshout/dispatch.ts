@@ -22,6 +22,16 @@ import { streamLLMGenerator } from "./generators/stream-llm";
 import { sqlSchemaGenerator } from "./generators/sql-schema";
 import { dynamoSchemaGenerator } from "./generators/dynamo-schema";
 import { openApiGenerator } from "./generators/openapi";
+import { cacheConfigGenerator } from "./generators/cache-config";
+import { queueConfigGenerator } from "./generators/queue-config";
+import { searchMappingGenerator } from "./generators/search-mapping";
+import { storageConfigGenerator } from "./generators/storage-config";
+import { lbConfigGenerator } from "./generators/lb-config";
+import { firewallConfigGenerator } from "./generators/firewall-config";
+import { dnsConfigGenerator } from "./generators/dns-config";
+import { cdnConfigGenerator } from "./generators/cdn-config";
+import { k8sManifestGenerator } from "./generators/k8s-manifests";
+import { warehouseSchemaGenerator } from "./generators/warehouse-schema";
 
 // Map componentType → ordered list of candidate generators. The first one
 // whose `supports()` returns true wins.
@@ -34,6 +44,16 @@ const REGISTRY: Partial<Record<ComponentType, Generator[]>> = {
   // dynamo first so it wins on technology=dynamodb; sql wins for postgres/mysql/etc.
   database: [dynamoSchemaGenerator, sqlSchemaGenerator],
   "api-gateway": [openApiGenerator],
+  cache: [cacheConfigGenerator],
+  "message-queue": [queueConfigGenerator],
+  "search-engine": [searchMappingGenerator],
+  storage: [storageConfigGenerator],
+  "load-balancer": [lbConfigGenerator],
+  firewall: [firewallConfigGenerator],
+  dns: [dnsConfigGenerator],
+  cdn: [cdnConfigGenerator],
+  "container-orchestration": [k8sManifestGenerator],
+  "data-warehouse": [warehouseSchemaGenerator],
   // message-queue, cache, storage, api-gateway, etc.
   // registered as deterministic Tier 2 generators land.
 };
