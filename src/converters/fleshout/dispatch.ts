@@ -20,6 +20,7 @@ import { cronLLMGenerator } from "./generators/cron-llm";
 import { webhookLLMGenerator } from "./generators/webhook-llm";
 import { streamLLMGenerator } from "./generators/stream-llm";
 import { sqlSchemaGenerator } from "./generators/sql-schema";
+import { dynamoSchemaGenerator } from "./generators/dynamo-schema";
 
 // Map componentType → ordered list of candidate generators. The first one
 // whose `supports()` returns true wins.
@@ -29,7 +30,8 @@ const REGISTRY: Partial<Record<ComponentType, Generator[]>> = {
   cron: [cronLLMGenerator],
   webhook: [webhookLLMGenerator],
   "stream-processor": [streamLLMGenerator],
-  database: [sqlSchemaGenerator],
+  // dynamo first so it wins on technology=dynamodb; sql wins for postgres/mysql/etc.
+  database: [dynamoSchemaGenerator, sqlSchemaGenerator],
   // message-queue, cache, storage, api-gateway, etc.
   // registered as deterministic Tier 2 generators land.
 };
