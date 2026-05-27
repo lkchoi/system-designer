@@ -1,34 +1,35 @@
 #!/usr/bin/env bun
 /**
- * Buildout CLI: take a DesignJSON file, generate implementation
- * artifacts per node, write them under an output directory.
+ * Buildout CLI — dev script.
+ *
+ * Reads a DesignJSON file, dispatches per-node generators, and writes
+ * the produced files under an output directory. For LLM-driven node
+ * types (service, serverless, cron, webhook, stream-processor) the
+ * "produced files" are a bundle the user runs against their own model.
+ *
+ * This script is dev-tooling: it's how you smoke-test the buildout
+ * pipeline from the terminal. The product surface is the Arkon web UI
+ * (which will share the underlying buildOutDesign() call).
  *
  * Usage:
- *   bun run scripts/buildout.ts <input.json> [--out <dir>] [--only <type,...>]
- *     [--only-node <id,...>] [--lang node|python|go] [--no-llm] [--dry-run]
+ *   bun run buildout <input.json> [--out <dir>] [--only <type,...>]
+ *     [--only-node <id,...>] [--lang node|python|go] [--dry-run]
+ *     [--execute]
  *
- * Examples:
- *   # Generate everything (services need ANTHROPIC_API_KEY in env):
- *   bun run scripts/buildout.ts my-design.json --out ./generated
- *
- *   # Deterministic-only run — skip LLM-driven nodes (Tier 2 only):
- *   bun run scripts/buildout.ts my-design.json --no-llm
- *
- *   # Just one node type:
- *   bun run scripts/buildout.ts my-design.json --only database,api-gateway
- *
- * Mirrors the shape of scripts/export-design.ts so callers see a
- * consistent CLI style across exporters and buildouts.
+ * --execute is the only path through this CLI that calls an LLM. It
+ * reads ANTHROPIC_API_KEY from env, runs each generated bundle's
+ * prompt.md against Claude, and writes the produced files into the
+ * bundle folder. Useful for verifying prompts end-to-end without
+ * leaving the terminal. NOT part of the product — Arkon itself never
+ * executes prompts.
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import {
   buildOutDesign,
-  makeDefaultLLMClient,
   type BuildOutOpts,
 } from "../src/converters/buildout/index";
-import { shouldRegenerate } from "../src/converters/buildout/manifest";
 import type { ComponentType } from "../src/types";
 import type { ScaffoldLang } from "../src/converters/scaffold/concerns/types";
 
@@ -38,16 +39,16 @@ interface Args {
   only?: ComponentType[];
   onlyNode?: string[];
   language?: ScaffoldLang;
-  noLLM: boolean;
   dryRun: boolean;
+  execute: boolean;
   help: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {
     out: resolve(process.cwd(), "generated"),
-    noLLM: false,
     dryRun: false,
+    execute: false,
     help: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -71,11 +72,11 @@ function parseArgs(argv: string[]): Args {
         args.language = l;
         break;
       }
-      case "--no-llm":
-        args.noLLM = true;
-        break;
       case "--dry-run":
         args.dryRun = true;
+        break;
+      case "--execute":
+        args.execute = true;
         break;
       case "-h":
       case "--help":
@@ -93,18 +94,20 @@ function parseArgs(argv: string[]): Args {
 function printHelp() {
   console.log(
     [
-      "Usage: bun run scripts/buildout.ts <input.json> [options]",
+      "Usage: bun run buildout <input.json> [options]",
       "",
       "Options:",
       "  --out <dir>            Output directory (default ./generated)",
       "  --only <type,...>      Restrict to componentTypes (e.g. service,database)",
       "  --only-node <id,...>   Restrict to node IDs",
       "  --lang node|python|go  Override default language for compute nodes",
-      "  --no-llm               Skip LLM-driven generators (Tier 2 only)",
       "  --dry-run              Don't write files, print planned output",
+      "  --execute              Dev-only: pipe each bundle's prompt.md through Claude",
+      "                         and write the produced files. Requires ANTHROPIC_API_KEY.",
       "  -h, --help             Show this help",
       "",
-      "Env: ANTHROPIC_API_KEY enables LLM generators.",
+      "Without --execute, LLM-driven nodes emit a bundle (README.md, prompt.md,",
+      "validate.sh) and the user runs the prompt against their preferred tool.",
     ].join("\n"),
   );
 }
@@ -125,16 +128,7 @@ async function main() {
     throw new Error("Input file is not a DesignJSON (missing nodes/edges).");
   }
 
-  const llm = args.noLLM ? undefined : makeDefaultLLMClient();
-  if (!args.noLLM && !llm) {
-    console.warn(
-      "WARN: ANTHROPIC_API_KEY not set — LLM generators will be skipped.\n" +
-        "      Pass --no-llm to silence this and run deterministic generators only.",
-    );
-  }
-
   const opts: BuildOutOpts = {
-    llm,
     onlyTypes: args.only,
     onlyNodeIds: args.onlyNode,
     defaultLanguage: args.language,
@@ -166,36 +160,20 @@ async function main() {
     process.exit(0);
   }
 
-  // Write files. We do the regenerate check here (CLI level) rather than
-  // inside the generator so the LLM call cost is paid only when we
-  // actually intend to write. TODO: invert this so we read existing files
-  // first, compare hashes against a cheap-to-compute fingerprint of the
-  // *inputs*, and skip the LLM call entirely on no-op runs. Requires
-  // splitting prompt assembly from generation, which is a Phase 4 task.
-  let written = 0;
-  let skipped = 0;
   for (const f of result.files) {
     const target = join(args.out, f.path);
     await mkdir(dirname(target), { recursive: true });
-
-    let existing: string | undefined;
-    try {
-      existing = await readFile(target, "utf8");
-    } catch {
-      // not present
-    }
-
-    if (existing && f.promptHash && !shouldRegenerate(existing, f.promptHash)) {
-      skipped++;
-      continue;
-    }
-
     await writeFile(target, f.contents);
-    written++;
+  }
+  console.log(`Wrote ${result.files.length} files to ${args.out}`);
+
+  if (args.execute) {
+    // Dynamic import keeps the Anthropic SDK off the production code
+    // path. Only loaded when --execute is passed.
+    const { executeBundlesInDir } = await import("../src/converters/buildout/execute-bundles");
+    await executeBundlesInDir(args.out, result.files);
   }
 
-  console.log(`Wrote ${written} files, skipped ${skipped} unchanged.`);
-  console.log(`Output: ${args.out}`);
   if (result.errors.length) process.exit(2);
 }
 

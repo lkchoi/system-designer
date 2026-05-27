@@ -177,18 +177,18 @@ Copy \`prompt.md\` into the chat. For each file the model emits, save it next to
 ### Anthropic API (raw)
 \`\`\`sh
 curl https://api.anthropic.com/v1/messages \\
-  -H "x-api-key: \$ANTHROPIC_API_KEY" \\
+  -H "x-api-key: $ANTHROPIC_API_KEY" \\
   -H "anthropic-version: 2023-06-01" \\
   -H "content-type: application/json" \\
-  -d "\$(jq -Rs '{model:"claude-opus-4-7",max_tokens:32768,messages:[{role:"user",content:.}]}' < prompt.md)"
+  -d "$(jq -Rs '{model:"claude-opus-4-7",max_tokens:32768,messages:[{role:"user",content:.}]}' < prompt.md)"
 \`\`\`
 
 ### OpenAI API (raw)
 \`\`\`sh
 curl https://api.openai.com/v1/chat/completions \\
-  -H "Authorization: Bearer \$OPENAI_API_KEY" \\
+  -H "Authorization: Bearer $OPENAI_API_KEY" \\
   -H "content-type: application/json" \\
-  -d "\$(jq -Rs '{model:"gpt-4o",messages:[{role:"user",content:.}]}' < prompt.md)"
+  -d "$(jq -Rs '{model:"gpt-4o",messages:[{role:"user",content:.}]}' < prompt.md)"
 \`\`\`
 
 ### Local (Ollama, llama.cpp, vLLM)

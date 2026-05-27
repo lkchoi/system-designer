@@ -65,8 +65,6 @@ export interface GeneratorContext {
   mergedSlots?: MergedSlots;
   /** Target language for compute generators. */
   language?: ScaffoldLang;
-  /** LLM client (undefined ⇒ deterministic-only run). */
-  llm?: LLMClient;
   /** Endpoints attached to the node, if any. */
   endpoints?: Endpoint[];
 }
@@ -80,26 +78,6 @@ export interface Generator {
   generate: (ctx: GeneratorContext) => Promise<GeneratedFile[]>;
 }
 
-/** Provider-agnostic LLM client. */
-export interface LLMClient {
-  /**
-   * Generate one or more files. Implementations should:
-   *  - use a low / deterministic-ish setting where supported
-   *  - leverage prompt caching for the stable system message
-   *  - validate the response shape and surface helpful errors
-   */
-  completeFiles(opts: {
-    system: string;
-    user: string;
-    /** Hint about which language the output is in (helps validation). */
-    language?: ScaffoldLang;
-  }): Promise<{
-    files: { path: string; contents: string }[];
-    /** Concatenated full prompt — used for hashing. */
-    promptText: string;
-  }>;
-}
-
 /** Aggregated result of one buildout run. */
 export interface BuildOutResult {
   files: GeneratedFile[];
@@ -111,8 +89,6 @@ export interface BuildOutResult {
 export interface BuildOutOpts {
   /** Default language for compute nodes (overridable per node via plan.technology). */
   defaultLanguage?: ScaffoldLang;
-  /** LLM client to use; omit for deterministic-only runs. */
-  llm?: LLMClient;
   /** Restrict to specific componentTypes. */
   onlyTypes?: ComponentType[];
   /** Restrict to specific node ids. */

@@ -22,7 +22,6 @@ import type {
 
 export * from "./types";
 export { pickGenerator, registerGenerator } from "./dispatch";
-export { makeAnthropicLLMClient, makeDefaultLLMClient } from "./llm-client";
 
 /**
  * Map a tech id to a scaffold language. Same logic the scaffold package
@@ -82,8 +81,9 @@ export async function buildOutDesign(
       }
     }
 
-    // For compute-like nodes, pre-resolve scaffold concerns so the LLM
-    // sees the same client setup the scaffolded code would have.
+    // For compute-like nodes, pre-resolve scaffold concerns so the prompt
+    // tells the downstream LLM about the same client setup the scaffolded
+    // code would have.
     const compute = data.componentType === "service" || data.componentType === "serverless";
     const techId = resolveTechId(data.componentType, data.plan?.technology ?? "", "docker");
     const lang = opts.defaultLanguage ?? techToLang(techId);
@@ -105,7 +105,6 @@ export async function buildOutDesign(
       outbound,
       mergedSlots,
       language: lang,
-      llm: opts.llm,
       endpoints: data.endpoints,
     };
 
@@ -113,9 +112,7 @@ export async function buildOutDesign(
     if (!gen) {
       result.skipped.push({
         nodeId: node.id,
-        reason:
-          `No generator registered for componentType=${data.componentType}` +
-          (compute && !opts.llm ? " (LLM client missing for compute node)" : ""),
+        reason: `No generator registered for componentType=${data.componentType}`,
       });
       continue;
     }
