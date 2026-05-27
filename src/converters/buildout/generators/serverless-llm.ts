@@ -1,15 +1,14 @@
 /**
- * LLM-driven serverless generator.
+ * Serverless generator (bundle-emit).
  *
- * Serverless is a single-entry variant of service. Adds a guidance block
- * to the service user-prompt that pins the output shape to a single
- * handler (no HTTP server boilerplate) and tells the LLM what event
- * shape to expect based on the trigger plan field.
+ * Single-entry variant of service. Adds guidance describing the handler
+ * shape and the event-payload schemas to expect based on the trigger
+ * plan field.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
-import { buildServiceUserPrompt } from "../prompt";
-import { runLLMGenerator } from "./_llm-runner";
+import { emitBundle } from "../bundle";
+import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
+import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 const SERVERLESS_GUIDANCE = [
   "",
@@ -24,18 +23,18 @@ const SERVERLESS_GUIDANCE = [
   "</serverless>",
 ].join("\n");
 
-function buildServerlessUserPrompt(ctx: GeneratorContext): string {
-  return buildServiceUserPrompt(ctx) + SERVERLESS_GUIDANCE;
-}
-
 export const serverlessLLMGenerator: Generator = {
   kind: "llm",
 
   supports(ctx) {
-    return ctx.node.componentType === "serverless" && !!ctx.llm;
+    return ctx.node.componentType === "serverless";
   },
 
   async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
-    return runLLMGenerator(ctx, buildServerlessUserPrompt);
+    const lang = ctx.language ?? "node";
+    return emitBundle(ctx, {
+      systemPrompt: buildSystemPrompt(lang),
+      userPrompt: buildServiceUserPrompt(ctx) + SERVERLESS_GUIDANCE,
+    });
   },
 };

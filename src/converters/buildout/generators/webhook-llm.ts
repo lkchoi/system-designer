@@ -24,9 +24,9 @@
  * that's the more common "I want to send notifications" intent.
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
-import { buildServiceUserPrompt } from "../prompt";
-import { runLLMGenerator } from "./_llm-runner";
+import { emitBundle } from "../bundle";
+import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
+import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 const INBOUND_GUIDANCE = [
   "",
@@ -69,19 +69,19 @@ function isInboundWebhook(ctx: GeneratorContext): boolean {
   return ctx.outbound.length > 0;
 }
 
-function buildWebhookUserPrompt(ctx: GeneratorContext): string {
-  const guidance = isInboundWebhook(ctx) ? INBOUND_GUIDANCE : OUTBOUND_GUIDANCE;
-  return buildServiceUserPrompt(ctx) + guidance;
-}
-
 export const webhookLLMGenerator: Generator = {
   kind: "llm",
 
   supports(ctx) {
-    return ctx.node.componentType === "webhook" && !!ctx.llm;
+    return ctx.node.componentType === "webhook";
   },
 
   async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
-    return runLLMGenerator(ctx, buildWebhookUserPrompt);
+    const lang = ctx.language ?? "node";
+    const guidance = isInboundWebhook(ctx) ? INBOUND_GUIDANCE : OUTBOUND_GUIDANCE;
+    return emitBundle(ctx, {
+      systemPrompt: buildSystemPrompt(lang),
+      userPrompt: buildServiceUserPrompt(ctx) + guidance,
+    });
   },
 };

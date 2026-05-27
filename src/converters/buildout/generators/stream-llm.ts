@@ -1,26 +1,15 @@
 /**
- * Stream-processor generator.
+ * Stream-processor generator (bundle-emit).
  *
- * Per the plan, this is intended to be a hybrid generator: deterministic
- * operator skeleton from a structured `operations` plan field + LLM
- * bodies for the transform code.
- *
- * **Reality check (v1):** `operations` doesn't exist on the registry yet
- * — that's blocked on the registry-promotion task (see buildout-plan.md).
- * So v1 emits an LLM-only generator with strong guidance for the
- * operator-chain pattern derived from `windowType`, `inputSource`, and
- * `outputSink` plan fields.
- *
- * TODO(hybrid): once `operations` lands on the registry, fork this into
- * a deterministic skeleton-builder + per-operator LLM body calls. The
- * skeleton would be the source/sink wiring and window setup; the LLM
- * would only fill the map/filter/aggregate function bodies. This cuts
- * token spend and reduces nondeterminism for the boilerplate parts.
+ * v1 is LLM-only: the user runs the bundle's prompt against their model
+ * of choice. The hybrid deterministic-skeleton + LLM-body design from
+ * the plan remains blocked on a structured `operations` plan field; see
+ * .context/buildout-plan.md (Registry changes).
  */
 
-import type { Generator, GeneratorContext, GeneratedFile } from "../types";
-import { buildServiceUserPrompt } from "../prompt";
-import { runLLMGenerator } from "./_llm-runner";
+import { emitBundle } from "../bundle";
+import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
+import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 const STREAM_GUIDANCE = [
   "",
@@ -42,18 +31,18 @@ const STREAM_GUIDANCE = [
   "</stream-processor>",
 ].join("\n");
 
-function buildStreamUserPrompt(ctx: GeneratorContext): string {
-  return buildServiceUserPrompt(ctx) + STREAM_GUIDANCE;
-}
-
 export const streamLLMGenerator: Generator = {
   kind: "llm",
 
   supports(ctx) {
-    return ctx.node.componentType === "stream-processor" && !!ctx.llm;
+    return ctx.node.componentType === "stream-processor";
   },
 
   async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
-    return runLLMGenerator(ctx, buildStreamUserPrompt);
+    const lang = ctx.language ?? "node";
+    return emitBundle(ctx, {
+      systemPrompt: buildSystemPrompt(lang),
+      userPrompt: buildServiceUserPrompt(ctx) + STREAM_GUIDANCE,
+    });
   },
 };
