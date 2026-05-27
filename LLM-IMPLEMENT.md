@@ -1,141 +1,146 @@
-# LLM-Driven Build-Out — Implementation Notes & Progress
+# Buildout — Implementation Notes & Progress
 
-Sibling to `.context/buildout-plan.md` (the spec). This file tracks **what I built, decisions I made, and why** as I work through the phases.
+Sibling to `.context/buildout-plan.md`. Tracks **what I built, decisions I made, and why**.
 
-## Status — all phases shipped
+## Status
 
 | Phase | Description | Status |
 |---|---|---|
 | 1 | Subsystem skeleton (types, dispatch, manifest, public API) | ✅ |
 | 2a | Prompt assembly (system + user) | ✅ |
-| 2b | Anthropic LLM client | ✅ |
-| 2c | Service LLM generator | ✅ |
+| 2b | ~~Anthropic LLM client~~ (removed — bundle pivot) | ⛔ |
+| 2c | Service generator | ✅ (emits bundle) |
 | 2d | CLI entrypoint (`scripts/buildout.ts`) | ✅ |
-| 3a | Serverless + cron LLM generators | ✅ |
+| 3a | Serverless + cron generators | ✅ |
 | 3b | Webhook generator (inbound + outbound) | ✅ |
 | 3c | Stream-processor generator | ✅ |
 | 4a | SQL schema generator | ✅ |
 | 4b | DynamoDB schema generator | ✅ |
 | 4c | OpenAPI generator (api-gateway) | ✅ |
 | 4d | Remaining config generators (cache, queue, search, storage, lb, firewall, dns, cdn, k8s, warehouse) | ✅ |
+| 5 | **Bundle pivot** — Tier 1 emits vendor-agnostic bundles, no LLM call in product code | ✅ |
 
-53 buildout-specific tests passing, 812 total. CLI smoke-tested end-to-end against a 2-node design (database + cache) producing expected files in `<slug>/` folders.
+58 buildout-specific tests passing, 829 total. CLI smoke-tested end-to-end.
+
+## The bundle pivot
+
+The original plan had Arkon directly call Claude to produce code (`llm-client.ts`, `runLLMGenerator`, `--no-llm` toggle). We replaced this with a **vendor-agnostic bundle emitter**.
+
+### What each Tier 1 node emits now
+
+```
+<slug>/
+├── README.md     — usage instructions across Claude Code / Cursor / web / raw API (Anthropic + OpenAI) / local (Ollama)
+├── prompt.md     — full system + user prompt, self-contained
+└── validate.sh   — language-aware post-gen check (tsc / pyright + py_compile / go vet)
+```
+
+The user picks their own tool to run `prompt.md`. Arkon never sees an API key.
+
+### Why this is better
+
+- **Zero credential management in Arkon.** No localStorage, no Settings panel, no disclosure modal, no audit burden.
+- **Vendor neutral.** Works with any model: Claude, GPT, Gemini, local Ollama. User's choice.
+- **Composes with existing AI workflows.** People already using Claude Code or Cursor don't get yet another integration.
+- **Reviewable.** Users can read and edit prompts before running them — important for compliance.
+- **Simpler product.** No "Build it" UI streaming, no cancel, no key modal. Just emit files.
+
+### Dev-side escape hatch
+
+`scripts/buildout.ts --execute` reads each bundle's `prompt.md`, pipes it through Claude (`claude-opus-4-7`, adaptive thinking, `xhigh` effort, JSON-schema structured output), and writes the produced files into the bundle folder. Useful for smoke-testing prompts in one terminal command.
+
+This path **only loads via dynamic import** — the Anthropic SDK never reaches the production bundle. The web UI cannot accidentally pull it in.
 
 ## Generator coverage by componentType
 
-**LLM-driven (Tier 1):**
-- `service` → handler files + tests (uses scaffold's MergedSlots as context)
-- `serverless` → single-entry handler keyed to trigger
-- `cron` → job body + scheduler registration + tests
-- `webhook` → inbound receiver (verify/validate/dispatch) OR outbound emitter (sign/retry/idempotency) based on edge direction
-- `stream-processor` → operator chain + window setup + DLQ handler
+**Bundle emitters (Tier 1, LLM-driven):**
+- `service` → handler files + tests bundle (uses scaffold's MergedSlots as context)
+- `serverless` → single-entry handler bundle keyed to trigger
+- `cron` → job body + scheduler registration bundle
+- `webhook` → inbound receiver OR outbound emitter bundle, based on edge direction
+- `stream-processor` → operator chain bundle
 
-**Deterministic (Tier 2):**
+**Deterministic generators (Tier 2, no LLM ever):**
 - `database` (SQL: postgresql/mysql/sqlite/cockroachdb/tidb) → `schema.sql`
 - `database` (DynamoDB) → `dynamo-table.json` + `access-patterns.md`
 - `api-gateway` → `openapi.yaml` + `openapi.json`
 - `cache` → `README.md` + `redis.conf`
-- `message-queue` → Kafka topic JSON / SQS CFN / topics.md fallback
+- `message-queue` → Kafka `topics.json` / SQS CFN / `topics.md` fallback
 - `search-engine` → `<index>.mapping.json` (ES/OpenSearch shape)
 - `storage` → S3 CFN / portable JSON
 - `load-balancer` → ALB CFN + `nginx.conf`
-- `firewall` → security-group CFN + `waf-rules.md` (recommendations, not auto-deployed)
+- `firewall` → security-group CFN + `waf-rules.md`
 - `dns` → Route53 CFN + zone file
 - `cdn` → CloudFront distribution CFN
 - `container-orchestration` → Deployment + Service + HPA per attached service
 - `data-warehouse` → BigQuery/Snowflake/Redshift-aware DDL
 
-**Not yet generated:** `client` (canvas placeholder for end-user devices — low priority per plan).
+**Not yet generated:** `client` (canvas placeholder for end-user devices — low priority).
 
 ## Key files
 
-- `src/converters/buildout/types.ts` — `GeneratorContext`, `Generator`, `LLMClient`, `BuildOutResult`, `BuildOutOpts`.
-- `src/converters/buildout/prompt.ts` — Stable, cache-eligible system prompt + per-node user prompt builder. **Versioned** via `SYSTEM_PROMPT_VERSION = "v1.0.0"`. Bump when the template changes — invalidates all prompt hashes.
-- `src/converters/buildout/llm-client.ts` — Anthropic SDK wrapper. Model: `claude-opus-4-7`. Effort: `xhigh`. Adaptive thinking. JSON Schema structured outputs. System prompt cached.
-- `src/converters/buildout/manifest.ts` — `// buildout: <sha256>` header for regenerate detection.
-- `src/converters/buildout/dispatch.ts` — `componentType → Generator[]`. Falls through generators in order.
-- `src/converters/buildout/index.ts` — Public `buildOutDesign(nodes, edges, opts)` API. Mirrors scaffold subsystem.
-- `src/converters/buildout/generators/_llm-runner.ts` — Shared LLM-runner used by all Tier-1 generators.
-- `src/converters/buildout/generators/*.ts` — One file per generator.
-- `scripts/buildout.ts` — CLI. `bun run buildout <design.json> [--out|--only|--lang|--no-llm|--dry-run]`.
+- `src/converters/buildout/types.ts` — `GeneratorContext`, `Generator`, `BuildOutResult`, `BuildOutOpts`.
+- `src/converters/buildout/prompt.ts` — stable system prompt + per-node user prompt builder. Versioned via `SYSTEM_PROMPT_VERSION = "v1.0.0"`.
+- `src/converters/buildout/bundle.ts` — `emitBundle()` — turns a prompt into the README + prompt.md + validate.sh trio.
+- `src/converters/buildout/manifest.ts` — prompt-hash helpers (vestigial since the bundle pivot; kept for the dev-only `--execute` path's eventual regenerate detection).
+- `src/converters/buildout/dispatch.ts` — `componentType → Generator[]`.
+- `src/converters/buildout/index.ts` — public `buildOutDesign(nodes, edges, opts)` API.
+- `src/converters/buildout/execute-bundles.ts` — **dev-only**, dynamically imported by the `--execute` CLI flag. Holds the Anthropic SDK dependency.
+- `src/converters/buildout/generators/*.ts` — one file per generator.
+- `scripts/buildout.ts` — dev script. `bun run buildout <design.json>` emits bundles; `--execute` additionally runs them through Claude.
 
 ## Decisions log
 
-### Why Opus 4.7 + xhigh effort + adaptive thinking
-Per the `claude-api` skill: Opus 4.7 is the default; `effort: "xhigh"` is the sweet spot for code generation (the default for Claude Code itself). Adaptive thinking lets the model decide reasoning depth per node — simple service nodes won't burn extra tokens, complex ones get more headroom.
+### Why bundles over direct LLM calls
+Avoids vendor lock-in and credential management in Arkon. Users pick their own model. See "The bundle pivot" above for the full rationale.
 
-### Why structured outputs (`output_config.format`) instead of prefills
-Assistant-turn prefills 400 on Opus 4.6+ and are fully removed on 4.7. Structured outputs via JSON Schema is the recommended replacement and gives stronger guarantees than a prefill ever did (no more "the model added prose before the JSON").
-
-### Why prompt caching on the system message
-The system prompt is byte-stable per language. Multiple service nodes generated in one CLI run share the system tokens — only the per-node user message is new context. With Opus 4.7's pricing, the cache hit on system tokens covers the ~1.25× write premium after the 2nd node.
-
-### Why we reuse `resolveConcerns()`
-The scaffold subsystem already computes the exact set of imports/globals/init/shutdown/healthChecks for a service based on its outbound edges. Feeding that to the LLM as `<available-clients>` keeps generated handlers consistent with the scaffolded boilerplate. The LLM is told *not* to invent new dependencies.
-
-### Why a `// buildout: <hash>` header instead of a sidecar manifest
-- One file per artifact, no orphaned `.buildout.json` metadata to chase.
-- Survives `git mv` and rename.
-- Easy to grep for stale generators (`rg "buildout: " --files-with-matches`).
-- Comment syntax adapts per-language (`//`, `#`, `--`).
-
-Tradeoff: clobbers the first line. Acceptable since callers can opt out.
+### Why we still reuse `resolveConcerns()`
+The scaffold subsystem already computes the exact set of imports/globals/init/shutdown/healthChecks for a service based on its outbound edges. Inserting that into the bundle's prompt under `<available-clients>` means whichever LLM the user runs is told *not* to invent new dependencies — it must use what scaffold already wired.
 
 ### Why dispatch is a flat map (not on the registry yet)
-Per `CLAUDE.md`, the registry is the single source of truth for component types. Adding `buildOut?: { kind, generator, requiredFields }` to `ComponentRegistryEntry` was tempting, but the structured plan-field shape isn't finalized — Tier 2 generators just landed and we'll learn from running them. Plan: promote to registry after the YAML field shape (`columns`, `accessPatterns`, `mappings`, `operations`) stabilizes. TODO in `dispatch.ts`.
-
-### Why streaming (`messages.stream`) instead of `.create`
-Per the skill: any request with `max_tokens > ~16K` should stream to avoid SDK HTTP timeouts. Default `max_tokens` is 32768. Streaming is also cheaper to abort if the user Ctrl-Cs the CLI.
+Per `CLAUDE.md`, the registry is the single source of truth for component types. Adding `buildOut?: { kind, generator, requiredFields }` to `ComponentRegistryEntry` was tempting, but the structured plan-field shape isn't finalized — Tier 2 generators just landed and we'll learn from running them. Plan: promote to registry after `columns`, `accessPatterns`, `mappings`, `operations` YAML shapes stabilize. TODO in `dispatch.ts`.
 
 ### Why webhook direction is inferred from edge direction
-On the canvas, edge direction follows the flow of data. An **inbound receiver** has outbound edges (it routes a third-party request *into* the system). An **outbound emitter** has inbound edges (services push events into it for delivery). Ambiguous cases default to outbound emitter — that's the more common "I want to send notifications" intent. Both flavors get tailored prompt guidance.
+On the canvas, edge direction follows the flow of data. An **inbound receiver** has outbound edges (it routes a third-party request *into* the system). An **outbound emitter** has inbound edges (services push events into it for delivery). Ambiguous cases default to outbound emitter. Both flavors get tailored guidance blocks appended to the service prompt.
 
-### Why stream-processor is LLM-only in v1
-The plan calls for a hybrid generator: deterministic operator skeleton + LLM bodies. That needs a structured `operations` plan field on the registry, which is blocked on the same registry-promotion task. v1 ships an LLM-only generator with strong operator-chain guidance derived from `windowType` / `inputSource` / `outputSink`. TODO marked.
+### Why stream-processor is bundle-only in v1
+The plan calls for a hybrid: deterministic operator skeleton + per-operator LLM bodies. That needs a structured `operations` plan field on the registry, which is blocked on the same registry-promotion task. v1 ships a single-bundle stream-processor generator with strong operator-chain guidance derived from `windowType`/`inputSource`/`outputSink`. TODO marked.
 
 ### Why DynamoDB output is CloudFormation
-CFN's `AWS::DynamoDB::Table` shape is the most universal — accepted directly by CDK, mostly compatible with `aws_dynamodb_table` (Terraform), and the SDK's `CreateTable` schema is a strict subset. One file, multiple downstream consumers.
+CFN's `AWS::DynamoDB::Table` shape is the most universal — accepted directly by CDK, mostly compatible with Terraform's `aws_dynamodb_table`, and the SDK's `CreateTable` schema is a strict subset. One file, multiple downstream consumers.
 
 ### Why we emit YAML *and* JSON for OpenAPI
-JSON is what 90% of tooling consumes (Postman, code generators, AWS API Gateway imports). YAML is what humans diff and check in. Cost to emit both is trivial.
+JSON is what 90% of tooling consumes. YAML is what humans diff and check in. Cost to emit both is trivial.
 
 ### Why firewall WAF rules ship as a markdown doc, not an auto-deployed config
-Security-critical. Wrong WAF rules can either block legitimate traffic (bad) or open holes (worse). Recommendations live in `waf-rules.md` for human review.
+Security-critical. Wrong WAF rules either block legitimate traffic (bad) or open holes (worse). Recommendations live in `waf-rules.md` for human review.
 
-## Open questions tracked as TODOs in code
+### Why `--execute` uses dynamic import
+Keeps the Anthropic SDK off the product code path. The Cloudflare bundle never sees `@anthropic-ai/sdk`. The web UI cannot accidentally pull it in. Only `scripts/buildout.ts` resolves it at runtime when `--execute` is passed.
 
-| Topic | Where | Resolution plan |
+## Open questions / next steps
+
+| Topic | Where | Plan |
 |---|---|---|
-| Structured plan fields (YAML in string vs widget) | `prompt.ts:plan-hints`, sql-schema, dynamo-schema, search-mapping, warehouse-schema | Push to registry-promotion phase |
-| LLM budget / cost cap | `llm-client.ts` | CLI-level. Add `--max-cost` after we have empirical numbers |
-| Promote dispatch to registry `buildOut` field | `dispatch.ts` | After Tier 2 generators are stable in production |
-| Output target convention | `scripts/buildout.ts` | v1: caller-controlled via CLI `--out`. v2: UI zip download |
-| K8s container image is unknown at buildout time | `k8s-manifests.ts` | Mark as `TODO-<svc>:latest` placeholder — caller substitutes at deploy time |
-| Replication destination bucket ARN | `storage-config.ts` | Surface as `x-todo-replication` in CFN; designers fill in |
-| Hybrid stream-processor (deterministic skeleton + LLM body) | `stream-llm.ts` | Blocked on `operations` structured plan field |
-| Non-simple DNS routing policies (weighted/latency/geo) | `dns-config.ts` | Surface as `_todo` field in record set |
-| Validation pipeline (`tsc`/`pyright`/`go vet` on generated files) | `index.ts` post-write | Phase 5; needs language-specific runners |
-| UI integration (right-click "Build out…") | TBD | Phase 4 from the plan |
+| Structured plan fields → dedicated widgets | `prompt.ts:plan-hints`, Tier 2 schema generators | Build widget editor in canvas for `columns`, `accessPatterns`, `mappings`, `operations` |
+| Validation pipeline (tsc/pyright/go vet) | already in bundle's `validate.sh` | Add hosted check in `--execute` mode that runs validate.sh after writing files |
+| Promote dispatch to registry `buildOut` field | `dispatch.ts` | After widgets land (#1) |
+| UI surfacing — "Build it" button | TBD | FSA folder picker (or zip fallback); per-node right-click + top-level toolbar |
+| Telemetry — token usage + cache hits | `execute-bundles.ts` (dev-only); pending for UI | Already logs per-call usage in `--execute`; UI counterpart depends on whether UI ever executes (it shouldn't) |
+| Stream-processor hybrid (deterministic skeleton + bundle bodies) | `stream-llm.ts` | Blocked on `operations` structured field |
 
 ## Tests
 
-- `prompt.test.ts` — Asserts byte stability (caching), language-specific framework hints, edge rendering, slot rendering, plan-hint exclusion of `technology`.
-- `manifest.test.ts` — Hash stability, header round-trip across comment syntaxes, regenerate decisions.
-- `sql-schema.test.ts` — DDL generation across dialects, composite PK, FK refs, indexes, stub fallback, malformed YAML resilience.
-- `dynamo-schema.test.ts` — Base PK derivation, GSI creation, GSI suppression when partition reuses base PK, sidecar `access-patterns.md`.
-- `openapi.test.ts` — Both file variants, security schemes, proxy routes, explicit endpoints, vendor extensions.
-- `tier2-smoke.test.ts` — One happy-path assertion per generator for cache, queue, search-engine, storage, lb, firewall, dns, cdn, k8s, warehouse.
+- `prompt.test.ts` — system prompt byte-stability, language-specific framework hints, edge rendering, slot rendering.
+- `manifest.test.ts` — hash stability, header round-trip, regenerate decisions.
+- `bundle.test.ts` — 3-file emission, prompt embedding, expected-outputs listing, vendor-neutral README, per-language validator.
+- `sql-schema.test.ts` — DDL across dialects, composite PK, FK refs, indexes, stub fallback, malformed YAML resilience.
+- `dynamo-schema.test.ts` — base PK derivation, GSI creation, GSI suppression when partition reuses base PK, sidecar `access-patterns.md`.
+- `openapi.test.ts` — YAML + JSON variants, security schemes, proxy routes, explicit endpoints, vendor extensions.
+- `tier2-smoke.test.ts` — happy-path assertion per generator for cache, queue, search-engine, storage, lb, firewall, dns, cdn, k8s, warehouse.
 
 Run: `bunx vitest run src/converters/buildout/`.
 
 ## Build state
 
-`npx tsc --noEmit` clean. Vitest passes (53 buildout-specific, 812 total). CLI smoke-tested against a 2-node design.
-
-## What's next (post-this-session)
-
-1. **Validate generated code** — run `tsc --noEmit` / `pyright` / `go build` on generated files before writing them. Surface failures in `BuildOutResult.errors`.
-2. **Registry promotion** — extend `ComponentRegistryEntry` with `buildOut?: { kind, generator, requiredFields, structuredFields }`. Replace the flat dispatch map with a registry lookup. Forces designers to declare which YAML plan fields each component type requires.
-3. **UI surfacing** — right-click "Build out…" on a node; modal with diff preview; BYO API key. See plan §"UI (later)".
-4. **Real run cost telemetry** — instrument `LLMClient.completeFiles` to report `cache_read_input_tokens` vs `input_tokens` per call so we can tune effort and prompt-caching empirically.
-5. **Stream-processor hybrid** — once `operations` lands on the registry, fork `stream-llm.ts` into a deterministic skeleton-builder + per-operator LLM call. Cuts token spend and nondeterminism for boilerplate.
+`npx tsc --noEmit` clean. 58 buildout-specific tests pass (829 total). CLI smoke-tested against a service+database design — produced one bundle and one schema.sql, exactly the contract.
