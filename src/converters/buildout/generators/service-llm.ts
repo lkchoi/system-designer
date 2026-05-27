@@ -28,8 +28,9 @@
  */
 
 import { emitBundle } from "../bundle";
-import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
+import { buildServiceUserPrompt, buildSystemPrompt, languageProfile } from "../prompt";
 import type { Endpoint } from "../../../types";
+import type { ScaffoldLang } from "../../scaffold/concerns/types";
 import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 export const serviceLLMGenerator: Generator = {
@@ -43,38 +44,76 @@ export const serviceLLMGenerator: Generator = {
     const lang = ctx.language ?? "node";
     const endpoints = ctx.endpoints ?? ctx.node.endpoints ?? [];
 
-    // Today's hybrid skeleton is TS-only. Python/Go endpoints fall back
-    // to the bundle prompt — same as how stream-processor handled it
-    // before extending to Python+Go.
-    const supportsHybrid = lang === "node";
-
-    if (endpoints.length === 0 || !supportsHybrid) {
+    if (endpoints.length === 0) {
       return emitBundle(ctx, {
         systemPrompt: buildSystemPrompt(lang),
         userPrompt: buildServiceUserPrompt(ctx),
       });
     }
 
-    return emitHybrid(ctx, endpoints);
+    return emitHybrid(ctx, endpoints, lang);
   },
 };
 
-function emitHybrid(ctx: GeneratorContext, endpoints: Endpoint[]): GeneratedFile[] {
+function emitHybrid(
+  ctx: GeneratorContext,
+  endpoints: Endpoint[],
+  lang: ScaffoldLang,
+): GeneratedFile[] {
   const handlers = endpoints.map((ep, idx) => ({
     endpoint: ep,
     idx,
-    name: handlerFnName(ep, idx),
+    name: handlerFnName(ep, idx, lang),
   }));
 
-  const server = renderServerTs(ctx, handlers);
-  const operatorPrompt = buildHandlerPrompt(ctx, handlers, server);
+  const renderer = SERVER_RENDERERS[lang];
+  const server = renderer(ctx, handlers);
+  const serverFile = serverFilename(lang);
+  const expectedOutputs = handlerOutputPaths(lang);
+  const fence = serverFenceLang(lang);
+
+  const handlerPrompt = buildHandlerPrompt(ctx, handlers, server, serverFile, expectedOutputs, fence, lang);
   const bundle = emitBundle(ctx, {
-    systemPrompt: buildSystemPrompt("node"),
-    userPrompt: operatorPrompt,
-    expectedOutputs: ["handlers.ts", "handlers.test.ts"],
+    systemPrompt: buildSystemPrompt(lang),
+    userPrompt: handlerPrompt,
+    expectedOutputs,
   });
 
-  return [{ path: "server.ts", contents: server }, ...bundle];
+  return [{ path: serverFile, contents: server }, ...bundle];
+}
+
+type ServerRenderer = (ctx: GeneratorContext, handlers: HandlerRef[]) => string;
+
+const SERVER_RENDERERS: Record<ScaffoldLang, ServerRenderer> = {
+  node: (ctx, h) => renderServerTs(ctx, h),
+  python: (ctx, h) => renderServerPython(ctx, h),
+  go: (ctx, h) => renderServerGo(ctx, h),
+};
+
+function serverFilename(lang: ScaffoldLang): string {
+  return `server.${languageProfile(lang).ext}`;
+}
+
+function handlerOutputPaths(lang: ScaffoldLang): string[] {
+  switch (lang) {
+    case "node":
+      return ["handlers.ts", "handlers.test.ts"];
+    case "python":
+      return ["handlers.py", "test_handlers.py"];
+    case "go":
+      return ["handlers.go", "handlers_test.go"];
+  }
+}
+
+function serverFenceLang(lang: ScaffoldLang): string {
+  switch (lang) {
+    case "node":
+      return "ts";
+    case "python":
+      return "python";
+    case "go":
+      return "go";
+  }
 }
 
 interface HandlerRef {
@@ -83,13 +122,17 @@ interface HandlerRef {
   name: string;
 }
 
-function handlerFnName(ep: Endpoint, idx: number): string {
+function handlerFnName(ep: Endpoint, idx: number, lang: ScaffoldLang): string {
   const slug = ep.path
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 40);
-  return `${ep.method.toLowerCase()}_${String(idx + 1).padStart(2, "0")}${slug ? `_${slug}` : ""}`;
+  const base = `${ep.method.toLowerCase()}_${String(idx + 1).padStart(2, "0")}${slug ? `_${slug}` : ""}`;
+  // Go conventions: exported (capitalized) symbols cross files in the
+  // same package, so we capitalize the first character for Go only.
+  if (lang === "go") return base[0].toUpperCase() + base.slice(1);
+  return base;
 }
 
 /**
@@ -203,25 +246,30 @@ function buildHandlerPrompt(
   ctx: GeneratorContext,
   handlers: HandlerRef[],
   serverSrc: string,
+  serverFile: string,
+  expectedOutputs: string[],
+  fenceLang: string,
+  lang: ScaffoldLang,
 ): string {
+  const [handlersFile, handlersTestFile] = expectedOutputs;
   const lines: string[] = [];
   lines.push(buildServiceUserPrompt(ctx));
   lines.push("");
   lines.push("<hybrid-skeleton>");
   lines.push(
-    "The HTTP server skeleton (`server.ts`) is already generated. It " +
-      "registers a route per declared endpoint, parses query/body, and " +
-      "dispatches to a named handler in `handlers.ts`. Your job is to " +
-      "write ONLY `handlers.ts` (plus `handlers.test.ts`) — do NOT " +
-      "regenerate `server.ts`.",
+    `The HTTP server skeleton (\`${serverFile}\`) is already generated. It ` +
+      `registers a route per declared endpoint, parses query/body, and ` +
+      `dispatches to a named handler in \`${handlersFile}\`. Your job is to ` +
+      `write ONLY \`${handlersFile}\` (plus \`${handlersTestFile}\`) — do NOT ` +
+      `regenerate \`${serverFile}\`.`,
   );
   lines.push("");
-  lines.push("Here is the `server.ts` you must match:");
-  lines.push("```ts");
+  lines.push(`Here is the \`${serverFile}\` you must match:`);
+  lines.push("```" + fenceLang);
   lines.push(serverSrc.trimEnd());
   lines.push("```");
   lines.push("");
-  lines.push("Handlers to implement in `handlers.ts`:");
+  lines.push(`Handlers to implement in \`${handlersFile}\`:`);
   for (const h of handlers) {
     const codes = h.endpoint.responseCodes?.length
       ? ` responses=[${h.endpoint.responseCodes.join(",")}]`
@@ -235,11 +283,240 @@ function buildHandlerPrompt(
   }
   lines.push("");
   lines.push("Rules:");
-  lines.push(" - Each handler is `async (rc: RouteCtx): Promise<RouteResult>`. Match the types from server.ts.");
-  lines.push(" - Validate request input at the boundary; return 4xx with a structured error body on failure.");
-  lines.push(" - Use ONLY the clients listed in `<available-clients>`. Do not invent new dependencies.");
-  lines.push(" - Tests in `handlers.test.ts` cover at least one happy path and one error path per handler.");
-  lines.push(" - Don't log request bodies at info level — they may contain PII.");
+  lines.push(...handlerRules(lang, handlersTestFile));
   lines.push("</hybrid-skeleton>");
   return lines.join("\n");
 }
+
+function handlerRules(lang: ScaffoldLang, handlersTestFile: string): string[] {
+  const common = [
+    " - Validate request input at the boundary; return 4xx with a structured error body on failure.",
+    " - Use ONLY the clients listed in `<available-clients>`. Do not invent new dependencies.",
+    ` - Tests in \`${handlersTestFile}\` cover at least one happy path and one error path per handler.`,
+    " - Don't log request bodies at info level — they may contain PII.",
+  ];
+  switch (lang) {
+    case "node":
+      return [
+        " - Each handler is `async (rc: RouteCtx): Promise<RouteResult>`. Match the types from server.ts.",
+        ...common,
+      ];
+    case "python":
+      return [
+        " - Each handler is `async def name(rc: RouteCtx) -> RouteResult` (Pydantic types from server.py).",
+        " - Define each at module level in handlers.py and export via __all__ or by name.",
+        ...common,
+      ];
+    case "go":
+      return [
+        " - Each handler is `func Name(rc *RouteCtx) RouteResult` — match the signature from server.go.",
+        " - Exported (capitalized) so it's reachable from the same package.",
+        ...common,
+      ];
+  }
+}
+
+/**
+ * Python server skeleton using FastAPI. FastAPI is the dominant async
+ * Python web framework and provides built-in path/query parsing,
+ * automatic OpenAPI generation, and Pydantic-typed responses. The
+ * skeleton imports handlers from a sibling `handlers` module and
+ * registers one route per declared endpoint.
+ */
+function renderServerPython(ctx: GeneratorContext, handlers: HandlerRef[]): string {
+  const lines: string[] = [];
+  lines.push(`"""HTTP server for "${ctx.node.label}".`);
+  lines.push("");
+  lines.push("Skeleton generated by Arkon buildout (deterministic).");
+  lines.push("Handler function bodies are LLM-generated — see handlers.py.");
+  lines.push(`"""`);
+  lines.push("");
+  lines.push("from __future__ import annotations");
+  lines.push("");
+  lines.push("from typing import Any");
+  lines.push("");
+  lines.push("from fastapi import FastAPI, Request, Response");
+  lines.push("from pydantic import BaseModel");
+  lines.push("");
+  if (handlers.length > 0) {
+    lines.push(`from handlers import ${handlers.map((h) => h.name).join(", ")}`);
+  }
+  lines.push("");
+  lines.push("class RouteCtx(BaseModel):");
+  lines.push("    method: str");
+  lines.push("    path: str");
+  lines.push("    query: dict[str, str]");
+  lines.push("    headers: dict[str, str]");
+  lines.push("    body: Any | None = None");
+  lines.push("");
+  lines.push("class RouteResult(BaseModel):");
+  lines.push("    status: int");
+  lines.push("    body: Any | None = None");
+  lines.push("    headers: dict[str, str] | None = None");
+  lines.push("");
+  lines.push("app = FastAPI()");
+  lines.push("");
+  lines.push("async def _to_ctx(req: Request) -> RouteCtx:");
+  lines.push(`    body: Any | None = None`);
+  lines.push(`    if req.headers.get("content-type", "").lower().startswith("application/json"):`);
+  lines.push(`        try:`);
+  lines.push(`            body = await req.json()`);
+  lines.push(`        except Exception:`);
+  lines.push(`            body = None`);
+  lines.push(`    return RouteCtx(`);
+  lines.push(`        method=req.method,`);
+  lines.push(`        path=req.url.path,`);
+  lines.push(`        query=dict(req.query_params),`);
+  lines.push(`        headers={k.lower(): v for k, v in req.headers.items()},`);
+  lines.push(`        body=body,`);
+  lines.push(`    )`);
+  lines.push("");
+  lines.push("def _respond(result: RouteResult) -> Response:");
+  lines.push("    import json");
+  lines.push("    payload = b\"\" if result.body is None else json.dumps(result.body).encode()");
+  lines.push("    headers = result.headers or {}");
+  lines.push("    if result.body is not None:");
+  lines.push("        headers.setdefault(\"content-type\", \"application/json\")");
+  lines.push("    return Response(content=payload, status_code=result.status, headers=headers)");
+  lines.push("");
+  for (const h of handlers) {
+    const method = h.endpoint.method.toLowerCase();
+    const route = JSON.stringify(h.endpoint.path);
+    lines.push(`@app.${method}(${route})`);
+    lines.push(`async def _route_${h.name}(req: Request) -> Response:`);
+    lines.push(`    rc = await _to_ctx(req)`);
+    lines.push(`    try:`);
+    lines.push(`        result = await ${h.name}(rc)`);
+    lines.push(`        return _respond(result)`);
+    lines.push(`    except Exception as err:`);
+    lines.push(`        return _respond(RouteResult(status=500, body={"error": "internal_error", "message": str(err)}))`);
+    lines.push("");
+  }
+  lines.push("if __name__ == \"__main__\":");
+  lines.push("    import os, uvicorn");
+  lines.push("    uvicorn.run(app, host=\"0.0.0.0\", port=int(os.environ.get(\"PORT\", 8080)))");
+  return lines.join("\n") + "\n";
+}
+
+/**
+ * Go server skeleton using net/http + ServeMux. No external framework
+ * deps; the generated code compiles in any module with @types/node-...
+ * (just kidding) — `gofmt` clean and ready to drop into a project.
+ * Handlers live in the same `package server`; their names are exported
+ * (capitalized) so server.go references them directly.
+ */
+function renderServerGo(ctx: GeneratorContext, handlers: HandlerRef[]): string {
+  const lines: string[] = [];
+  lines.push(`// Package server — HTTP server for "${ctx.node.label}".`);
+  lines.push(`//`);
+  lines.push(`// Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`// Handler function bodies are LLM-generated — see handlers.go.`);
+  lines.push(`package server`);
+  lines.push(``);
+  lines.push(`import (`);
+  lines.push(`	"context"`);
+  lines.push(`	"encoding/json"`);
+  lines.push(`	"io"`);
+  lines.push(`	"log"`);
+  lines.push(`	"net/http"`);
+  lines.push(`	"os"`);
+  lines.push(`	"strings"`);
+  lines.push(`)`);
+  lines.push(``);
+  lines.push(`// RouteCtx carries the request data passed to each handler.`);
+  lines.push(`type RouteCtx struct {`);
+  lines.push(`	Method  string`);
+  lines.push(`	Path    string`);
+  lines.push(`	Query   map[string]string`);
+  lines.push(`	Headers http.Header`);
+  lines.push(`	Body    any`);
+  lines.push(`	Ctx     context.Context`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// RouteResult is what handlers return.`);
+  lines.push(`type RouteResult struct {`);
+  lines.push(`	Status  int`);
+  lines.push(`	Body    any`);
+  lines.push(`	Headers map[string]string`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func parseBody(r *http.Request) any {`);
+  lines.push(`	if r.Body == nil {`);
+  lines.push(`		return nil`);
+  lines.push(`	}`);
+  lines.push(`	defer r.Body.Close()`);
+  lines.push(`	raw, err := io.ReadAll(r.Body)`);
+  lines.push(`	if err != nil || len(raw) == 0 {`);
+  lines.push(`		return nil`);
+  lines.push(`	}`);
+  lines.push(`	ct := strings.ToLower(r.Header.Get("Content-Type"))`);
+  lines.push(`	if strings.Contains(ct, "application/json") {`);
+  lines.push(`		var v any`);
+  lines.push(`		if json.Unmarshal(raw, &v) == nil {`);
+  lines.push(`			return v`);
+  lines.push(`		}`);
+  lines.push(`	}`);
+  lines.push(`	return string(raw)`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func writeResult(w http.ResponseWriter, result RouteResult) {`);
+  lines.push(`	for k, v := range result.Headers {`);
+  lines.push(`		w.Header().Set(k, v)`);
+  lines.push(`	}`);
+  lines.push(`	if result.Body != nil {`);
+  lines.push(`		w.Header().Set("content-type", "application/json")`);
+  lines.push(`	}`);
+  lines.push(`	w.WriteHeader(result.Status)`);
+  lines.push(`	if result.Body != nil {`);
+  lines.push(`		_ = json.NewEncoder(w).Encode(result.Body)`);
+  lines.push(`	}`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func adapt(h func(*RouteCtx) RouteResult) http.HandlerFunc {`);
+  lines.push(`	return func(w http.ResponseWriter, r *http.Request) {`);
+  lines.push(`		query := map[string]string{}`);
+  lines.push(`		for k, vs := range r.URL.Query() {`);
+  lines.push(`			if len(vs) > 0 {`);
+  lines.push(`				query[k] = vs[0]`);
+  lines.push(`			}`);
+  lines.push(`		}`);
+  lines.push(`		rc := &RouteCtx{`);
+  lines.push(`			Method:  r.Method,`);
+  lines.push(`			Path:    r.URL.Path,`);
+  lines.push(`			Query:   query,`);
+  lines.push(`			Headers: r.Header,`);
+  lines.push(`			Body:    parseBody(r),`);
+  lines.push(`			Ctx:     r.Context(),`);
+  lines.push(`		}`);
+  lines.push(`		defer func() {`);
+  lines.push(`			if rec := recover(); rec != nil {`);
+  lines.push(`				log.Printf("handler panic: %v", rec)`);
+  lines.push(`				writeResult(w, RouteResult{Status: 500, Body: map[string]any{"error": "internal_error"}})`);
+  lines.push(`			}`);
+  lines.push(`		}()`);
+  lines.push(`		writeResult(w, h(rc))`);
+  lines.push(`	}`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// Register attaches all routes to the mux.`);
+  lines.push(`func Register(mux *http.ServeMux) {`);
+  for (const h of handlers) {
+    const route = JSON.stringify(`${h.endpoint.method.toUpperCase()} ${h.endpoint.path}`);
+    lines.push(`	mux.HandleFunc(${route}, adapt(${h.name}))`);
+  }
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// Run starts the server on $PORT (default 8080).`);
+  lines.push(`func Run() error {`);
+  lines.push(`	port := os.Getenv("PORT")`);
+  lines.push(`	if port == "" {`);
+  lines.push(`		port = "8080"`);
+  lines.push(`	}`);
+  lines.push(`	mux := http.NewServeMux()`);
+  lines.push(`	Register(mux)`);
+  lines.push(`	log.Printf("listening on :%s", port)`);
+  lines.push(`	return http.ListenAndServe(":"+port, mux)`);
+  lines.push(`}`);
+  return lines.join("\n") + "\n";
+}
+
