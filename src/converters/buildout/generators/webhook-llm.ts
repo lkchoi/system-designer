@@ -18,31 +18,16 @@
  */
 
 import { emitBundle } from "../bundle";
-import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
+import { buildServiceUserPrompt, buildSystemPrompt, languageProfile } from "../prompt";
+import type { ScaffoldLang } from "../../scaffold/concerns/types";
 import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 function isInboundWebhook(ctx: GeneratorContext): boolean {
   return ctx.outbound.length > 0;
 }
 
-const FALLBACK_INBOUND_GUIDANCE = [
-  "",
-  "<webhook-inbound>",
-  "Receiver: verify the HMAC-SHA256 signature header against an env secret,",
-  "validate the payload schema, dispatch to downstream nodes, return 2xx",
-  "only on success. Tests: valid signature, invalid signature (401),",
-  "schema mismatch (400), downstream failure (5xx).",
-  "</webhook-inbound>",
-].join("\n");
-
-const FALLBACK_OUTBOUND_GUIDANCE = [
-  "",
-  "<webhook-outbound>",
-  "Emitter: HMAC-sign the body, add an idempotency-key header, retry on",
-  "5xx/network with exponential backoff (3 attempts), surface 4xx without",
-  "retry, timeout each attempt at 5s. Never log payloads at info level.",
-  "</webhook-outbound>",
-].join("\n");
+// (Fallback guidance constants removed — every language now has a
+//  hybrid skeleton, so the fallback prompt path is dead code.)
 
 export const webhookLLMGenerator: Generator = {
   kind: "hybrid",
@@ -53,43 +38,77 @@ export const webhookLLMGenerator: Generator = {
 
   async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
     const lang = ctx.language ?? "node";
-
-    if (lang !== "node") {
-      // Non-Node falls back to a guided bundle — the security-critical
-      // skeleton is TS-only for now.
-      return emitBundle(ctx, {
-        systemPrompt: buildSystemPrompt(lang),
-        userPrompt:
-          buildServiceUserPrompt(ctx) +
-          (isInboundWebhook(ctx) ? FALLBACK_INBOUND_GUIDANCE : FALLBACK_OUTBOUND_GUIDANCE),
-      });
-    }
-
-    return isInboundWebhook(ctx) ? emitInbound(ctx) : emitOutbound(ctx);
+    return isInboundWebhook(ctx) ? emitInbound(ctx, lang) : emitOutbound(ctx, lang);
   },
 };
 
-function emitInbound(ctx: GeneratorContext): GeneratedFile[] {
-  const receiver = renderInboundReceiver(ctx);
-  const prompt = buildInboundPrompt(ctx, receiver);
-  const bundle = emitBundle(ctx, {
-    systemPrompt: buildSystemPrompt("node"),
-    userPrompt: prompt,
-    expectedOutputs: ["process.ts", "process.test.ts"],
-  });
-  return [{ path: "receiver.ts", contents: receiver }, ...bundle];
+function langExt(lang: ScaffoldLang): string {
+  return languageProfile(lang).ext;
 }
 
-function emitOutbound(ctx: GeneratorContext): GeneratedFile[] {
-  const emitter = renderOutboundEmitter(ctx);
-  const prompt = buildOutboundPrompt(ctx, emitter);
-  const bundle = emitBundle(ctx, {
-    systemPrompt: buildSystemPrompt("node"),
-    userPrompt: prompt,
-    expectedOutputs: ["payload.ts", "payload.test.ts"],
-  });
-  return [{ path: "emitter.ts", contents: emitter }, ...bundle];
+function fenceLang(lang: ScaffoldLang): string {
+  return lang === "node" ? "ts" : lang === "python" ? "python" : "go";
 }
+
+function inboundOutputPaths(lang: ScaffoldLang): string[] {
+  switch (lang) {
+    case "node":
+      return ["process.ts", "process.test.ts"];
+    case "python":
+      return ["process.py", "test_process.py"];
+    case "go":
+      return ["process.go", "process_test.go"];
+  }
+}
+
+function outboundOutputPaths(lang: ScaffoldLang): string[] {
+  switch (lang) {
+    case "node":
+      return ["payload.ts", "payload.test.ts"];
+    case "python":
+      return ["payload.py", "test_payload.py"];
+    case "go":
+      return ["payload.go", "payload_test.go"];
+  }
+}
+
+function emitInbound(ctx: GeneratorContext, lang: ScaffoldLang): GeneratedFile[] {
+  const receiver = INBOUND_RENDERERS[lang](ctx);
+  const outputs = inboundOutputPaths(lang);
+  const receiverFile = `receiver.${langExt(lang)}`;
+  const prompt = buildInboundPrompt(ctx, receiver, lang, receiverFile, outputs);
+  const bundle = emitBundle(ctx, {
+    systemPrompt: buildSystemPrompt(lang),
+    userPrompt: prompt,
+    expectedOutputs: outputs,
+  });
+  return [{ path: receiverFile, contents: receiver }, ...bundle];
+}
+
+function emitOutbound(ctx: GeneratorContext, lang: ScaffoldLang): GeneratedFile[] {
+  const emitter = OUTBOUND_RENDERERS[lang](ctx);
+  const outputs = outboundOutputPaths(lang);
+  const emitterFile = `emitter.${langExt(lang)}`;
+  const prompt = buildOutboundPrompt(ctx, emitter, lang, emitterFile, outputs);
+  const bundle = emitBundle(ctx, {
+    systemPrompt: buildSystemPrompt(lang),
+    userPrompt: prompt,
+    expectedOutputs: outputs,
+  });
+  return [{ path: emitterFile, contents: emitter }, ...bundle];
+}
+
+const INBOUND_RENDERERS: Record<ScaffoldLang, (ctx: GeneratorContext) => string> = {
+  node: renderInboundReceiver,
+  python: renderInboundReceiverPython,
+  go: renderInboundReceiverGo,
+};
+
+const OUTBOUND_RENDERERS: Record<ScaffoldLang, (ctx: GeneratorContext) => string> = {
+  node: renderOutboundEmitter,
+  python: renderOutboundEmitterPython,
+  go: renderOutboundEmitterGo,
+};
 
 function renderInboundReceiver(ctx: GeneratorContext): string {
   const plan = ctx.node.plan ?? {};
@@ -267,60 +286,494 @@ function renderOutboundEmitter(ctx: GeneratorContext): string {
   return lines.join("\n") + "\n";
 }
 
-function buildInboundPrompt(ctx: GeneratorContext, receiverSrc: string): string {
+function buildInboundPrompt(
+  ctx: GeneratorContext,
+  receiverSrc: string,
+  lang: ScaffoldLang,
+  receiverFile: string,
+  outputs: string[],
+): string {
+  const [processFile, testFile] = outputs;
   const lines: string[] = [];
   lines.push(buildServiceUserPrompt(ctx));
   lines.push("");
   lines.push("<hybrid-skeleton>");
   lines.push(
-    "The HMAC-verifying webhook receiver (`receiver.ts`) is already " +
-      "generated. Signature verification (timing-safe), JSON body " +
-      "parsing, error response shaping, and 401/400/500 status mapping " +
-      "are all handled there. Your job is to write ONLY `process.ts` " +
-      "(plus `process.test.ts`) — do NOT regenerate `receiver.ts`.",
+    `The HMAC-verifying webhook receiver (\`${receiverFile}\`) is already ` +
+      `generated. Signature verification (timing-safe), body parsing, error ` +
+      `response shaping, and 401/400/500 status mapping are all handled there. ` +
+      `Your job is to write ONLY \`${processFile}\` (plus \`${testFile}\`) — ` +
+      `do NOT regenerate \`${receiverFile}\`.`,
   );
   lines.push("");
-  lines.push("Here is the `receiver.ts` you must match:");
-  lines.push("```ts");
+  lines.push(`Here is the \`${receiverFile}\` you must match:`);
+  lines.push("```" + fenceLang(lang));
   lines.push(receiverSrc.trimEnd());
   lines.push("```");
   lines.push("");
-  lines.push("Implement in `process.ts`:");
-  lines.push(" - `export async function process(payload: unknown): Promise<void>`");
-  lines.push(" - Validate the payload shape (Zod / hand-rolled). Throw on mismatch — receiver maps the");
-  lines.push("   exception to 500. If you want a 400 instead, do that mapping yourself before throwing.");
-  lines.push(" - Dispatch to the downstream nodes listed in `<outbound-edges>` using the clients in");
-  lines.push("   `<available-clients>`. Use durable enqueueing (not in-memory) where possible.");
-  lines.push(" - Tests in `process.test.ts` cover: valid payload happy path, schema mismatch, downstream error.");
-  lines.push(" - Do NOT log payload contents at info level — they may contain PII.");
+  lines.push(`Implement in \`${processFile}\`:`);
+  lines.push(...inboundProcessRules(lang, testFile));
   lines.push("</hybrid-skeleton>");
   return lines.join("\n");
 }
 
-function buildOutboundPrompt(ctx: GeneratorContext, emitterSrc: string): string {
+function inboundProcessRules(lang: ScaffoldLang, testFile: string): string[] {
+  const common = [
+    " - Validate the payload shape. Throw on mismatch — receiver maps the exception to 500.",
+    " - Dispatch to the downstream nodes listed in `<outbound-edges>` using the clients in",
+    "   `<available-clients>`. Use durable enqueueing (not in-memory) where possible.",
+    ` - Tests in \`${testFile}\` cover: valid payload happy path, schema mismatch, downstream error.`,
+    " - Do NOT log payload contents at info level — they may contain PII.",
+  ];
+  switch (lang) {
+    case "node":
+      return [" - `export async function process(payload: unknown): Promise<void>`", ...common];
+    case "python":
+      return [" - `async def process(payload: Any) -> None`", ...common];
+    case "go":
+      return [
+        " - `func Process(ctx context.Context, payload any) error` (exported, error-returning).",
+        ...common,
+      ];
+  }
+}
+
+function buildOutboundPrompt(
+  ctx: GeneratorContext,
+  emitterSrc: string,
+  lang: ScaffoldLang,
+  emitterFile: string,
+  outputs: string[],
+): string {
+  const [payloadFile, testFile] = outputs;
   const lines: string[] = [];
   lines.push(buildServiceUserPrompt(ctx));
   lines.push("");
   lines.push("<hybrid-skeleton>");
   lines.push(
-    "The signed-and-retrying webhook emitter (`emitter.ts`) is already " +
-      "generated. HMAC signing, idempotency-key generation, exponential " +
-      "backoff retry on 5xx/network, and per-attempt timeout are all " +
-      "handled there. Your job is to write ONLY `payload.ts` (plus " +
-      "`payload.test.ts`) — do NOT regenerate `emitter.ts`.",
+    `The signed-and-retrying webhook emitter (\`${emitterFile}\`) is already ` +
+      `generated. HMAC signing, idempotency-key generation, exponential ` +
+      `backoff retry on 5xx/network, and per-attempt timeout are all ` +
+      `handled there. Your job is to write ONLY \`${payloadFile}\` (plus ` +
+      `\`${testFile}\`) — do NOT regenerate \`${emitterFile}\`.`,
   );
   lines.push("");
-  lines.push("Here is the `emitter.ts` you must match:");
-  lines.push("```ts");
+  lines.push(`Here is the \`${emitterFile}\` you must match:`);
+  lines.push("```" + fenceLang(lang));
   lines.push(emitterSrc.trimEnd());
   lines.push("```");
   lines.push("");
-  lines.push("Implement in `payload.ts`:");
-  lines.push(" - `export async function buildPayload(input: unknown): Promise<unknown>`");
-  lines.push(" - Map the inbound event (from upstream services/queues) into the JSON shape the");
-  lines.push("   third party expects. Pure transform — no network calls or side effects.");
-  lines.push(" - Strip PII fields the third party doesn't need.");
-  lines.push(" - Tests in `payload.test.ts` cover: typical input → expected output, missing-field handling.");
+  lines.push(`Implement in \`${payloadFile}\`:`);
+  lines.push(...outboundPayloadRules(lang, testFile));
   lines.push("</hybrid-skeleton>");
   return lines.join("\n");
+}
+
+function outboundPayloadRules(lang: ScaffoldLang, testFile: string): string[] {
+  const common = [
+    " - Pure transform — no network calls or side effects.",
+    " - Strip PII fields the third party doesn't need.",
+    ` - Tests in \`${testFile}\` cover: typical input → expected output, missing-field handling.`,
+  ];
+  switch (lang) {
+    case "node":
+      return [
+        " - `export async function buildPayload(input: unknown): Promise<unknown>`",
+        ...common,
+      ];
+    case "python":
+      return [" - `def build_payload(input_: Any) -> Any` (sync — emitter awaits if needed)", ...common];
+    case "go":
+      return [" - `func BuildPayload(input any) (any, error)` (exported, error-returning)", ...common];
+  }
+}
+
+/**
+ * Python inbound receiver — FastAPI with hmac.compare_digest for
+ * timing-safe signature comparison.
+ */
+function renderInboundReceiverPython(ctx: GeneratorContext): string {
+  const plan = ctx.node.plan ?? {};
+  const method = (plan.method || "POST").toLowerCase();
+  return [
+    `"""HMAC-verifying webhook receiver for "${ctx.node.label}".`,
+    ``,
+    `Skeleton generated by Arkon buildout (deterministic).`,
+    `Business logic in process.py is LLM-generated.`,
+    `"""`,
+    ``,
+    `from __future__ import annotations`,
+    ``,
+    `import hashlib`,
+    `import hmac`,
+    `import json`,
+    `import logging`,
+    `import os`,
+    `from typing import Any`,
+    ``,
+    `from fastapi import FastAPI, Request, Response`,
+    ``,
+    `from process import process as process_payload`,
+    ``,
+    `_WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET")`,
+    `if not _WEBHOOK_SECRET:`,
+    `    raise RuntimeError("WEBHOOK_SECRET env var is required")`,
+    ``,
+    `_SIGNATURE_HEADER = os.environ.get("WEBHOOK_SIGNATURE_HEADER", "x-signature").lower()`,
+    ``,
+    `app = FastAPI()`,
+    `log = logging.getLogger(__name__)`,
+    ``,
+    `def verify_signature(raw_body: bytes, signature: str | None) -> bool:`,
+    `    """Constant-time HMAC-SHA256 verification."""`,
+    `    if signature is None:`,
+    `        return False`,
+    `    expected = hmac.new(_WEBHOOK_SECRET.encode(), raw_body, hashlib.sha256).hexdigest()`,
+    `    provided = signature[7:] if signature.startswith("sha256=") else signature`,
+    `    if len(provided) != len(expected):`,
+    `        return False`,
+    `    return hmac.compare_digest(expected, provided)`,
+    ``,
+    `@app.${method}("/")`,
+    `async def handle(request: Request) -> Response:`,
+    `    raw = await request.body()`,
+    `    sig = request.headers.get(_SIGNATURE_HEADER)`,
+    `    if not verify_signature(raw, sig):`,
+    `        return Response(`,
+    `            content=json.dumps({"error": "invalid_signature"}),`,
+    `            status_code=401,`,
+    `            media_type="application/json",`,
+    `        )`,
+    `    try:`,
+    `        payload: Any = json.loads(raw) if raw else None`,
+    `    except json.JSONDecodeError:`,
+    `        return Response(`,
+    `            content=json.dumps({"error": "invalid_json"}),`,
+    `            status_code=400,`,
+    `            media_type="application/json",`,
+    `        )`,
+    `    try:`,
+    `        await process_payload(payload)`,
+    `        return Response(status_code=200)`,
+    `    except Exception:`,
+    `        # Don't echo internal detail back to the caller — log fully server-side.`,
+    `        log.exception("webhook process failed")`,
+    `        return Response(`,
+    `            content=json.dumps({"error": "internal_error"}),`,
+    `            status_code=500,`,
+    `            media_type="application/json",`,
+    `        )`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * Python outbound emitter — httpx async client with HMAC + idempotency
+ * key + exponential backoff retry. AsyncClient handles per-attempt
+ * timeout.
+ */
+function renderOutboundEmitterPython(ctx: GeneratorContext): string {
+  const plan = ctx.node.plan ?? {};
+  const url = plan.url || "https://example.com/webhook";
+  const method = (plan.method || "POST").toUpperCase();
+  return [
+    `"""Signed-and-retrying webhook emitter for "${ctx.node.label}".`,
+    ``,
+    `Skeleton generated by Arkon buildout (deterministic).`,
+    `Payload mapping in payload.py is LLM-generated.`,
+    `"""`,
+    ``,
+    `from __future__ import annotations`,
+    ``,
+    `import asyncio`,
+    `import hashlib`,
+    `import hmac`,
+    `import json`,
+    `import logging`,
+    `import os`,
+    `import uuid`,
+    `from typing import Any`,
+    ``,
+    `import httpx`,
+    ``,
+    `from payload import build_payload`,
+    ``,
+    `_WEBHOOK_URL = os.environ.get("WEBHOOK_URL", ${JSON.stringify(url)})`,
+    `_WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET")`,
+    `if not _WEBHOOK_SECRET:`,
+    `    raise RuntimeError("WEBHOOK_SECRET env var is required")`,
+    ``,
+    `_TIMEOUT_S = float(os.environ.get("WEBHOOK_TIMEOUT_S", "5.0"))`,
+    `_MAX_ATTEMPTS = int(os.environ.get("WEBHOOK_MAX_ATTEMPTS", "3"))`,
+    ``,
+    `log = logging.getLogger(__name__)`,
+    ``,
+    `def _sign(body: bytes) -> str:`,
+    `    return hmac.new(_WEBHOOK_SECRET.encode(), body, hashlib.sha256).hexdigest()`,
+    ``,
+    `async def emit(input_: Any) -> None:`,
+    `    """Compute payload, sign, POST with retry on 5xx/network."""`,
+    `    result = build_payload(input_)`,
+    `    if asyncio.iscoroutine(result):`,
+    `        result = await result`,
+    `    body = json.dumps(result).encode()`,
+    `    headers = {`,
+    `        "content-type": "application/json",`,
+    `        "x-signature": _sign(body),`,
+    `        "x-idempotency-key": str(uuid.uuid4()),`,
+    `    }`,
+    ``,
+    `    last_err: Exception | None = None`,
+    `    async with httpx.AsyncClient(timeout=_TIMEOUT_S) as client:`,
+    `        for attempt in range(1, _MAX_ATTEMPTS + 1):`,
+    `            try:`,
+    `                resp = await client.request(${JSON.stringify(method)}, _WEBHOOK_URL, content=body, headers=headers)`,
+    `                if 200 <= resp.status_code < 300:`,
+    `                    return`,
+    `                if 400 <= resp.status_code < 500:`,
+    `                    raise RuntimeError(f"webhook 4xx: {resp.status_code}")`,
+    `                last_err = RuntimeError(f"webhook {resp.status_code}")`,
+    `            except (httpx.NetworkError, httpx.TimeoutException) as err:`,
+    `                last_err = err`,
+    `            if attempt < _MAX_ATTEMPTS:`,
+    `                # Exponential backoff: 200ms, 400ms, 800ms…`,
+    `                await asyncio.sleep(0.2 * (2 ** (attempt - 1)))`,
+    `    assert last_err is not None`,
+    `    raise last_err`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * Go inbound receiver — net/http handler with hmac.Equal-style
+ * timing-safe comparison via subtle.ConstantTimeCompare.
+ */
+function renderInboundReceiverGo(ctx: GeneratorContext): string {
+  const plan = ctx.node.plan ?? {};
+  const method = (plan.method || "POST").toUpperCase();
+  return [
+    `// Package webhook — HMAC-verifying receiver for "${ctx.node.label}".`,
+    `//`,
+    `// Skeleton generated by Arkon buildout (deterministic).`,
+    `// Business logic in process.go is LLM-generated.`,
+    `package webhook`,
+    ``,
+    `import (`,
+    `	"crypto/hmac"`,
+    `	"crypto/sha256"`,
+    `	"crypto/subtle"`,
+    `	"encoding/hex"`,
+    `	"encoding/json"`,
+    `	"io"`,
+    `	"log"`,
+    `	"net/http"`,
+    `	"os"`,
+    `	"strings"`,
+    `)`,
+    ``,
+    `var (`,
+    `	webhookSecret    = mustEnv("WEBHOOK_SECRET")`,
+    `	signatureHeader  = envOr("WEBHOOK_SIGNATURE_HEADER", "X-Signature")`,
+    `)`,
+    ``,
+    `func mustEnv(k string) string {`,
+    `	v := os.Getenv(k)`,
+    `	if v == "" {`,
+    `		panic(k + " env var is required")`,
+    `	}`,
+    `	return v`,
+    `}`,
+    ``,
+    `func envOr(k, def string) string {`,
+    `	if v := os.Getenv(k); v != "" {`,
+    `		return v`,
+    `	}`,
+    `	return def`,
+    `}`,
+    ``,
+    `// VerifySignature performs a constant-time HMAC-SHA256 verification.`,
+    `// Returns true on match, false on any failure (including parse).`,
+    `func VerifySignature(rawBody []byte, signature string) bool {`,
+    `	if signature == "" {`,
+    `		return false`,
+    `	}`,
+    `	provided := strings.TrimPrefix(signature, "sha256=")`,
+    `	providedBytes, err := hex.DecodeString(provided)`,
+    `	if err != nil {`,
+    `		return false`,
+    `	}`,
+    `	mac := hmac.New(sha256.New, []byte(webhookSecret))`,
+    `	mac.Write(rawBody)`,
+    `	expected := mac.Sum(nil)`,
+    `	return subtle.ConstantTimeCompare(expected, providedBytes) == 1`,
+    `}`,
+    ``,
+    `// Handle is the HTTP handler. Wire it into http.ServeMux yourself —`,
+    `// e.g. mux.HandleFunc("POST /webhook", webhook.Handle).`,
+    `func Handle(w http.ResponseWriter, r *http.Request) {`,
+    `	if r.Method != ${JSON.stringify(method)} {`,
+    `		w.WriteHeader(http.StatusMethodNotAllowed)`,
+    `		return`,
+    `	}`,
+    `	raw, err := io.ReadAll(r.Body)`,
+    `	if err != nil {`,
+    `		w.WriteHeader(http.StatusBadRequest)`,
+    `		return`,
+    `	}`,
+    `	sig := r.Header.Get(signatureHeader)`,
+    `	if !VerifySignature(raw, sig) {`,
+    `		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid_signature"})`,
+    `		return`,
+    `	}`,
+    `	var payload any`,
+    `	if len(raw) > 0 {`,
+    `		if err := json.Unmarshal(raw, &payload); err != nil {`,
+    `			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid_json"})`,
+    `			return`,
+    `		}`,
+    `	}`,
+    `	if err := Process(r.Context(), payload); err != nil {`,
+    `		log.Printf("webhook process failed: %v", err)`,
+    `		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal_error"})`,
+    `		return`,
+    `	}`,
+    `	w.WriteHeader(http.StatusOK)`,
+    `}`,
+    ``,
+    `func writeJSON(w http.ResponseWriter, status int, body any) {`,
+    `	w.Header().Set("content-type", "application/json")`,
+    `	w.WriteHeader(status)`,
+    `	_ = json.NewEncoder(w).Encode(body)`,
+    `}`,
+    ``,
+  ].join("\n");
+}
+
+/**
+ * Go outbound emitter — http.Client with context timeout, exponential
+ * backoff retry, idempotency key.
+ */
+function renderOutboundEmitterGo(ctx: GeneratorContext): string {
+  const plan = ctx.node.plan ?? {};
+  const url = plan.url || "https://example.com/webhook";
+  const method = (plan.method || "POST").toUpperCase();
+  return [
+    `// Package webhook — signed-and-retrying emitter for "${ctx.node.label}".`,
+    `//`,
+    `// Skeleton generated by Arkon buildout (deterministic).`,
+    `// Payload mapping in payload.go is LLM-generated.`,
+    `package webhook`,
+    ``,
+    `import (`,
+    `	"bytes"`,
+    `	"context"`,
+    `	"crypto/hmac"`,
+    `	"crypto/sha256"`,
+    `	"encoding/hex"`,
+    `	"encoding/json"`,
+    `	"errors"`,
+    `	"fmt"`,
+    `	"net/http"`,
+    `	"os"`,
+    `	"strconv"`,
+    `	"time"`,
+    ``,
+    `	"github.com/google/uuid"`,
+    `)`,
+    ``,
+    `var (`,
+    `	webhookURL      = envOrDefault("WEBHOOK_URL", ${JSON.stringify(url)})`,
+    `	emitterSecret   = mustEnvEmit("WEBHOOK_SECRET")`,
+    `	emitTimeout     = envDuration("WEBHOOK_TIMEOUT_MS", 5000) * time.Millisecond`,
+    `	emitMaxAttempts = envInt("WEBHOOK_MAX_ATTEMPTS", 3)`,
+    `)`,
+    ``,
+    `func mustEnvEmit(k string) string {`,
+    `	v := os.Getenv(k)`,
+    `	if v == "" {`,
+    `		panic(k + " env var is required")`,
+    `	}`,
+    `	return v`,
+    `}`,
+    ``,
+    `func envOrDefault(k, def string) string {`,
+    `	if v := os.Getenv(k); v != "" {`,
+    `		return v`,
+    `	}`,
+    `	return def`,
+    `}`,
+    ``,
+    `func envInt(k string, def int) int {`,
+    `	if v := os.Getenv(k); v != "" {`,
+    `		if n, err := strconv.Atoi(v); err == nil {`,
+    `			return n`,
+    `		}`,
+    `	}`,
+    `	return def`,
+    `}`,
+    ``,
+    `func envDuration(k string, defMs int) time.Duration {`,
+    `	return time.Duration(envInt(k, defMs))`,
+    `}`,
+    ``,
+    `func sign(body []byte) string {`,
+    `	mac := hmac.New(sha256.New, []byte(emitterSecret))`,
+    `	mac.Write(body)`,
+    `	return hex.EncodeToString(mac.Sum(nil))`,
+    `}`,
+    ``,
+    `// Emit serializes the payload, signs it, posts with retry. 5xx and`,
+    `// network errors retry with exponential backoff; 4xx propagates.`,
+    `func Emit(ctx context.Context, input any) error {`,
+    `	mapped, err := BuildPayload(input)`,
+    `	if err != nil {`,
+    `		return fmt.Errorf("build payload: %w", err)`,
+    `	}`,
+    `	body, err := json.Marshal(mapped)`,
+    `	if err != nil {`,
+    `		return fmt.Errorf("marshal: %w", err)`,
+    `	}`,
+    `	idempotencyKey := uuid.NewString()`,
+    `	signature := sign(body)`,
+    ``,
+    `	client := &http.Client{Timeout: emitTimeout}`,
+    `	var lastErr error`,
+    `	for attempt := 1; attempt <= emitMaxAttempts; attempt++ {`,
+    `		req, err := http.NewRequestWithContext(ctx, ${JSON.stringify(method)}, webhookURL, bytes.NewReader(body))`,
+    `		if err != nil {`,
+    `			return err`,
+    `		}`,
+    `		req.Header.Set("content-type", "application/json")`,
+    `		req.Header.Set("x-signature", signature)`,
+    `		req.Header.Set("x-idempotency-key", idempotencyKey)`,
+    ``,
+    `		resp, err := client.Do(req)`,
+    `		if err == nil {`,
+    `			resp.Body.Close()`,
+    `			if resp.StatusCode >= 200 && resp.StatusCode < 300 {`,
+    `				return nil`,
+    `			}`,
+    `			if resp.StatusCode >= 400 && resp.StatusCode < 500 {`,
+    `				return fmt.Errorf("webhook 4xx: %d", resp.StatusCode)`,
+    `			}`,
+    `			lastErr = fmt.Errorf("webhook %d", resp.StatusCode)`,
+    `		} else {`,
+    `			lastErr = err`,
+    `		}`,
+    `		if attempt < emitMaxAttempts {`,
+    `			backoff := time.Duration(200*(1<<(attempt-1))) * time.Millisecond`,
+    `			select {`,
+    `			case <-time.After(backoff):`,
+    `			case <-ctx.Done():`,
+    `				return ctx.Err()`,
+    `			}`,
+    `		}`,
+    `	}`,
+    `	if lastErr == nil {`,
+    `		lastErr = errors.New("all retries exhausted")`,
+    `	}`,
+    `	return lastErr`,
+    `}`,
+    ``,
+  ].join("\n");
 }

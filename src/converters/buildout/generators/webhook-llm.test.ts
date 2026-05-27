@@ -39,16 +39,6 @@ const srcEdge: EdgeRef = {
   otherTechId: "nodejs",
 };
 
-describe("webhookLLMGenerator — fallback (non-Node)", () => {
-  it("falls back to a single guided bundle for Python", async () => {
-    const c = ctx({ language: "python", outbound: [dbEdge] });
-    const files = await webhookLLMGenerator.generate(c);
-    expect(files.map((f) => f.path).sort()).toEqual(["README.md", "prompt.md", "validate.sh"]);
-    expect(files.find((f) => f.path === "receiver.ts")).toBeUndefined();
-    expect(files.find((f) => f.path === "prompt.md")!.contents).toContain("<webhook-inbound>");
-  });
-});
-
 describe("webhookLLMGenerator — inbound hybrid (TS)", () => {
   function inboundCtx() {
     return ctx({ outbound: [dbEdge] });
@@ -133,5 +123,107 @@ describe("webhookLLMGenerator — outbound hybrid (TS)", () => {
     expect(prompt).toContain("payload.ts");
     expect(prompt).toContain("do NOT regenerate `emitter.ts`");
     expect(prompt).toContain("export async function buildPayload");
+  });
+});
+
+describe("webhookLLMGenerator — inbound hybrid (Python)", () => {
+  it("emits receiver.py with FastAPI + hmac.compare_digest", async () => {
+    const files = await webhookLLMGenerator.generate(
+      ctx({ language: "python", outbound: [dbEdge] }),
+    );
+    expect(files.map((f) => f.path).sort()).toEqual([
+      "README.md",
+      "prompt.md",
+      "receiver.py",
+      "validate.sh",
+    ]);
+    const py = files.find((f) => f.path === "receiver.py")!.contents;
+    expect(py).toContain("from fastapi import FastAPI");
+    expect(py).toContain("hmac.compare_digest");
+    expect(py).toContain('startswith("sha256=")');
+    expect(py).toContain("from process import process as process_payload");
+  });
+
+  it("prompt asks for process.py with async def signature", async () => {
+    const files = await webhookLLMGenerator.generate(
+      ctx({ language: "python", outbound: [dbEdge] }),
+    );
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```python");
+    expect(prompt).toContain("async def process");
+    expect(prompt).toContain("process.py");
+    expect(prompt).toContain("test_process.py");
+  });
+});
+
+describe("webhookLLMGenerator — outbound hybrid (Python)", () => {
+  it("emits emitter.py with httpx + HMAC + idempotency + backoff", async () => {
+    const files = await webhookLLMGenerator.generate(
+      ctx({ language: "python", inbound: [srcEdge] }),
+    );
+    expect(files.map((f) => f.path).sort()).toEqual([
+      "README.md",
+      "emitter.py",
+      "prompt.md",
+      "validate.sh",
+    ]);
+    const py = files.find((f) => f.path === "emitter.py")!.contents;
+    expect(py).toContain("import httpx");
+    expect(py).toContain("hmac.new");
+    expect(py).toContain("uuid.uuid4()");
+    expect(py).toContain("x-idempotency-key");
+    expect(py).toContain("asyncio.sleep(0.2");
+  });
+});
+
+describe("webhookLLMGenerator — inbound hybrid (Go)", () => {
+  it("emits receiver.go with subtle.ConstantTimeCompare", async () => {
+    const files = await webhookLLMGenerator.generate(
+      ctx({ language: "go", outbound: [dbEdge] }),
+    );
+    expect(files.map((f) => f.path).sort()).toEqual([
+      "README.md",
+      "prompt.md",
+      "receiver.go",
+      "validate.sh",
+    ]);
+    const go = files.find((f) => f.path === "receiver.go")!.contents;
+    expect(go).toContain("package webhook");
+    expect(go).toContain("subtle.ConstantTimeCompare");
+    expect(go).toContain('strings.TrimPrefix(signature, "sha256=")');
+    expect(go).toContain("func VerifySignature");
+    expect(go).toContain("Process(r.Context()");
+  });
+
+  it("prompt asks for process.go with context-aware signature", async () => {
+    const files = await webhookLLMGenerator.generate(
+      ctx({ language: "go", outbound: [dbEdge] }),
+    );
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```go");
+    expect(prompt).toContain("func Process(ctx context.Context");
+    expect(prompt).toContain("process.go");
+    expect(prompt).toContain("process_test.go");
+  });
+});
+
+describe("webhookLLMGenerator — outbound hybrid (Go)", () => {
+  it("emits emitter.go with http.Client + retry + idempotency", async () => {
+    const files = await webhookLLMGenerator.generate(
+      ctx({ language: "go", inbound: [srcEdge] }),
+    );
+    expect(files.map((f) => f.path).sort()).toEqual([
+      "README.md",
+      "emitter.go",
+      "prompt.md",
+      "validate.sh",
+    ]);
+    const go = files.find((f) => f.path === "emitter.go")!.contents;
+    expect(go).toContain("package webhook");
+    expect(go).toContain("hmac.New");
+    expect(go).toContain("uuid.NewString()");
+    expect(go).toContain("x-idempotency-key");
+    expect(go).toContain("func Emit(ctx context.Context");
+    expect(go).toContain("BuildPayload(input)");
   });
 });
