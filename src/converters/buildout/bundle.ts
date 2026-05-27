@@ -52,10 +52,12 @@ const LANGUAGE_VALIDATORS: Record<ScaffoldLang, LanguageValidator> = {
   node: {
     exts: [".ts", ".tsx", ".js"],
     script: [
-      "# Type-check TypeScript output.",
+      "# Type-check TypeScript output. Server skeletons import from node:* so we",
+      "# include the 'node' types lib explicitly — make sure @types/node is",
+      "# installed in the parent project (or run this from within one).",
       "if compgen -G '*.ts' > /dev/null; then",
       "  if command -v tsc >/dev/null 2>&1; then",
-      "    tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler *.ts || exit 1",
+      "    tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution Bundler --types node *.ts || exit 1",
       "  else",
       "    echo 'tsc not on PATH — skipping typecheck' >&2",
       "  fi",
