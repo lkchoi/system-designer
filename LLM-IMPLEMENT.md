@@ -23,8 +23,17 @@ Sibling to `.context/buildout-plan.md`. Tracks **what I built, decisions I made,
 | 6b | Structured plan field types in registry | ✅ |
 | 6c | Plan field widget editors (`ColumnsTable`, `AccessPatterns`, `MappingsObject`, `OperationsList`) | ✅ |
 | 6d | "Build it" toolbar button + FSA/zip output dialog | ✅ |
+| 7a | Stream-processor hybrid (deterministic skeleton + LLM operator bundle) | ✅ |
+| 7b | Python + Go pipeline skeletons for stream hybrid | ✅ |
+| 7c | Service hybrid (TS) — deterministic node:http server + handlers bundle | ✅ |
+| 7d | Python + Go server skeletons for service hybrid (FastAPI / net/http) | ✅ |
+| 7e | Webhook hybrid — HMAC-verifying receiver + signed retrying emitter | ✅ |
+| 7f | Serverless hybrid — trigger-typed handler (HTTP/S3/SQS/schedule) | ✅ |
+| 7g | Cron hybrid — AbortController-timed job runner + k8s CronJob manifest | ✅ |
 
-58 buildout-specific tests passing, 829 total. CLI smoke-tested end-to-end.
+**All 5 LLM-driven component types now have hybrid skeletons** — service, serverless, cron, webhook, and stream-processor. The boilerplate (HMAC verification, retry/backoff, event-shape parsing, route registration, window math) is deterministic. The LLM only fills business logic — typically 10-30 lines per function.
+
+111 buildout-specific tests passing, 880 total. Generated TS for all 5 hybrid types verified end-to-end with `tsc --strict` against stub LLM-filled implementations.
 
 ## The bundle pivot
 
