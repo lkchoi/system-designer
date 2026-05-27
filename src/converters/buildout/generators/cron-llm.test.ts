@@ -25,11 +25,71 @@ function ctx(plan: Record<string, string>, overrides: Partial<GeneratorContext> 
   };
 }
 
-describe("cronLLMGenerator — fallback (non-Node)", () => {
-  it("falls back to a single guided bundle for Python", async () => {
-    const files = await cronLLMGenerator.generate(ctx({ schedule: "*/15 * * * *" }, { language: "python" }));
-    expect(files.map((f) => f.path).sort()).toEqual(["README.md", "prompt.md", "validate.sh"]);
-    expect(files.find((f) => f.path === "job.ts")).toBeUndefined();
+describe("cronLLMGenerator — hybrid (Python)", () => {
+  it("emits job.py + cronjob.yaml + work bundle", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "0 3 * * *", timeout: "5m" }, { language: "python" }));
+    const paths = files.map((f) => f.path).sort();
+    expect(paths).toEqual(["README.md", "cronjob.yaml", "job.py", "prompt.md", "validate.sh"]);
+  });
+
+  it("job.py uses asyncio.wait_for + exits 2 on timeout, 1 on failure", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "*/5 * * * *", timeout: "30s" }, { language: "python" }));
+    const py = files.find((f) => f.path === "job.py")!.contents;
+    expect(py).toContain("asyncio.wait_for(work(), timeout=TIMEOUT_S)");
+    expect(py).toContain("sys.exit(2)");
+    expect(py).toContain("sys.exit(1)");
+    expect(py).toContain('JOB_TIMEOUT_S", "30')
+    expect(py).toContain('if __name__ == "__main__":');
+  });
+
+  it("cronjob.yaml command points at python job.py for Python builds", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "0 0 * * *" }, { language: "python" }));
+    const y = files.find((f) => f.path === "cronjob.yaml")!.contents;
+    expect(y).toContain('command: ["python", "job.py"]');
+  });
+
+  it("prompt asks for work.py with async def signature", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "0 3 * * *" }, { language: "python" }));
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```python");
+    expect(prompt).toContain("async def work");
+    expect(prompt).toContain("work.py");
+    expect(prompt).toContain("test_work.py");
+  });
+});
+
+describe("cronLLMGenerator — hybrid (Go)", () => {
+  it("emits job.go + cronjob.yaml + work bundle", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "0 0 * * *", timeout: "5m" }, { language: "go" }));
+    const paths = files.map((f) => f.path).sort();
+    expect(paths).toEqual(["README.md", "cronjob.yaml", "job.go", "prompt.md", "validate.sh"]);
+  });
+
+  it("job.go uses context.WithTimeout + os.Exit(2) on DeadlineExceeded", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "*/15 * * * *", timeout: "60s" }, { language: "go" }));
+    const go = files.find((f) => f.path === "job.go")!.contents;
+    expect(go).toContain("package main");
+    expect(go).toContain("context.WithTimeout");
+    expect(go).toContain("DeadlineExceeded");
+    expect(go).toContain("os.Exit(1)");
+    expect(go).toContain("os.Exit(2)");
+    expect(go).toContain("Work(ctx)");
+    expect(go).toContain("timeoutSeconds := 60");
+  });
+
+  it("cronjob.yaml command runs ./job for Go builds", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "0 0 * * *" }, { language: "go" }));
+    const y = files.find((f) => f.path === "cronjob.yaml")!.contents;
+    expect(y).toContain('command: ["./job"]');
+  });
+
+  it("prompt asks for Work(ctx) signature in work.go", async () => {
+    const files = await cronLLMGenerator.generate(ctx({ schedule: "0 3 * * *" }, { language: "go" }));
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```go");
+    expect(prompt).toContain("func Work(ctx context.Context) error");
+    expect(prompt).toContain("work.go");
+    expect(prompt).toContain("work_test.go");
   });
 });
 
