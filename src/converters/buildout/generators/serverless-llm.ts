@@ -23,23 +23,14 @@
  */
 
 import { emitBundle } from "../bundle";
-import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
+import { buildServiceUserPrompt, buildSystemPrompt, languageProfile } from "../prompt";
+import type { ScaffoldLang } from "../../scaffold/concerns/types";
 import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 type Trigger = "http" | "s3" | "sqs" | "schedule";
 
-const FALLBACK_GUIDANCE = [
-  "",
-  "<serverless>",
-  "This is a serverless function — single entry, no HTTP server boilerplate.",
-  "The handler receives an event object whose shape depends on the trigger:",
-  " - HTTP: { method, path, headers, query, body }",
-  " - S3: { Records: [{ s3: { bucket: { name }, object: { key } } }] }",
-  " - SQS / message-queue: { Records: [{ body, messageAttributes }] }",
-  " - Schedule / cron: { time, name } (CloudWatch Event shape)",
-  "Emit exactly one handler file (export-named or default per language convention) plus its tests.",
-  "</serverless>",
-].join("\n");
+// (FALLBACK_GUIDANCE removed — every language now has a real hybrid
+//  skeleton, so the fallback path is unused.)
 
 export const serverlessLLMGenerator: Generator = {
   kind: "hybrid",
@@ -50,25 +41,31 @@ export const serverlessLLMGenerator: Generator = {
 
   async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
     const lang = ctx.language ?? "node";
-
-    if (lang !== "node") {
-      return emitBundle(ctx, {
-        systemPrompt: buildSystemPrompt(lang),
-        userPrompt: buildServiceUserPrompt(ctx) + FALLBACK_GUIDANCE,
-      });
-    }
-
     const trigger = detectTrigger(ctx.node.plan?.trigger);
-    const handler = renderHandler(ctx, trigger);
-    const prompt = buildHandlerPrompt(ctx, trigger, handler);
+    const handler = renderHandler(ctx, trigger, lang);
+    const outputs = processOutputPaths(lang);
+    const handlerFile = `handler.${languageProfile(lang).ext}`;
+    const fence = lang === "node" ? "ts" : lang === "python" ? "python" : "go";
+    const prompt = buildHandlerPrompt(ctx, trigger, handler, lang, handlerFile, outputs, fence);
     const bundle = emitBundle(ctx, {
-      systemPrompt: buildSystemPrompt("node"),
+      systemPrompt: buildSystemPrompt(lang),
       userPrompt: prompt,
-      expectedOutputs: ["process.ts", "process.test.ts"],
+      expectedOutputs: outputs,
     });
-    return [{ path: "handler.ts", contents: handler }, ...bundle];
+    return [{ path: handlerFile, contents: handler }, ...bundle];
   },
 };
+
+function processOutputPaths(lang: ScaffoldLang): string[] {
+  switch (lang) {
+    case "node":
+      return ["process.ts", "process.test.ts"];
+    case "python":
+      return ["process.py", "test_process.py"];
+    case "go":
+      return ["process.go", "process_test.go"];
+  }
+}
 
 /**
  * Best-effort substring match on the plan.trigger free-form text.
@@ -84,7 +81,32 @@ function detectTrigger(raw: string | undefined): Trigger {
   return "http";
 }
 
-function renderHandler(ctx: GeneratorContext, trigger: Trigger): string {
+function renderHandler(ctx: GeneratorContext, trigger: Trigger, lang: ScaffoldLang): string {
+  if (lang === "python") {
+    switch (trigger) {
+      case "http":
+        return renderHttpHandlerPython(ctx);
+      case "s3":
+        return renderS3HandlerPython(ctx);
+      case "sqs":
+        return renderSqsHandlerPython(ctx);
+      case "schedule":
+        return renderScheduleHandlerPython(ctx);
+    }
+  }
+  if (lang === "go") {
+    switch (trigger) {
+      case "http":
+        return renderHttpHandlerGo(ctx);
+      case "s3":
+        return renderS3HandlerGo(ctx);
+      case "sqs":
+        return renderSqsHandlerGo(ctx);
+      case "schedule":
+        return renderScheduleHandlerGo(ctx);
+    }
+  }
+  // node
   switch (trigger) {
     case "http":
       return renderHttpHandler(ctx);
@@ -303,35 +325,96 @@ function renderScheduleHandler(ctx: GeneratorContext): string {
   ].join("\n");
 }
 
-function buildHandlerPrompt(ctx: GeneratorContext, trigger: Trigger, handlerSrc: string): string {
+function buildHandlerPrompt(
+  ctx: GeneratorContext,
+  trigger: Trigger,
+  handlerSrc: string,
+  lang: ScaffoldLang,
+  handlerFile: string,
+  outputs: string[],
+  fenceLang: string,
+): string {
+  const [processFile, testFile] = outputs;
   const lines: string[] = [];
   lines.push(buildServiceUserPrompt(ctx));
   lines.push("");
   lines.push("<hybrid-skeleton>");
   lines.push(
-    `Trigger detected: **${trigger}**. The Lambda entrypoint (\`handler.ts\`) is ` +
+    `Trigger detected: **${trigger}**. The Lambda entrypoint (\`${handlerFile}\`) is ` +
       `already generated. It parses the AWS event shape, dispatches to a ` +
-      `focused per-event function in \`process.ts\`, and handles errors / ` +
-      `partial-batch failures. Your job is to write ONLY \`process.ts\` (plus ` +
-      `\`process.test.ts\`) — do NOT regenerate \`handler.ts\`.`,
+      `focused per-event function in \`${processFile}\`, and handles errors / ` +
+      `partial-batch failures. Your job is to write ONLY \`${processFile}\` (plus ` +
+      `\`${testFile}\`) — do NOT regenerate \`${handlerFile}\`.`,
   );
   lines.push("");
-  lines.push("Here is the `handler.ts` you must match:");
-  lines.push("```ts");
+  lines.push(`Here is the \`${handlerFile}\` you must match:`);
+  lines.push("```" + fenceLang);
   lines.push(handlerSrc.trimEnd());
   lines.push("```");
   lines.push("");
-  lines.push("Implement in `process.ts`:");
-  lines.push(...processFnHint(trigger));
+  lines.push(`Implement in \`${processFile}\`:`);
+  lines.push(...processFnHint(trigger, lang));
   lines.push(" - Validate input at the boundary. Throw on schema mismatch.");
   lines.push(" - Use ONLY the clients listed in `<available-clients>`.");
-  lines.push(" - Tests in `process.test.ts` cover happy + at least one failure mode.");
+  lines.push(` - Tests in \`${testFile}\` cover happy + at least one failure mode.`);
   lines.push(" - Don't log payload bodies at info level — they may contain PII.");
   lines.push("</hybrid-skeleton>");
   return lines.join("\n");
 }
 
-function processFnHint(trigger: Trigger): string[] {
+function processFnHint(trigger: Trigger, lang: ScaffoldLang): string[] {
+  if (lang === "python") {
+    switch (trigger) {
+      case "http":
+        return [
+          " - Define `HttpInput`/`HttpOutput` as TypedDicts at module level.",
+          " - `async def process(input_: HttpInput) -> HttpOutput`.",
+        ];
+      case "s3":
+        return [
+          " - Define `S3Record` as a TypedDict at module level.",
+          " - `async def process(record: S3Record) -> None`.",
+          " - The handler iterates records — keep this function focused on one record.",
+        ];
+      case "sqs":
+        return [
+          " - Define `SqsMessage` as a TypedDict at module level.",
+          " - `async def process(message: SqsMessage) -> None`.",
+        ];
+      case "schedule":
+        return [
+          " - Define `ScheduleEvent` as a dataclass or TypedDict.",
+          " - `async def process(tick: ScheduleEvent) -> None`.",
+          " - Idempotent: a retry on the same firedAt must not double-process.",
+        ];
+    }
+  }
+  if (lang === "go") {
+    switch (trigger) {
+      case "http":
+        return [
+          " - Define `HttpInput` and `HttpOutput` structs in the same `package handler`.",
+          " - `func Process(ctx context.Context, in HttpInput) (HttpOutput, error)`.",
+        ];
+      case "s3":
+        return [
+          " - Define `S3Record` struct.",
+          " - `func Process(ctx context.Context, record S3Record) error`.",
+        ];
+      case "sqs":
+        return [
+          " - Define `SqsMessage` struct (id string, body any, attributes map[string]string).",
+          " - `func Process(ctx context.Context, msg SqsMessage) error`.",
+        ];
+      case "schedule":
+        return [
+          " - Define `ScheduleEvent` struct (FiredAt time.Time, Rule string).",
+          " - `func Process(ctx context.Context, tick ScheduleEvent) error`.",
+          " - Idempotent: a retry on the same FiredAt must not double-process.",
+        ];
+    }
+  }
+  // node
   switch (trigger) {
     case "http":
       return [
@@ -358,4 +441,383 @@ function processFnHint(trigger: Trigger): string[] {
         " - Idempotent: a retry on the same firedAt should not double-process.",
       ];
   }
+}
+
+// ─── Python renderers ────────────────────────────────────────────────
+
+function renderHttpHandlerPython(ctx: GeneratorContext): string {
+  return [
+    `"""Serverless HTTP handler for "${ctx.node.label}".`,
+    ``,
+    `Skeleton generated by Arkon buildout (deterministic).`,
+    `Business logic in process.py is LLM-generated.`,
+    `"""`,
+    ``,
+    `import base64`,
+    `import json`,
+    `import logging`,
+    `from typing import Any, TypedDict`,
+    ``,
+    `from process import process as process_input  # noqa: F401  type: ignore`,
+    `# process.py must export HttpInput / HttpOutput TypedDicts.`,
+    ``,
+    `log = logging.getLogger(__name__)`,
+    ``,
+    `def _parse_body(event: dict[str, Any]) -> Any:`,
+    `    raw = event.get("body")`,
+    `    if not raw:`,
+    `        return None`,
+    `    if event.get("isBase64Encoded"):`,
+    `        raw = base64.b64decode(raw).decode("utf-8")`,
+    `    ct = (event.get("headers", {}).get("content-type", "") or "").lower()`,
+    `    if "application/json" in ct:`,
+    `        try:`,
+    `            return json.loads(raw)`,
+    `        except json.JSONDecodeError:`,
+    `            return None`,
+    `    return raw`,
+    ``,
+    `async def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `    """API Gateway v2 (HTTP API) handler."""`,
+    `    http = event.get("requestContext", {}).get("http", {})`,
+    `    input_ = {`,
+    `        "method": http.get("method", "GET"),`,
+    `        "path": http.get("path", "/"),`,
+    `        "query": event.get("queryStringParameters") or {},`,
+    `        "headers": event.get("headers") or {},`,
+    `        "body": _parse_body(event),`,
+    `    }`,
+    `    try:`,
+    `        result = await process_input(input_)  # type: ignore[arg-type]`,
+    `    except Exception:`,
+    `        log.exception("handler error")`,
+    `        return {`,
+    `            "statusCode": 500,`,
+    `            "headers": {"content-type": "application/json"},`,
+    `            "body": json.dumps({"error": "internal_error"}),`,
+    `        }`,
+    `    body = result.get("body")`,
+    `    return {`,
+    `        "statusCode": result["status"],`,
+    `        "headers": {"content-type": "application/json", **(result.get("headers") or {})},`,
+    `        "body": None if body is None else json.dumps(body),`,
+    `    }`,
+    ``,
+  ].join("\n");
+}
+
+function renderS3HandlerPython(ctx: GeneratorContext): string {
+  return [
+    `"""Serverless S3 handler for "${ctx.node.label}".`,
+    ``,
+    `Skeleton generated by Arkon buildout (deterministic).`,
+    `Business logic in process.py is LLM-generated.`,
+    `"""`,
+    ``,
+    `import logging`,
+    `from typing import Any`,
+    `from urllib.parse import unquote_plus`,
+    ``,
+    `from process import process as process_record  # process.py defines S3Record`,
+    ``,
+    `log = logging.getLogger(__name__)`,
+    ``,
+    `async def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `    """Iterate S3 records; report partial-batch failures."""`,
+    `    failures = []`,
+    `    for r in event.get("Records", []):`,
+    `        s3 = r["s3"]`,
+    `        record = {`,
+    `            "bucket": s3["bucket"]["name"],`,
+    `            "key": unquote_plus(s3["object"]["key"]),`,
+    `            "size": s3["object"].get("size", 0),`,
+    `            "etag": s3["object"].get("eTag", ""),`,
+    `            "eventName": r.get("eventName", ""),`,
+    `        }`,
+    `        try:`,
+    `            await process_record(record)`,
+    `        except Exception:`,
+    `            log.exception("s3 record failed: %s/%s", record["bucket"], record["key"])`,
+    `            failures.append({"itemIdentifier": f"{record['bucket']}/{record['key']}"})`,
+    `    return {"batchItemFailures": failures}`,
+    ``,
+  ].join("\n");
+}
+
+function renderSqsHandlerPython(ctx: GeneratorContext): string {
+  return [
+    `"""Serverless SQS handler for "${ctx.node.label}".`,
+    ``,
+    `Skeleton generated by Arkon buildout (deterministic).`,
+    `Business logic in process.py is LLM-generated.`,
+    `"""`,
+    ``,
+    `import json`,
+    `import logging`,
+    `from typing import Any`,
+    ``,
+    `from process import process as process_message  # process.py defines SqsMessage`,
+    ``,
+    `log = logging.getLogger(__name__)`,
+    ``,
+    `def _parse_body(raw: str) -> Any:`,
+    `    try:`,
+    `        return json.loads(raw)`,
+    `    except json.JSONDecodeError:`,
+    `        return raw`,
+    ``,
+    `async def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `    """Iterate SQS messages; report partial-batch failures."""`,
+    `    failures = []`,
+    `    for r in event.get("Records", []):`,
+    `        attrs = r.get("messageAttributes", {}) or {}`,
+    `        message = {`,
+    `            "id": r["messageId"],`,
+    `            "body": _parse_body(r["body"]),`,
+    `            "attributes": {k: v.get("stringValue", "") for k, v in attrs.items()},`,
+    `        }`,
+    `        try:`,
+    `            await process_message(message)`,
+    `        except Exception:`,
+    `            log.exception("sqs message failed: %s", message["id"])`,
+    `            failures.append({"itemIdentifier": message["id"]})`,
+    `    return {"batchItemFailures": failures}`,
+    ``,
+  ].join("\n");
+}
+
+function renderScheduleHandlerPython(ctx: GeneratorContext): string {
+  return [
+    `"""Serverless scheduled handler for "${ctx.node.label}".`,
+    ``,
+    `Skeleton generated by Arkon buildout (deterministic).`,
+    `Business logic in process.py is LLM-generated.`,
+    `"""`,
+    ``,
+    `from datetime import datetime`,
+    `from typing import Any`,
+    ``,
+    `from process import process as process_tick  # process.py defines ScheduleEvent`,
+    ``,
+    `async def handler(event: dict[str, Any], context: Any) -> None:`,
+    `    """EventBridge Scheduled Event handler."""`,
+    `    tick = {`,
+    `        "firedAt": datetime.fromisoformat(event["time"].replace("Z", "+00:00")),`,
+    `        "rule": (event.get("resources") or [""])[0],`,
+    `    }`,
+    `    # Let exceptions propagate — EventBridge surfaces them.`,
+    `    await process_tick(tick)`,
+    ``,
+  ].join("\n");
+}
+
+// ─── Go renderers (uses aws-lambda-go/events) ────────────────────────
+
+function renderHttpHandlerGo(ctx: GeneratorContext): string {
+  return [
+    `// Serverless HTTP handler for "${ctx.node.label}".`,
+    `// Skeleton generated by Arkon buildout (deterministic).`,
+    `// Business logic in process.go is LLM-generated.`,
+    `package handler`,
+    ``,
+    `import (`,
+    `	"context"`,
+    `	"encoding/base64"`,
+    `	"encoding/json"`,
+    `	"log"`,
+    `	"strings"`,
+    ``,
+    `	"github.com/aws/aws-lambda-go/events"`,
+    `)`,
+    ``,
+    `func parseBody(req events.APIGatewayV2HTTPRequest) any {`,
+    `	if req.Body == "" {`,
+    `		return nil`,
+    `	}`,
+    `	raw := req.Body`,
+    `	if req.IsBase64Encoded {`,
+    `		decoded, err := base64.StdEncoding.DecodeString(raw)`,
+    `		if err == nil {`,
+    `			raw = string(decoded)`,
+    `		}`,
+    `	}`,
+    `	ct := strings.ToLower(req.Headers["content-type"])`,
+    `	if strings.Contains(ct, "application/json") {`,
+    `		var v any`,
+    `		if json.Unmarshal([]byte(raw), &v) == nil {`,
+    `			return v`,
+    `		}`,
+    `	}`,
+    `	return raw`,
+    `}`,
+    ``,
+    `// Handle is the Lambda entry. Register with lambda.Start(handler.Handle).`,
+    `func Handle(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {`,
+    `	in := HttpInput{`,
+    `		Method:  req.RequestContext.HTTP.Method,`,
+    `		Path:    req.RequestContext.HTTP.Path,`,
+    `		Query:   req.QueryStringParameters,`,
+    `		Headers: req.Headers,`,
+    `		Body:    parseBody(req),`,
+    `	}`,
+    `	out, err := Process(ctx, in)`,
+    `	if err != nil {`,
+    `		log.Printf("handler error: %v", err)`,
+    `		body, _ := json.Marshal(map[string]string{"error": "internal_error"})`,
+    `		return events.APIGatewayV2HTTPResponse{`,
+    `			StatusCode: 500,`,
+    `			Headers:    map[string]string{"content-type": "application/json"},`,
+    `			Body:       string(body),`,
+    `		}, nil`,
+    `	}`,
+    `	headers := map[string]string{"content-type": "application/json"}`,
+    `	for k, v := range out.Headers {`,
+    `		headers[k] = v`,
+    `	}`,
+    `	var bodyStr string`,
+    `	if out.Body != nil {`,
+    `		b, _ := json.Marshal(out.Body)`,
+    `		bodyStr = string(b)`,
+    `	}`,
+    `	return events.APIGatewayV2HTTPResponse{`,
+    `		StatusCode: out.Status,`,
+    `		Headers:    headers,`,
+    `		Body:       bodyStr,`,
+    `	}, nil`,
+    `}`,
+    ``,
+  ].join("\n");
+}
+
+function renderS3HandlerGo(ctx: GeneratorContext): string {
+  return [
+    `// Serverless S3 handler for "${ctx.node.label}".`,
+    `// Skeleton generated by Arkon buildout (deterministic).`,
+    `// Business logic in process.go is LLM-generated.`,
+    `package handler`,
+    ``,
+    `import (`,
+    `	"context"`,
+    `	"fmt"`,
+    `	"log"`,
+    `	"net/url"`,
+    ``,
+    `	"github.com/aws/aws-lambda-go/events"`,
+    `)`,
+    ``,
+    `// BatchResponse follows the AWS partial-batch-failure contract.`,
+    `type BatchResponse struct {`,
+    `	BatchItemFailures []BatchItemFailure \`json:"batchItemFailures"\``,
+    `}`,
+    ``,
+    `type BatchItemFailure struct {`,
+    `	ItemIdentifier string \`json:"itemIdentifier"\``,
+    `}`,
+    ``,
+    `func Handle(ctx context.Context, event events.S3Event) (BatchResponse, error) {`,
+    `	failures := []BatchItemFailure{}`,
+    `	for _, r := range event.Records {`,
+    `		key, _ := url.QueryUnescape(r.S3.Object.Key)`,
+    `		record := S3Record{`,
+    `			Bucket:    r.S3.Bucket.Name,`,
+    `			Key:       key,`,
+    `			Size:      r.S3.Object.Size,`,
+    `			ETag:      r.S3.Object.ETag,`,
+    `			EventName: r.EventName,`,
+    `		}`,
+    `		if err := Process(ctx, record); err != nil {`,
+    `			log.Printf("s3 record failed: %s/%s err=%v", record.Bucket, record.Key, err)`,
+    `			failures = append(failures, BatchItemFailure{`,
+    `				ItemIdentifier: fmt.Sprintf("%s/%s", record.Bucket, record.Key),`,
+    `			})`,
+    `		}`,
+    `	}`,
+    `	return BatchResponse{BatchItemFailures: failures}, nil`,
+    `}`,
+    ``,
+  ].join("\n");
+}
+
+function renderSqsHandlerGo(ctx: GeneratorContext): string {
+  return [
+    `// Serverless SQS handler for "${ctx.node.label}".`,
+    `// Skeleton generated by Arkon buildout (deterministic).`,
+    `// Business logic in process.go is LLM-generated.`,
+    `package handler`,
+    ``,
+    `import (`,
+    `	"context"`,
+    `	"encoding/json"`,
+    `	"log"`,
+    ``,
+    `	"github.com/aws/aws-lambda-go/events"`,
+    `)`,
+    ``,
+    `// BatchResponse follows the AWS partial-batch-failure contract.`,
+    `type BatchResponse struct {`,
+    `	BatchItemFailures []BatchItemFailure \`json:"batchItemFailures"\``,
+    `}`,
+    ``,
+    `type BatchItemFailure struct {`,
+    `	ItemIdentifier string \`json:"itemIdentifier"\``,
+    `}`,
+    ``,
+    `func parseBody(raw string) any {`,
+    `	var v any`,
+    `	if json.Unmarshal([]byte(raw), &v) == nil {`,
+    `		return v`,
+    `	}`,
+    `	return raw`,
+    `}`,
+    ``,
+    `func Handle(ctx context.Context, event events.SQSEvent) (BatchResponse, error) {`,
+    `	failures := []BatchItemFailure{}`,
+    `	for _, r := range event.Records {`,
+    `		attrs := make(map[string]string, len(r.MessageAttributes))`,
+    `		for k, v := range r.MessageAttributes {`,
+    `			if v.StringValue != nil {`,
+    `				attrs[k] = *v.StringValue`,
+    `			}`,
+    `		}`,
+    `		msg := SqsMessage{`,
+    `			ID:         r.MessageId,`,
+    `			Body:       parseBody(r.Body),`,
+    `			Attributes: attrs,`,
+    `		}`,
+    `		if err := Process(ctx, msg); err != nil {`,
+    `			log.Printf("sqs message failed: %s err=%v", msg.ID, err)`,
+    `			failures = append(failures, BatchItemFailure{ItemIdentifier: msg.ID})`,
+    `		}`,
+    `	}`,
+    `	return BatchResponse{BatchItemFailures: failures}, nil`,
+    `}`,
+    ``,
+  ].join("\n");
+}
+
+function renderScheduleHandlerGo(ctx: GeneratorContext): string {
+  return [
+    `// Serverless scheduled handler for "${ctx.node.label}".`,
+    `// Skeleton generated by Arkon buildout (deterministic).`,
+    `// Business logic in process.go is LLM-generated.`,
+    `package handler`,
+    ``,
+    `import (`,
+    `	"context"`,
+    `	"time"`,
+    ``,
+    `	"github.com/aws/aws-lambda-go/events"`,
+    `)`,
+    ``,
+    `func Handle(ctx context.Context, event events.CloudWatchEvent) error {`,
+    `	firedAt, _ := time.Parse(time.RFC3339, event.Time.Format(time.RFC3339))`,
+    `	rule := ""`,
+    `	if len(event.Resources) > 0 {`,
+    `		rule = event.Resources[0]`,
+    `	}`,
+    `	// Let errors propagate — EventBridge surfaces them.`,
+    `	return Process(ctx, ScheduleEvent{FiredAt: firedAt, Rule: rule})`,
+    `}`,
+    ``,
+  ].join("\n");
 }

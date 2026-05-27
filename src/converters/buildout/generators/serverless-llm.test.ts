@@ -25,13 +25,108 @@ function ctx(trigger: string, overrides: Partial<GeneratorContext> = {}): Genera
   };
 }
 
-describe("serverlessLLMGenerator — fallback (non-Node)", () => {
-  it("falls back to a guided bundle for Python", async () => {
-    const c = ctx("HTTP", { language: "python" });
-    const files = await serverlessLLMGenerator.generate(c);
-    expect(files.map((f) => f.path).sort()).toEqual(["README.md", "prompt.md", "validate.sh"]);
-    expect(files.find((f) => f.path === "handler.ts")).toBeUndefined();
-    expect(files.find((f) => f.path === "prompt.md")!.contents).toContain("<serverless>");
+describe("serverlessLLMGenerator — Python (HTTP)", () => {
+  it("emits handler.py with API Gateway v2 shape + base64 body decode", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("HTTP", { language: "python" }));
+    expect(files.map((f) => f.path).sort()).toEqual([
+      "README.md",
+      "handler.py",
+      "prompt.md",
+      "validate.sh",
+    ]);
+    const py = files.find((f) => f.path === "handler.py")!.contents;
+    expect(py).toContain("import base64");
+    expect(py).toContain("requestContext");
+    expect(py).toContain('event.get("isBase64Encoded")');
+    expect(py).toContain("from process import process as process_input");
+    expect(py).toContain("async def handler");
+  });
+
+  it("Python prompt asks for TypedDict definitions", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("HTTP", { language: "python" }));
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```python");
+    expect(prompt).toContain("TypedDict");
+    expect(prompt).toContain("async def process");
+    expect(prompt).toContain("test_process.py");
+  });
+});
+
+describe("serverlessLLMGenerator — Python (S3)", () => {
+  it("emits handler.py with unquote_plus and partial-batch failure", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("S3 event", { language: "python" }));
+    const py = files.find((f) => f.path === "handler.py")!.contents;
+    expect(py).toContain("unquote_plus");
+    expect(py).toContain("batchItemFailures");
+    expect(py).toContain("from process import process as process_record");
+  });
+});
+
+describe("serverlessLLMGenerator — Python (SQS / schedule)", () => {
+  it("SQS handler iterates Records and reports batch failures", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("SQS", { language: "python" }));
+    const py = files.find((f) => f.path === "handler.py")!.contents;
+    expect(py).toContain("messageId");
+    expect(py).toContain("batchItemFailures");
+  });
+
+  it("schedule handler parses event['time'] into datetime", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("schedule cron", { language: "python" }));
+    const py = files.find((f) => f.path === "handler.py")!.contents;
+    expect(py).toContain("datetime.fromisoformat");
+    expect(py).not.toContain("batchItemFailures");
+  });
+});
+
+describe("serverlessLLMGenerator — Go (HTTP)", () => {
+  it("emits handler.go using aws-lambda-go/events", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("HTTP", { language: "go" }));
+    expect(files.map((f) => f.path).sort()).toEqual([
+      "README.md",
+      "handler.go",
+      "prompt.md",
+      "validate.sh",
+    ]);
+    const go = files.find((f) => f.path === "handler.go")!.contents;
+    expect(go).toContain("package handler");
+    expect(go).toContain('"github.com/aws/aws-lambda-go/events"');
+    expect(go).toContain("APIGatewayV2HTTPRequest");
+    expect(go).toContain("APIGatewayV2HTTPResponse");
+    expect(go).toContain("func Handle(ctx context.Context");
+    expect(go).toContain("Process(ctx, in)");
+  });
+
+  it("Go prompt asks for HttpInput / HttpOutput struct definitions", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("HTTP", { language: "go" }));
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```go");
+    expect(prompt).toContain("HttpInput");
+    expect(prompt).toContain("HttpOutput");
+    expect(prompt).toContain("func Process(ctx context.Context");
+  });
+});
+
+describe("serverlessLLMGenerator — Go (S3 / SQS / schedule)", () => {
+  it("S3 handler uses events.S3Event with partial batch failure", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("S3", { language: "go" }));
+    const go = files.find((f) => f.path === "handler.go")!.contents;
+    expect(go).toContain("events.S3Event");
+    expect(go).toContain("BatchItemFailures");
+    expect(go).toContain("url.QueryUnescape");
+  });
+
+  it("SQS handler uses events.SQSEvent", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("SQS", { language: "go" }));
+    const go = files.find((f) => f.path === "handler.go")!.contents;
+    expect(go).toContain("events.SQSEvent");
+    expect(go).toContain("BatchItemFailures");
+  });
+
+  it("schedule handler uses events.CloudWatchEvent", async () => {
+    const files = await serverlessLLMGenerator.generate(ctx("schedule rate(1 hour)", { language: "go" }));
+    const go = files.find((f) => f.path === "handler.go")!.contents;
+    expect(go).toContain("events.CloudWatchEvent");
+    expect(go).not.toContain("BatchItemFailures");
   });
 });
 
