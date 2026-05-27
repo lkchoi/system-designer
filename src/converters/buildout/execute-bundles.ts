@@ -61,10 +61,32 @@ const FILES_OUTPUT_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+export type ExecuteEffort = "low" | "medium" | "high" | "xhigh" | "max";
+
+export interface ExecuteOpts {
+  /** Max output tokens per bundle. Default 32768. */
+  maxTokens?: number;
+  /** Per-call wall-clock cap in ms. AbortController-enforced. Default 600_000 (10 min). */
+  timeoutMs?: number;
+  /** Claude effort level. Default "xhigh". */
+  effort?: ExecuteEffort;
+  /** Override the model id. Default "claude-opus-4-7". */
+  model?: string;
+}
+
+const DEFAULT_OPTS: Required<ExecuteOpts> = {
+  maxTokens: 32768,
+  timeoutMs: 10 * 60 * 1000,
+  effort: "xhigh",
+  model: "claude-opus-4-7",
+};
+
 export async function executeBundlesInDir(
   outRoot: string,
   generated: GeneratedFile[],
+  opts: ExecuteOpts = {},
 ): Promise<void> {
+  const cfg = { ...DEFAULT_OPTS, ...opts };
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     console.error("--execute requires ANTHROPIC_API_KEY in env. Skipping.");
@@ -78,24 +100,63 @@ export async function executeBundlesInDir(
     return;
   }
 
-  console.log(`--execute: running ${bundles.length} bundle(s) through claude-opus-4-7…`);
+  console.log(
+    `--execute: running ${bundles.length} bundle(s) through ${cfg.model} ` +
+      `(max_tokens=${cfg.maxTokens}, effort=${cfg.effort}, timeout=${Math.round(cfg.timeoutMs / 1000)}s)…`,
+  );
+
+  // Aggregate cost-relevant counters across bundles for the summary line.
+  let totalInput = 0;
+  let totalCacheRead = 0;
+  let totalCacheCreated = 0;
+  let totalOutput = 0;
+  let timedOut = 0;
+  let failed = 0;
 
   for (const b of bundles) {
     const promptPath = join(b.dir, "prompt.md");
     const prompt = await readFile(promptPath, "utf8");
 
     process.stdout.write(`  ${b.slug}… `);
-    const stream = client.messages.stream({
-      model: "claude-opus-4-7",
-      max_tokens: 32768,
-      thinking: { type: "adaptive" },
-      output_config: {
-        effort: "xhigh",
-        format: { type: "json_schema", schema: FILES_OUTPUT_SCHEMA },
-      },
-      messages: [{ role: "user", content: prompt }],
-    });
-    const message = await stream.finalMessage();
+
+    // Wall-clock cap. SDK's HTTP read timeouts reset on each chunk, so
+    // we wrap the whole stream in an AbortController to enforce a true
+    // deadline. (See claude-api skill notes on robust polling.)
+    const ac = new AbortController();
+    const deadline = setTimeout(() => ac.abort(), cfg.timeoutMs);
+
+    let message: Awaited<ReturnType<typeof client.messages.stream>> extends infer S
+      ? S extends { finalMessage: () => Promise<infer M> }
+        ? M
+        : never
+      : never;
+    try {
+      const stream = client.messages.stream(
+        {
+          model: cfg.model,
+          max_tokens: cfg.maxTokens,
+          thinking: { type: "adaptive" },
+          output_config: {
+            effort: cfg.effort,
+            format: { type: "json_schema", schema: FILES_OUTPUT_SCHEMA },
+          },
+          messages: [{ role: "user", content: prompt }],
+        },
+        { signal: ac.signal },
+      );
+      message = (await stream.finalMessage()) as typeof message;
+    } catch (err) {
+      clearTimeout(deadline);
+      if (ac.signal.aborted) {
+        timedOut += 1;
+        console.log(`TIMED OUT after ${Math.round(cfg.timeoutMs / 1000)}s`);
+      } else {
+        failed += 1;
+        console.log(`FAILED (${(err as Error).message})`);
+      }
+      continue;
+    }
+    clearTimeout(deadline);
 
     const textBlock = message.content.find(
       (blk): blk is Anthropic.TextBlock => blk.type === "text",
@@ -124,9 +185,26 @@ export async function executeBundlesInDir(
     const usage = message.usage;
     const cacheRead = usage.cache_read_input_tokens ?? 0;
     const cacheCreated = usage.cache_creation_input_tokens ?? 0;
+    totalInput += usage.input_tokens;
+    totalCacheRead += cacheRead;
+    totalCacheCreated += cacheCreated;
+    totalOutput += usage.output_tokens;
     console.log(
       `wrote ${written} files ` +
         `(in=${usage.input_tokens} cache_read=${cacheRead} cache_created=${cacheCreated} out=${usage.output_tokens})`,
     );
   }
+
+  // Summary line + crude cost estimate for Opus 4.7 pricing
+  // ($5/M input, $25/M output; cache_read at ~0.1×, cache_create at ~1.25×).
+  const cost =
+    (totalInput / 1_000_000) * 5 +
+    (totalCacheRead / 1_000_000) * 0.5 +
+    (totalCacheCreated / 1_000_000) * 6.25 +
+    (totalOutput / 1_000_000) * 25;
+  console.log(
+    `summary: in=${totalInput} cache_read=${totalCacheRead} cache_created=${totalCacheCreated} ` +
+      `out=${totalOutput} (~$${cost.toFixed(3)}) ` +
+      `timed_out=${timedOut} failed=${failed}`,
+  );
 }

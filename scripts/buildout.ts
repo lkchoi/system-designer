@@ -41,6 +41,10 @@ interface Args {
   language?: ScaffoldLang;
   dryRun: boolean;
   execute: boolean;
+  maxTokens?: number;
+  timeoutMs?: number;
+  effort?: "low" | "medium" | "high" | "xhigh" | "max";
+  model?: string;
   help: boolean;
 }
 
@@ -78,6 +82,33 @@ function parseArgs(argv: string[]): Args {
       case "--execute":
         args.execute = true;
         break;
+      case "--max-tokens": {
+        const n = parseInt(argv[++i], 10);
+        if (!Number.isFinite(n) || n < 1024) {
+          throw new Error("--max-tokens must be an integer >= 1024");
+        }
+        args.maxTokens = n;
+        break;
+      }
+      case "--timeout-ms": {
+        const n = parseInt(argv[++i], 10);
+        if (!Number.isFinite(n) || n < 1000) {
+          throw new Error("--timeout-ms must be an integer >= 1000");
+        }
+        args.timeoutMs = n;
+        break;
+      }
+      case "--effort": {
+        const e = argv[++i];
+        if (e !== "low" && e !== "medium" && e !== "high" && e !== "xhigh" && e !== "max") {
+          throw new Error(`--effort must be low|medium|high|xhigh|max (got ${e})`);
+        }
+        args.effort = e;
+        break;
+      }
+      case "--model":
+        args.model = argv[++i];
+        break;
       case "-h":
       case "--help":
         args.help = true;
@@ -104,6 +135,10 @@ function printHelp() {
       "  --dry-run              Don't write files, print planned output",
       "  --execute              Dev-only: pipe each bundle's prompt.md through Claude",
       "                         and write the produced files. Requires ANTHROPIC_API_KEY.",
+      "  --max-tokens <n>       (with --execute) max output tokens per bundle. Default 32768.",
+      "  --timeout-ms <n>       (with --execute) wall-clock cap per bundle. Default 600000 (10m).",
+      "  --effort <level>       (with --execute) low|medium|high|xhigh|max. Default xhigh.",
+      "  --model <id>           (with --execute) override the model. Default claude-opus-4-7.",
       "  -h, --help             Show this help",
       "",
       "Without --execute, LLM-driven nodes emit a bundle (README.md, prompt.md,",
@@ -171,7 +206,12 @@ async function main() {
     // Dynamic import keeps the Anthropic SDK off the production code
     // path. Only loaded when --execute is passed.
     const { executeBundlesInDir } = await import("../src/converters/buildout/execute-bundles");
-    await executeBundlesInDir(args.out, result.files);
+    await executeBundlesInDir(args.out, result.files, {
+      maxTokens: args.maxTokens,
+      timeoutMs: args.timeoutMs,
+      effort: args.effort,
+      model: args.model,
+    });
   }
 
   if (result.errors.length) process.exit(2);
