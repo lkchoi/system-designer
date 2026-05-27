@@ -1,18 +1,19 @@
 /**
  * Generator dispatch.
  *
- * Per CLAUDE.md, registry entries are the single source of truth for
- * component types. The buildOut field on a registry entry could declare
- * which generator to use, but we haven't extended ComponentRegistryEntry
- * yet (see buildout-plan.md — Registry changes). Until then, dispatch is
- * a flat map keyed by componentType.
+ * The registry entry for each component type declares which generator(s)
+ * to use via `buildOut.generators` (a list of string ids). This module
+ * holds the id→impl map and resolves the right generator at runtime.
  *
- * TODO(open-question): once we promote `buildOut` onto registry entries
- * (Tier 2 generators land first to motivate the structured plan fields),
- * collapse this map into a registry lookup.
+ * Why two layers (registry declares, dispatch resolves):
+ *  - Keeps the registry package free of buildout-impl imports.
+ *  - Lets the registry stay the single source of truth (per CLAUDE.md):
+ *    if a component type doesn't declare `buildOut`, it produces nothing.
+ *  - Adding a new generator means: drop a file in `generators/`, register
+ *    its id here, list the id in the relevant `builtin-entries.ts`.
  */
 
-import type { ComponentType } from "../../types";
+import { registry } from "../../registry";
 import type { Generator, GeneratorContext } from "./types";
 import { serviceLLMGenerator } from "./generators/service-llm";
 import { serverlessLLMGenerator } from "./generators/serverless-llm";
@@ -33,38 +34,59 @@ import { cdnConfigGenerator } from "./generators/cdn-config";
 import { k8sManifestGenerator } from "./generators/k8s-manifests";
 import { warehouseSchemaGenerator } from "./generators/warehouse-schema";
 
-// Map componentType → ordered list of candidate generators. The first one
-// whose `supports()` returns true wins.
-const REGISTRY: Partial<Record<ComponentType, Generator[]>> = {
-  service: [serviceLLMGenerator],
-  serverless: [serverlessLLMGenerator],
-  cron: [cronLLMGenerator],
-  webhook: [webhookLLMGenerator],
-  "stream-processor": [streamLLMGenerator],
-  // dynamo first so it wins on technology=dynamodb; sql wins for postgres/mysql/etc.
-  database: [dynamoSchemaGenerator, sqlSchemaGenerator],
-  "api-gateway": [openApiGenerator],
-  cache: [cacheConfigGenerator],
-  "message-queue": [queueConfigGenerator],
-  "search-engine": [searchMappingGenerator],
-  storage: [storageConfigGenerator],
-  "load-balancer": [lbConfigGenerator],
-  firewall: [firewallConfigGenerator],
-  dns: [dnsConfigGenerator],
-  cdn: [cdnConfigGenerator],
-  "container-orchestration": [k8sManifestGenerator],
-  "data-warehouse": [warehouseSchemaGenerator],
-  // message-queue, cache, storage, api-gateway, etc.
-  // registered as deterministic Tier 2 generators land.
+/**
+ * Generator id → implementation. Ids are referenced by string from
+ * `ComponentRegistryEntry.buildOut.generators`. Keep ids stable — renames
+ * here require updating every registry entry that uses them.
+ */
+const GENERATOR_REGISTRY: Record<string, Generator> = {
+  "service-llm": serviceLLMGenerator,
+  "serverless-llm": serverlessLLMGenerator,
+  "cron-llm": cronLLMGenerator,
+  "webhook-llm": webhookLLMGenerator,
+  "stream-llm": streamLLMGenerator,
+  "sql-schema": sqlSchemaGenerator,
+  "dynamo-schema": dynamoSchemaGenerator,
+  openapi: openApiGenerator,
+  "cache-config": cacheConfigGenerator,
+  "queue-config": queueConfigGenerator,
+  "search-mapping": searchMappingGenerator,
+  "storage-config": storageConfigGenerator,
+  "lb-config": lbConfigGenerator,
+  "firewall-config": firewallConfigGenerator,
+  "dns-config": dnsConfigGenerator,
+  "cdn-config": cdnConfigGenerator,
+  "k8s-manifests": k8sManifestGenerator,
+  "warehouse-schema": warehouseSchemaGenerator,
 };
 
+/**
+ * Resolve the generator for a given context by consulting the registry
+ * entry's `buildOut.generators` list and walking it in order. The first
+ * whose `supports(ctx)` returns true wins.
+ */
 export function pickGenerator(ctx: GeneratorContext): Generator | undefined {
-  const candidates = REGISTRY[ctx.node.componentType] ?? [];
-  return candidates.find((g) => g.supports(ctx));
+  const entry = registry.get(ctx.node.componentType);
+  if (!entry?.buildOut) return undefined;
+  for (const id of entry.buildOut.generators) {
+    const gen = GENERATOR_REGISTRY[id];
+    if (!gen) {
+      // A registry entry references an unknown generator id — surface
+      // loudly so dev notices, but don't crash the whole run.
+      console.warn(
+        `buildOut: registry entry "${ctx.node.componentType}" references unknown generator id "${id}"`,
+      );
+      continue;
+    }
+    if (gen.supports(ctx)) return gen;
+  }
+  return undefined;
 }
 
-export function registerGenerator(type: ComponentType, generator: Generator): void {
-  const list = REGISTRY[type] ?? [];
-  list.push(generator);
-  REGISTRY[type] = list;
+/**
+ * Late-registration hook. Used in tests and for plugins. Production code
+ * paths should declare generators in the registry, not call this.
+ */
+export function registerGenerator(id: string, generator: Generator): void {
+  GENERATOR_REGISTRY[id] = generator;
 }
