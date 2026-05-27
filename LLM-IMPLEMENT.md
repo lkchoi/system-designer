@@ -19,6 +19,10 @@ Sibling to `.context/buildout-plan.md`. Tracks **what I built, decisions I made,
 | 4c | OpenAPI generator (api-gateway) | ✅ |
 | 4d | Remaining config generators (cache, queue, search, storage, lb, firewall, dns, cdn, k8s, warehouse) | ✅ |
 | 5 | **Bundle pivot** — Tier 1 emits vendor-agnostic bundles, no LLM call in product code | ✅ |
+| 6a | Registry promotion — `buildOut` declared per component type | ✅ |
+| 6b | Structured plan field types in registry | ✅ |
+| 6c | Plan field widget editors (`ColumnsTable`, `AccessPatterns`, `MappingsObject`, `OperationsList`) | ✅ |
+| 6d | "Build it" toolbar button + FSA/zip output dialog | ✅ |
 
 58 buildout-specific tests passing, 829 total. CLI smoke-tested end-to-end.
 
@@ -79,6 +83,12 @@ This path **only loads via dynamic import** — the Anthropic SDK never reaches 
 
 ## Key files
 
+- `src/registry/types.ts` — `BuildOutSpec`, `StructuredFieldDef`. Declares which generator(s) each component type uses and what structured plan fields it needs.
+- `src/registry/builtin-entries.ts` — every builtin component carries its `buildOut` block here.
+- `src/components/widgets/StructuredFieldEditor.tsx` — dispatcher.
+- `src/components/widgets/{ColumnsTable,AccessPatterns,MappingsObject,OperationsList}Widget.tsx` — editors per structured field type.
+- `src/components/widgets/yaml-helpers.ts` — shared parse/dump.
+- `src/components/BuildItDialog.tsx` — toolbar-triggered build modal with FSA/zip output.
 - `src/converters/buildout/types.ts` — `GeneratorContext`, `Generator`, `BuildOutResult`, `BuildOutOpts`.
 - `src/converters/buildout/prompt.ts` — stable system prompt + per-node user prompt builder. Versioned via `SYSTEM_PROMPT_VERSION = "v1.0.0"`.
 - `src/converters/buildout/bundle.ts` — `emitBundle()` — turns a prompt into the README + prompt.md + validate.sh trio.
@@ -122,12 +132,11 @@ Keeps the Anthropic SDK off the product code path. The Cloudflare bundle never s
 
 | Topic | Where | Plan |
 |---|---|---|
-| Structured plan fields → dedicated widgets | `prompt.ts:plan-hints`, Tier 2 schema generators | Build widget editor in canvas for `columns`, `accessPatterns`, `mappings`, `operations` |
-| Validation pipeline (tsc/pyright/go vet) | already in bundle's `validate.sh` | Add hosted check in `--execute` mode that runs validate.sh after writing files |
-| Promote dispatch to registry `buildOut` field | `dispatch.ts` | After widgets land (#1) |
-| UI surfacing — "Build it" button | TBD | FSA folder picker (or zip fallback); per-node right-click + top-level toolbar |
-| Telemetry — token usage + cache hits | `execute-bundles.ts` (dev-only); pending for UI | Already logs per-call usage in `--execute`; UI counterpart depends on whether UI ever executes (it shouldn't) |
-| Stream-processor hybrid (deterministic skeleton + bundle bodies) | `stream-llm.ts` | Blocked on `operations` structured field |
+| Stream-processor hybrid (deterministic skeleton + LLM bodies) | `stream-llm.ts` | Now unblocked — `operations` structured field has landed. Next: split skeleton emission (source/sink wiring + window setup) from per-operator prompt generation. |
+| Generators consume structured fields instead of YAML strings | `sql-schema.ts`, `dynamo-schema.ts`, etc. | They already parse YAML; widgets emit YAML. Consider tightening by passing parsed objects directly from dispatcher to generator. |
+| Per-node right-click "Build it" | `PropertiesPanel`/canvas | Today the dialog has "Selected only" scope, which covers the use case without a context-menu system. Right-click sugar is a UX polish, not blocking. |
+| Validation pipeline (tsc/pyright/go vet) | bundle's `validate.sh` | Already in bundle. Could hoist into an in-UI "Validate" button that runs the script via a subprocess in `--execute` mode. |
+| Telemetry — token usage + cache hits | `execute-bundles.ts` (dev-only) | Logs per-call usage already. UI doesn't execute, so no UI counterpart needed. |
 
 ## Tests
 
