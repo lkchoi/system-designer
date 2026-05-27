@@ -47,6 +47,7 @@ const CapacityCalculator = lazy(() => import("./tools/capacity-calculator/Capaci
 const CronTranslator = lazy(() => import("./tools/cron-translator/CronTranslator"));
 const ExportDialog = lazy(() => import("./components/ExportDialog"));
 const BuildItDialog = lazy(() => import("./components/BuildItDialog"));
+const NodeContextMenu = lazy(() => import("./components/NodeContextMenu"));
 const CompareView = lazy(() => import("./components/CompareView"));
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
@@ -217,6 +218,9 @@ function Canvas({
   const [showCronTranslator, setShowCronTranslator] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [showBuildItDialog, setShowBuildItDialog] = useState(false);
+  const [nodeContextMenu, setNodeContextMenu] = useState<
+    { node: Node; x: number; y: number } | null
+  >(null);
   const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
   const [showDesignMenu, setShowDesignMenu] = useState(false);
   const [editingDesignName, setEditingDesignName] = useState(false);
@@ -1848,6 +1852,12 @@ function Canvas({
                 onDrop={onDrop}
                 onDragOver={onDragOver}
                 onNodeClick={onNodeClick}
+                onNodeContextMenu={(event, node) => {
+                  // Show our menu instead of the browser default.
+                  event.preventDefault();
+                  setSelectedNodeId(node.id);
+                  setNodeContextMenu({ node, x: event.clientX, y: event.clientY });
+                }}
                 onEdgeClick={onEdgeClick}
                 onPaneClick={onPaneClick}
                 nodeTypes={nodeTypes}
@@ -2067,6 +2077,17 @@ function Canvas({
               edges={edges}
               designName={currentDesign?.name ?? "design"}
               selectedNodeId={selectedNodeId}
+            />
+          )}
+          {nodeContextMenu && (
+            <NodeContextMenu
+              node={nodeContextMenu.node}
+              position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
+              onBuildIt={(node) => {
+                setSelectedNodeId(node.id);
+                setShowBuildItDialog(true);
+              }}
+              onClose={() => setNodeContextMenu(null)}
             />
           )}
         </Suspense>
