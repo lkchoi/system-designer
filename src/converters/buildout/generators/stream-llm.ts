@@ -32,6 +32,7 @@
 import yaml from "js-yaml";
 import { emitBundle } from "../bundle";
 import { buildServiceUserPrompt, buildSystemPrompt, languageProfile } from "../prompt";
+import type { ScaffoldLang } from "../../scaffold/concerns/types";
 import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
 type OpKind = "map" | "filter" | "window" | "aggregate";
@@ -86,17 +87,6 @@ export const streamLLMGenerator: Generator = {
       });
     }
 
-    // Only TS/Node skeleton implemented today. Other languages fall back.
-    if (lang !== "node") {
-      return emitBundle(ctx, {
-        systemPrompt: buildSystemPrompt(lang),
-        userPrompt:
-          buildServiceUserPrompt(ctx) +
-          FALLBACK_GUIDANCE +
-          `\n\n(Note: hybrid skeleton is currently TypeScript-only; falling back to bundle mode.)`,
-      });
-    }
-
     return emitHybrid(ctx, operations);
   },
 };
@@ -120,22 +110,74 @@ function parseOperations(raw: string | undefined): Operation[] | undefined {
  * to fill in operators.ts with a function per non-window operation.
  */
 function emitHybrid(ctx: GeneratorContext, operations: Operation[]): GeneratedFile[] {
+  const lang = ctx.language ?? "node";
   const operatorFns = operations
     .map((op, idx) => ({ op, idx, name: operatorFnName(op, idx) }))
     .filter((x) => x.op.kind !== "window");
 
-  const pipeline = renderPipelineTs(ctx, operations, operatorFns);
-  const lang = ctx.language ?? "node";
-  const prof = languageProfile(lang);
-  const operatorPrompt = buildOperatorPrompt(ctx, operatorFns, pipeline);
+  const renderer = PIPELINE_RENDERERS[lang];
+  const pipeline = renderer(ctx, operations, operatorFns);
+  const pipelinePath = pipelineFilename(lang);
+  const expectedOperatorPaths = operatorOutputPaths(lang);
+  const fenceLang = pipelineFenceLang(lang);
+
+  const operatorPrompt = buildOperatorPrompt(
+    ctx,
+    operatorFns,
+    pipeline,
+    pipelinePath,
+    expectedOperatorPaths,
+    fenceLang,
+  );
   const bundle = emitBundle(ctx, {
     systemPrompt: buildSystemPrompt(lang),
     userPrompt: operatorPrompt,
-    expectedOutputs: [`operators.${prof.ext}`, `operators.test.${prof.ext}`],
+    expectedOutputs: expectedOperatorPaths,
   });
 
-  // Add the deterministic pipeline file to the bundle output.
-  return [{ path: `pipeline.${prof.ext}`, contents: pipeline }, ...bundle];
+  return [{ path: pipelinePath, contents: pipeline }, ...bundle];
+}
+
+type PipelineRenderer = (
+  ctx: GeneratorContext,
+  operations: Operation[],
+  operatorFns: OperatorRef[],
+) => string;
+
+const PIPELINE_RENDERERS: Record<ScaffoldLang, PipelineRenderer> = {
+  node: (ctx, ops, fns) => renderPipelineTs(ctx, ops, fns),
+  python: (ctx, ops, fns) => renderPipelinePython(ctx, ops, fns),
+  go: (ctx, ops, fns) => renderPipelineGo(ctx, ops, fns),
+};
+
+function pipelineFilename(lang: ScaffoldLang): string {
+  return `pipeline.${languageProfile(lang).ext}`;
+}
+
+function operatorOutputPaths(lang: ScaffoldLang): string[] {
+  // Test file naming follows the language's standard convention. Falling
+  // back to languageProfile.testExt would give us `operators.test.py` /
+  // `operators._test.go`, which isn't idiomatic — explicit per-language
+  // here.
+  switch (lang) {
+    case "node":
+      return ["operators.ts", "operators.test.ts"];
+    case "python":
+      return ["operators.py", "test_operators.py"];
+    case "go":
+      return ["operators.go", "operators_test.go"];
+  }
+}
+
+function pipelineFenceLang(lang: ScaffoldLang): string {
+  switch (lang) {
+    case "node":
+      return "ts";
+    case "python":
+      return "python";
+    case "go":
+      return "go";
+  }
 }
 
 function operatorFnName(op: Operation, idx: number): string {
@@ -280,38 +322,73 @@ function buildOperatorPrompt(
   ctx: GeneratorContext,
   operatorFns: OperatorRef[],
   pipelineSrc: string,
+  pipelinePath: string,
+  expectedOutputs: string[],
+  fenceLang: string,
 ): string {
+  const [operatorsFile, operatorsTestFile] = expectedOutputs;
+  const lang = ctx.language ?? "node";
   const baseUserPrompt = buildServiceUserPrompt(ctx);
   const lines: string[] = [];
   lines.push(baseUserPrompt);
   lines.push("");
   lines.push("<hybrid-skeleton>");
   lines.push(
-    "The stream pipeline skeleton (pipeline.ts) is already generated. It " +
-      "calls into `operators.ts` for each map/filter/aggregate step. Your " +
-      "job is to write ONLY operators.ts (plus tests) — do NOT regenerate " +
-      "pipeline.ts.",
+    `The stream pipeline skeleton (\`${pipelinePath}\`) is already generated. ` +
+      `It calls into \`${operatorsFile}\` for each map/filter/aggregate step. ` +
+      `Your job is to write ONLY \`${operatorsFile}\` (plus \`${operatorsTestFile}\`) — ` +
+      `do NOT regenerate \`${pipelinePath}\`.`,
   );
   lines.push("");
-  lines.push("Here is the pipeline.ts you must match:");
-  lines.push("```ts");
+  lines.push(`Here is the \`${pipelinePath}\` you must match:`);
+  lines.push("```" + fenceLang);
   lines.push(pipelineSrc.trimEnd());
   lines.push("```");
   lines.push("");
-  lines.push("Operator functions to implement (in operators.ts):");
+  lines.push(`Operator functions to implement (in \`${operatorsFile}\`):`);
   for (const f of operatorFns) {
     lines.push(`- \`${f.name}\` — kind=${f.op.kind}, body: ${f.op.body ?? "(unspecified)"}`);
   }
   lines.push("");
   lines.push("Rules:");
-  lines.push(" - Each operator is a small pure async function: `async (input: T) => U` (or `=> boolean` for filter).");
-  lines.push(" - Export each by name from operators.ts.");
-  lines.push(" - Match the function signatures called from pipeline.ts exactly.");
-  lines.push(" - Do not introduce side effects (logging, sinks). pipeline.ts handles that.");
-  lines.push(" - Tests in operators.test.ts cover happy + edge for each operator.");
+  lines.push(...operatorRules(lang, operatorsFile, operatorsTestFile, pipelinePath));
   lines.push("</hybrid-skeleton>");
 
   return lines.join("\n");
+}
+
+function operatorRules(
+  lang: ScaffoldLang,
+  operatorsFile: string,
+  operatorsTestFile: string,
+  pipelinePath: string,
+): string[] {
+  const common = [
+    ` - Match the function signatures called from \`${pipelinePath}\` exactly.`,
+    ` - Do not introduce side effects (logging, sinks). \`${pipelinePath}\` handles that.`,
+    ` - Tests in \`${operatorsTestFile}\` cover happy + edge for each operator.`,
+  ];
+  switch (lang) {
+    case "node":
+      return [
+        " - Each operator is a small pure async function: `async (input: T) => U` (or `=> boolean` for filter).",
+        ` - Export each by name from \`${operatorsFile}\`.`,
+        ...common,
+      ];
+    case "python":
+      return [
+        " - Each operator is a small pure async function: `async def name(value) -> ...` (return `bool` for filter).",
+        ` - Define each at module level in \`${operatorsFile}\`.`,
+        ...common,
+      ];
+    case "go":
+      return [
+        " - Each operator is a small pure function with the signature shown in the skeleton:",
+        "   `func name(in Event) (Event, error)` for map/aggregate, `func name(in Event) bool` for filter.",
+        ` - Export each (capital-letter prefix) from package \`stream\` in \`${operatorsFile}\`.`,
+        ...common,
+      ];
+  }
 }
 
 function durationMs(duration: string): number {
@@ -321,4 +398,269 @@ function durationMs(duration: string): number {
   const unit = (m[2] || "m").toLowerCase();
   const factor = unit === "s" ? 1000 : unit === "m" ? 60_000 : unit === "h" ? 3_600_000 : 86_400_000;
   return n * factor;
+}
+
+function durationSeconds(duration: string): number {
+  return Math.max(1, Math.round(durationMs(duration) / 1000));
+}
+
+/**
+ * Python pipeline skeleton.
+ *
+ * Uses asyncio + async generators. Operator functions live in
+ * `operators.py` and are imported by name. Window state is held in
+ * module-level lists for parity with the TS implementation.
+ *
+ * Tradeoff: we don't try to detect aiokafka/faust/etc.; the source/sink
+ * are `async def` stubs the user wires to their consumer/producer.
+ */
+function renderPipelinePython(
+  ctx: GeneratorContext,
+  operations: Operation[],
+  operatorFns: OperatorRef[],
+): string {
+  const inSource = ctx.inbound[0]?.otherNodeLabel ?? "(no inbound edge)";
+  const outSink = ctx.outbound[0]?.otherNodeLabel ?? "(no outbound edge)";
+  const windows = operations.filter((o) => o.kind === "window");
+
+  const lines: string[] = [];
+  lines.push(`"""Stream pipeline for "${ctx.node.label}".`);
+  lines.push(``);
+  lines.push(`Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`Operator function bodies are LLM-generated — see operators.py.`);
+  lines.push(``);
+  lines.push(`TODO: replace the source/sink stubs with real consumer/producer wiring.`);
+  lines.push(`  Inbound:  ${inSource}`);
+  lines.push(`  Outbound: ${outSink}`);
+  lines.push(`"""`);
+  lines.push(``);
+  lines.push(`import asyncio`);
+  lines.push(`import time`);
+  lines.push(`from typing import Any, AsyncIterator`);
+  if (operatorFns.length > 0) {
+    lines.push(`from operators import ${operatorFns.map((f) => f.name).join(", ")}`);
+  }
+  lines.push(``);
+  lines.push(`MAX_RETRIES = 3`);
+  lines.push(``);
+
+  for (let wi = 0; wi < windows.length; wi++) {
+    const w = windows[wi];
+    lines.push(
+      `# Window ${wi + 1}: ${w.window_type ?? "tumbling"} ${w.duration ?? "5m"} — flushed as a list batch`,
+    );
+    lines.push(`_window${wi + 1}_buffer: list[Any] = []`);
+    lines.push(
+      `_window${wi + 1}_seconds = ${durationSeconds(w.duration ?? "5m")}  # ${w.duration ?? "5m"}`,
+    );
+    lines.push(`_window${wi + 1}_start = time.monotonic()`);
+    lines.push(``);
+  }
+
+  lines.push(`async def source() -> AsyncIterator[Any]:`);
+  lines.push(`    """Iterate the source — replace with a real consumer."""`);
+  lines.push(`    # TODO: wire to ${inSource}`);
+  lines.push(`    if False:`);
+  lines.push(`        yield None  # generator type marker; remove when wired`);
+  lines.push(``);
+  lines.push(`async def sink(value: Any) -> None:`);
+  lines.push(`    """Emit to the sink."""`);
+  lines.push(`    # TODO: wire to ${outSink}`);
+  lines.push(`    _ = value`);
+  lines.push(``);
+  lines.push(`async def dead_letter(event: Any, err: Exception) -> None:`);
+  lines.push(`    # TODO: route to DLQ topic or persistent store.`);
+  lines.push(`    print("DLQ", {"event": event, "err": repr(err)})`);
+  lines.push(``);
+  lines.push(`async def run() -> None:`);
+  lines.push(`    global ${windows.map((_, i) => `_window${i + 1}_start`).join(", ") || "_"}`);
+  lines.push(`    async for event in source():`);
+  lines.push(`        attempts = 0`);
+  lines.push(`        while attempts < MAX_RETRIES:`);
+  lines.push(`            try:`);
+  lines.push(`                value: Any = event`);
+
+  let windowSeen = 0;
+  for (const op of operations) {
+    if (op.kind === "window") {
+      windowSeen += 1;
+      lines.push(
+        `                # ── window ${windowSeen} (${op.window_type ?? "tumbling"} ${op.duration ?? "5m"}) ──`,
+      );
+      lines.push(`                _window${windowSeen}_buffer.append(value)`);
+      lines.push(
+        `                if time.monotonic() - _window${windowSeen}_start >= _window${windowSeen}_seconds:`,
+      );
+      lines.push(`                    batch = list(_window${windowSeen}_buffer)`);
+      lines.push(`                    _window${windowSeen}_buffer.clear()`);
+      lines.push(`                    _window${windowSeen}_start = time.monotonic()`);
+      lines.push(`                    value = batch`);
+      lines.push(`                else:`);
+      lines.push(`                    break  # not yet — wait for next event`);
+      continue;
+    }
+    const fn = operatorFns.find((f) => f.idx === operations.indexOf(op))?.name;
+    if (!fn) continue;
+    if (op.kind === "filter") {
+      lines.push(`                if not await ${fn}(value):`);
+      lines.push(`                    break`);
+    } else {
+      lines.push(`                value = await ${fn}(value)`);
+    }
+  }
+
+  lines.push(`                await sink(value)`);
+  lines.push(`                break`);
+  lines.push(`            except Exception as err:`);
+  lines.push(`                attempts += 1`);
+  lines.push(`                if attempts >= MAX_RETRIES:`);
+  lines.push(`                    await dead_letter(event, err)`);
+  lines.push(``);
+  lines.push(`if __name__ == "__main__":`);
+  lines.push(`    asyncio.run(run())`);
+  return lines.join("\n") + "\n";
+}
+
+/**
+ * Go pipeline skeleton.
+ *
+ * Uses channels for source/sink and assumes operators live in the same
+ * `package stream`. Exported function names start with an uppercase
+ * letter; we rewrite the operator name's first character accordingly
+ * (`map_01_extract_userid` → `Map_01_extract_userid`) so the import-free
+ * cross-file reference works.
+ *
+ * Filter/map/aggregate signatures are uniform:
+ *   func Name(in Event) (Event, error)       // map, aggregate
+ *   func Name(in Event) bool                 // filter
+ *
+ * Window math runs inline in Run() with a time.Time per window.
+ */
+function renderPipelineGo(
+  ctx: GeneratorContext,
+  operations: Operation[],
+  operatorFns: OperatorRef[],
+): string {
+  const inSource = ctx.inbound[0]?.otherNodeLabel ?? "(no inbound edge)";
+  const outSink = ctx.outbound[0]?.otherNodeLabel ?? "(no outbound edge)";
+  const windows = operations.filter((o) => o.kind === "window");
+  const exportedName = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+  const lines: string[] = [];
+  lines.push(`// Package stream — pipeline for "${ctx.node.label}".`);
+  lines.push(`//`);
+  lines.push(`// Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`// Operator function bodies are LLM-generated — see operators.go.`);
+  lines.push(`//`);
+  lines.push(`// TODO: replace the source/sink stubs with real consumer/producer wiring.`);
+  lines.push(`//   Inbound:  ${inSource}`);
+  lines.push(`//   Outbound: ${outSink}`);
+  lines.push(`package stream`);
+  lines.push(``);
+  lines.push(`import (`);
+  lines.push(`	"context"`);
+  lines.push(`	"log"`);
+  lines.push(`	"time"`);
+  lines.push(`)`);
+  lines.push(``);
+  lines.push(`// Event is the message type flowing through the pipeline.`);
+  lines.push(`// Refine to your domain type.`);
+  lines.push(`type Event = any`);
+  lines.push(``);
+  lines.push(`const maxRetries = 3`);
+  lines.push(``);
+
+  for (let wi = 0; wi < windows.length; wi++) {
+    const w = windows[wi];
+    lines.push(
+      `// Window ${wi + 1}: ${w.window_type ?? "tumbling"} ${w.duration ?? "5m"} — flushed as a slice batch`,
+    );
+    lines.push(`var window${wi + 1}Buffer []Event`);
+    lines.push(`var window${wi + 1}Duration = ${durationSeconds(w.duration ?? "5m")} * time.Second`);
+    lines.push(`var window${wi + 1}Start = time.Now()`);
+    lines.push(``);
+  }
+
+  lines.push(`// source emits events. Replace with your real consumer.`);
+  lines.push(`func source(ctx context.Context) <-chan Event {`);
+  lines.push(`	out := make(chan Event)`);
+  lines.push(`	go func() {`);
+  lines.push(`		defer close(out)`);
+  lines.push(`		// TODO: wire to ${inSource}`);
+  lines.push(`		_ = ctx`);
+  lines.push(`	}()`);
+  lines.push(`	return out`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// sink emits to the destination. Replace with your real producer.`);
+  lines.push(`func sink(value any) error {`);
+  lines.push(`	// TODO: wire to ${outSink}`);
+  lines.push(`	_ = value`);
+  lines.push(`	return nil`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func deadLetter(event Event, err error) {`);
+  lines.push(`	// TODO: route to DLQ topic or persistent store.`);
+  lines.push(`	log.Printf("DLQ: event=%v err=%v", event, err)`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// Run drains the source through the operator chain into the sink.`);
+  lines.push(`func Run(ctx context.Context) error {`);
+  lines.push(`	for event := range source(ctx) {`);
+  lines.push(`		attempts := 0`);
+  lines.push(`		for attempts < maxRetries {`);
+  lines.push(`			err := func() error {`);
+  lines.push(`				var value Event = event`);
+  lines.push(`				var opErr error`);
+
+  let windowSeen = 0;
+  for (const op of operations) {
+    if (op.kind === "window") {
+      windowSeen += 1;
+      lines.push(
+        `				// ── window ${windowSeen} (${op.window_type ?? "tumbling"} ${op.duration ?? "5m"}) ──`,
+      );
+      lines.push(`				window${windowSeen}Buffer = append(window${windowSeen}Buffer, value)`);
+      lines.push(
+        `				if time.Since(window${windowSeen}Start) >= window${windowSeen}Duration {`,
+      );
+      lines.push(`					batch := append([]Event(nil), window${windowSeen}Buffer...)`);
+      lines.push(`					window${windowSeen}Buffer = window${windowSeen}Buffer[:0]`);
+      lines.push(`					window${windowSeen}Start = time.Now()`);
+      lines.push(`					value = batch`);
+      lines.push(`				} else {`);
+      lines.push(`					return nil  // not yet — wait for next event`);
+      lines.push(`				}`);
+      continue;
+    }
+    const fn = operatorFns.find((f) => f.idx === operations.indexOf(op))?.name;
+    if (!fn) continue;
+    const exported = exportedName(fn);
+    if (op.kind === "filter") {
+      lines.push(`				if !${exported}(value) {`);
+      lines.push(`					return nil`);
+      lines.push(`				}`);
+    } else {
+      lines.push(`				value, opErr = ${exported}(value)`);
+      lines.push(`				if opErr != nil {`);
+      lines.push(`					return opErr`);
+      lines.push(`				}`);
+    }
+  }
+
+  lines.push(`				return sink(value)`);
+  lines.push(`			}()`);
+  lines.push(`			if err == nil {`);
+  lines.push(`				break`);
+  lines.push(`			}`);
+  lines.push(`			attempts++`);
+  lines.push(`			if attempts >= maxRetries {`);
+  lines.push(`				deadLetter(event, err)`);
+  lines.push(`			}`);
+  lines.push(`		}`);
+  lines.push(`	}`);
+  lines.push(`	return nil`);
+  lines.push(`}`);
+
+  return lines.join("\n") + "\n";
 }

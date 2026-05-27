@@ -59,17 +59,6 @@ describe("streamLLMGenerator — fallback bundle mode", () => {
     expect(files.find((f) => f.path === "prompt.md")).toBeTruthy();
   });
 
-  it("falls back to bundle mode for non-Node languages even when ops are present", async () => {
-    const c = ctx({ language: "python" });
-    c.node.plan = {
-      ...c.node.plan,
-      operations: "- kind: map\n  body: extract userId\n",
-    };
-    const files = await streamLLMGenerator.generate(c);
-    expect(files.find((f) => f.path === "pipeline.ts")).toBeUndefined();
-    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
-    expect(prompt).toContain("TypeScript-only");
-  });
 });
 
 describe("streamLLMGenerator — hybrid mode", () => {
@@ -134,5 +123,103 @@ describe("streamLLMGenerator — hybrid mode", () => {
     expect(prompt).toContain("aggregate_04");
     // Embeds the pipeline source so the LLM matches signatures.
     expect(prompt).toContain('from "./operators";');
+  });
+});
+
+describe("streamLLMGenerator — hybrid mode (Python)", () => {
+  function pyCtx() {
+    const c = ctx({ language: "python" });
+    c.node.plan = {
+      ...c.node.plan,
+      operations: [
+        "- kind: map",
+        "  body: Extract userId",
+        "- kind: filter",
+        "  body: amount > 0",
+        "- kind: window",
+        "  window_type: tumbling",
+        "  duration: 2m",
+        "- kind: aggregate",
+        "  body: Sum per user",
+      ].join("\n"),
+    };
+    return c;
+  }
+
+  it("emits pipeline.py + Python operators bundle", async () => {
+    const files = await streamLLMGenerator.generate(pyCtx());
+    const paths = files.map((f) => f.path).sort();
+    expect(paths).toEqual(["README.md", "pipeline.py", "prompt.md", "validate.sh"]);
+  });
+
+  it("pipeline.py imports from operators module, uses asyncio, and materializes the window", async () => {
+    const files = await streamLLMGenerator.generate(pyCtx());
+    const py = files.find((f) => f.path === "pipeline.py")!.contents;
+    expect(py).toContain("import asyncio");
+    expect(py).toMatch(/from operators import map_01_extract_userid, filter_02_amount_0, aggregate_04_sum_per_user/);
+    expect(py).toContain('if __name__ == "__main__":');
+    expect(py).toContain("_window1_seconds = 120");
+    // Filter / map dispatch shape.
+    expect(py).toContain("if not await filter_02_amount_0(value):");
+    expect(py).toContain("value = await map_01_extract_userid(value)");
+  });
+
+  it("prompt fences the source as python and references test_operators.py", async () => {
+    const files = await streamLLMGenerator.generate(pyCtx());
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```python");
+    expect(prompt).toContain("operators.py");
+    expect(prompt).toContain("test_operators.py");
+    expect(prompt).toContain("async def name");
+  });
+});
+
+describe("streamLLMGenerator — hybrid mode (Go)", () => {
+  function goCtx() {
+    const c = ctx({ language: "go" });
+    c.node.plan = {
+      ...c.node.plan,
+      operations: [
+        "- kind: map",
+        "  body: Extract userId",
+        "- kind: filter",
+        "  body: amount > 0",
+        "- kind: window",
+        "  window_type: tumbling",
+        "  duration: 30s",
+        "- kind: aggregate",
+        "  body: Sum per user",
+      ].join("\n"),
+    };
+    return c;
+  }
+
+  it("emits pipeline.go + Go operators bundle", async () => {
+    const files = await streamLLMGenerator.generate(goCtx());
+    const paths = files.map((f) => f.path).sort();
+    expect(paths).toEqual(["README.md", "pipeline.go", "prompt.md", "validate.sh"]);
+  });
+
+  it("pipeline.go declares package stream, uses channels, exports operator names", async () => {
+    const files = await streamLLMGenerator.generate(goCtx());
+    const go = files.find((f) => f.path === "pipeline.go")!.contents;
+    expect(go).toContain("package stream");
+    expect(go).toContain("type Event = any");
+    expect(go).toContain("func Run(ctx context.Context) error");
+    expect(go).toContain("<-chan Event");
+    expect(go).toContain("window1Duration = 30 * time.Second");
+    // Operator names are exported (capitalized).
+    expect(go).toContain("Map_01_extract_userid");
+    expect(go).toContain("Filter_02_amount_0");
+    expect(go).toContain("Aggregate_04_sum_per_user");
+  });
+
+  it("prompt fences source as go and references operators_test.go", async () => {
+    const files = await streamLLMGenerator.generate(goCtx());
+    const prompt = files.find((f) => f.path === "prompt.md")!.contents;
+    expect(prompt).toContain("```go");
+    expect(prompt).toContain("operators.go");
+    expect(prompt).toContain("operators_test.go");
+    expect(prompt).toContain("func name(in Event)");
   });
 });
