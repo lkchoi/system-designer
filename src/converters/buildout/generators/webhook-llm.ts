@@ -1,76 +1,51 @@
 /**
- * LLM-driven webhook generator.
+ * Webhook generator — hybrid.
  *
- * A `webhook` node represents either:
- *  - **Outbound**: an emitter — your system sends a webhook out to a
- *    third party. Needs signing (HMAC), retry/backoff, an idempotency
- *    key, and a payload schema derived from upstream service edges.
- *  - **Inbound**: a receiver — a third party hits your endpoint. Needs
- *    signature verification, schema validation, and dispatch to the
- *    connected service.
+ * Inbound (outbound edges present): emits an HMAC-verifying receiver
+ * skeleton. Bundle asks LLM to write `process(payload)` only.
  *
- * Disambiguation: if the webhook has any **outbound** edges, it's an
- * inbound receiver (it routes the call into something else). If it has
- * only **inbound** edges from services/serverless, it's an outbound
- * emitter (services push events into it for delivery).
+ * Outbound (inbound edges only): emits a signed emitter skeleton with
+ * idempotency keys, retry + exponential backoff, timeout. Bundle asks
+ * LLM to write `buildPayload(input)` only.
  *
- * Why this rule: on the canvas, edge direction follows the flow of data
- * (request direction). An inbound receiver receives a third-party
- * request, then dispatches into the system — so the edge from webhook →
- * service models the post-validation dispatch. An outbound emitter
- * receives an internal event (service → webhook) and forwards out.
+ * Why bother making this hybrid: HMAC verification and retry/backoff
+ * are exactly the kind of mechanical, security-critical code we don't
+ * want an LLM inventing. A custom HMAC compare without timing-safe
+ * equality is a real bug we'd never want shipped; baking it into the
+ * skeleton makes it impossible to forget.
  *
- * Ambiguous cases (no edges either way) default to outbound emitter —
- * that's the more common "I want to send notifications" intent.
+ * v1 scope: TS only. Python+Go follow the same pattern; tracked TODO.
  */
 
 import { emitBundle } from "../bundle";
 import { buildServiceUserPrompt, buildSystemPrompt } from "../prompt";
 import type { Generator, GeneratedFile, GeneratorContext } from "../types";
 
-const INBOUND_GUIDANCE = [
-  "",
-  "<webhook-inbound>",
-  "This webhook receives HTTP callbacks from a third party.",
-  "Emit:",
-  " 1. A request handler that:",
-  "    - Verifies the signature header (HMAC-SHA256 by convention; the secret",
-  "      comes from env, never the request).",
-  "    - Validates the payload against an explicit schema. Reject 4xx on shape mismatch.",
-  "    - Dispatches the validated payload to the downstream node(s) listed in <outbound-edges>",
-  "      using the clients from <available-clients>.",
-  "    - Returns 2xx ONLY after the dispatch succeeds (or after the message is durably enqueued).",
-  " 2. Tests for: valid signature happy path, invalid signature (401), schema mismatch (400),",
-  "    downstream failure (5xx).",
-  "Use the URL/method/headers hints from <plan-hints> to shape the endpoint.",
-  "Do not return any data the third party could use to enumerate internals.",
-  "</webhook-inbound>",
-].join("\n");
-
-const OUTBOUND_GUIDANCE = [
-  "",
-  "<webhook-outbound>",
-  "This webhook is an outbound emitter — internal events are forwarded to a remote URL.",
-  "Emit:",
-  " 1. An emit function that:",
-  "    - Signs the payload with HMAC-SHA256 over the request body (secret from env).",
-  "    - Includes an idempotency key in a header so retries are safe.",
-  "    - Retries on 5xx and network errors with exponential backoff (3 attempts default).",
-  "    - Surfaces non-retryable errors (4xx) to the caller without retry.",
-  "    - Times out individual attempts at a sensible default (5s).",
-  " 2. A message-consumer wrapper if the inbound edge is a queue/topic.",
-  " 3. Tests covering: success path, 5xx retry-then-success, 4xx no-retry, timeout.",
-  "Use URL/method/headers from <plan-hints>. Never log payloads at info level — they may contain PII.",
-  "</webhook-outbound>",
-].join("\n");
-
 function isInboundWebhook(ctx: GeneratorContext): boolean {
-  // Inbound = has outbound edges (i.e. it dispatches data INTO the system).
   return ctx.outbound.length > 0;
 }
 
+const FALLBACK_INBOUND_GUIDANCE = [
+  "",
+  "<webhook-inbound>",
+  "Receiver: verify the HMAC-SHA256 signature header against an env secret,",
+  "validate the payload schema, dispatch to downstream nodes, return 2xx",
+  "only on success. Tests: valid signature, invalid signature (401),",
+  "schema mismatch (400), downstream failure (5xx).",
+  "</webhook-inbound>",
+].join("\n");
+
+const FALLBACK_OUTBOUND_GUIDANCE = [
+  "",
+  "<webhook-outbound>",
+  "Emitter: HMAC-sign the body, add an idempotency-key header, retry on",
+  "5xx/network with exponential backoff (3 attempts), surface 4xx without",
+  "retry, timeout each attempt at 5s. Never log payloads at info level.",
+  "</webhook-outbound>",
+].join("\n");
+
 export const webhookLLMGenerator: Generator = {
-  kind: "llm",
+  kind: "hybrid",
 
   supports(ctx) {
     return ctx.node.componentType === "webhook";
@@ -78,10 +53,274 @@ export const webhookLLMGenerator: Generator = {
 
   async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
     const lang = ctx.language ?? "node";
-    const guidance = isInboundWebhook(ctx) ? INBOUND_GUIDANCE : OUTBOUND_GUIDANCE;
-    return emitBundle(ctx, {
-      systemPrompt: buildSystemPrompt(lang),
-      userPrompt: buildServiceUserPrompt(ctx) + guidance,
-    });
+
+    if (lang !== "node") {
+      // Non-Node falls back to a guided bundle — the security-critical
+      // skeleton is TS-only for now.
+      return emitBundle(ctx, {
+        systemPrompt: buildSystemPrompt(lang),
+        userPrompt:
+          buildServiceUserPrompt(ctx) +
+          (isInboundWebhook(ctx) ? FALLBACK_INBOUND_GUIDANCE : FALLBACK_OUTBOUND_GUIDANCE),
+      });
+    }
+
+    return isInboundWebhook(ctx) ? emitInbound(ctx) : emitOutbound(ctx);
   },
 };
+
+function emitInbound(ctx: GeneratorContext): GeneratedFile[] {
+  const receiver = renderInboundReceiver(ctx);
+  const prompt = buildInboundPrompt(ctx, receiver);
+  const bundle = emitBundle(ctx, {
+    systemPrompt: buildSystemPrompt("node"),
+    userPrompt: prompt,
+    expectedOutputs: ["process.ts", "process.test.ts"],
+  });
+  return [{ path: "receiver.ts", contents: receiver }, ...bundle];
+}
+
+function emitOutbound(ctx: GeneratorContext): GeneratedFile[] {
+  const emitter = renderOutboundEmitter(ctx);
+  const prompt = buildOutboundPrompt(ctx, emitter);
+  const bundle = emitBundle(ctx, {
+    systemPrompt: buildSystemPrompt("node"),
+    userPrompt: prompt,
+    expectedOutputs: ["payload.ts", "payload.test.ts"],
+  });
+  return [{ path: "emitter.ts", contents: emitter }, ...bundle];
+}
+
+function renderInboundReceiver(ctx: GeneratorContext): string {
+  const plan = ctx.node.plan ?? {};
+  const method = (plan.method || "POST").toUpperCase();
+  const downstream = ctx.outbound.map((e) => `${e.otherNodeLabel} (${e.otherComponentType})`);
+
+  const lines: string[] = [];
+  lines.push(`// HMAC-verifying webhook receiver for "${ctx.node.label}".`);
+  lines.push(`// Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`// Business logic in process.ts is LLM-generated.`);
+  lines.push(``);
+  if (downstream.length > 0) {
+    lines.push(`// Downstream dispatch targets:`);
+    for (const d of downstream) lines.push(`//   - ${d}`);
+    lines.push(``);
+  }
+  lines.push(`import { createHmac, timingSafeEqual } from "node:crypto";`);
+  lines.push(`import type { IncomingMessage, ServerResponse } from "node:http";`);
+  lines.push(`import { process as processPayload } from "./process";`);
+  lines.push(``);
+  lines.push(`/** Env-configured secret. We read once at module load to fail fast. */`);
+  lines.push(`const WEBHOOK_SECRET = (() => {`);
+  lines.push(`  const s = process.env.WEBHOOK_SECRET;`);
+  lines.push(`  if (!s) throw new Error("WEBHOOK_SECRET env var is required");`);
+  lines.push(`  return s;`);
+  lines.push(`})();`);
+  lines.push(``);
+  lines.push(`/** Signature header name. Override per third-party convention. */`);
+  lines.push(`const SIGNATURE_HEADER = process.env.WEBHOOK_SIGNATURE_HEADER ?? "x-signature";`);
+  lines.push(``);
+  lines.push(`/**`);
+  lines.push(` * Verify the HMAC-SHA256 signature using timing-safe comparison.`);
+  lines.push(` * Returns true on match, false otherwise (including malformed input).`);
+  lines.push(` */`);
+  lines.push(`export function verifySignature(rawBody: string, signature: string | undefined): boolean {`);
+  lines.push(`  if (!signature) return false;`);
+  lines.push(`  const expected = createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex");`);
+  lines.push(`  // Strip optional "sha256=" prefix used by some providers (e.g. GitHub).`);
+  lines.push(`  const provided = signature.startsWith("sha256=") ? signature.slice(7) : signature;`);
+  lines.push(`  if (provided.length !== expected.length) return false;`);
+  lines.push(`  try {`);
+  lines.push(`    return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(provided, "hex"));`);
+  lines.push(`  } catch {`);
+  lines.push(`    return false;`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`/**`);
+  lines.push(` * Generic HTTP handler. Adapt to your framework (Express, Fastify, etc.)`);
+  lines.push(` * by passing the IncomingMessage / ServerResponse pair in. Returns void;`);
+  lines.push(` * the response is written directly.`);
+  lines.push(` */`);
+  lines.push(`export async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {`);
+  lines.push(`  if (req.method !== ${JSON.stringify(method)}) {`);
+  lines.push(`    res.statusCode = 405;`);
+  lines.push(`    res.end();`);
+  lines.push(`    return;`);
+  lines.push(`  }`);
+  lines.push(`  const chunks: Buffer[] = [];`);
+  lines.push(`  for await (const c of req) chunks.push(c as Buffer);`);
+  lines.push(`  const rawBody = Buffer.concat(chunks).toString("utf8");`);
+  lines.push(``);
+  lines.push(`  const sigHeader = req.headers[SIGNATURE_HEADER];`);
+  lines.push(`  const signature = Array.isArray(sigHeader) ? sigHeader[0] : sigHeader;`);
+  lines.push(`  if (!verifySignature(rawBody, signature)) {`);
+  lines.push(`    res.statusCode = 401;`);
+  lines.push(`    res.end(JSON.stringify({ error: "invalid_signature" }));`);
+  lines.push(`    return;`);
+  lines.push(`  }`);
+  lines.push(``);
+  lines.push(`  let payload: unknown;`);
+  lines.push(`  try {`);
+  lines.push(`    payload = JSON.parse(rawBody);`);
+  lines.push(`  } catch {`);
+  lines.push(`    res.statusCode = 400;`);
+  lines.push(`    res.end(JSON.stringify({ error: "invalid_json" }));`);
+  lines.push(`    return;`);
+  lines.push(`  }`);
+  lines.push(``);
+  lines.push(`  try {`);
+  lines.push(`    // process() is the LLM-filled business logic. It owns schema`);
+  lines.push(`    // validation and downstream dispatch.`);
+  lines.push(`    await processPayload(payload);`);
+  lines.push(`    res.statusCode = 200;`);
+  lines.push(`    res.end();`);
+  lines.push(`  } catch (err) {`);
+  lines.push(`    // Don't echo internal error detail back to the caller — that's`);
+  lines.push(`    // an enumeration vector. Log full detail server-side instead.`);
+  lines.push(`    console.error("webhook process failed", err);`);
+  lines.push(`    res.statusCode = 500;`);
+  lines.push(`    res.end(JSON.stringify({ error: "internal_error" }));`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  return lines.join("\n") + "\n";
+}
+
+function renderOutboundEmitter(ctx: GeneratorContext): string {
+  const plan = ctx.node.plan ?? {};
+  const url = plan.url || "https://example.com/webhook";
+  const method = (plan.method || "POST").toUpperCase();
+
+  const lines: string[] = [];
+  lines.push(`// Signed-and-retrying webhook emitter for "${ctx.node.label}".`);
+  lines.push(`// Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`// Payload mapping in payload.ts is LLM-generated.`);
+  lines.push(``);
+  lines.push(`import { createHmac, randomUUID } from "node:crypto";`);
+  lines.push(`import { buildPayload } from "./payload";`);
+  lines.push(``);
+  lines.push(`/** Plan-defaults; override via env. */`);
+  lines.push(`const WEBHOOK_URL = process.env.WEBHOOK_URL ?? ${JSON.stringify(url)};`);
+  lines.push(`const WEBHOOK_SECRET = (() => {`);
+  lines.push(`  const s = process.env.WEBHOOK_SECRET;`);
+  lines.push(`  if (!s) throw new Error("WEBHOOK_SECRET env var is required");`);
+  lines.push(`  return s;`);
+  lines.push(`})();`);
+  lines.push(``);
+  lines.push(`const TIMEOUT_MS = Number(process.env.WEBHOOK_TIMEOUT_MS ?? 5000);`);
+  lines.push(`const MAX_ATTEMPTS = Number(process.env.WEBHOOK_MAX_ATTEMPTS ?? 3);`);
+  lines.push(``);
+  lines.push(`function sign(body: string): string {`);
+  lines.push(`  return createHmac("sha256", WEBHOOK_SECRET).update(body).digest("hex");`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`async function sleep(ms: number): Promise<void> {`);
+  lines.push(`  return new Promise((resolve) => setTimeout(resolve, ms));`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`/**`);
+  lines.push(` * Emit one event. Computes the payload via the LLM-filled mapper,`);
+  lines.push(` * then performs a signed HTTP request with idempotency, retry on`);
+  lines.push(` * 5xx/network errors with exponential backoff, and a per-attempt`);
+  lines.push(` * timeout. 4xx responses are not retried — they propagate.`);
+  lines.push(` */`);
+  lines.push(`export async function emit(input: unknown): Promise<void> {`);
+  lines.push(`  const payload = await buildPayload(input);`);
+  lines.push(`  const body = JSON.stringify(payload);`);
+  lines.push(`  const idempotencyKey = randomUUID();`);
+  lines.push(`  const signature = sign(body);`);
+  lines.push(``);
+  lines.push(`  let lastErr: unknown;`);
+  lines.push(`  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {`);
+  lines.push(`    const controller = new AbortController();`);
+  lines.push(`    const t = setTimeout(() => controller.abort(), TIMEOUT_MS);`);
+  lines.push(`    try {`);
+  lines.push(`      const res = await fetch(WEBHOOK_URL, {`);
+  lines.push(`        method: ${JSON.stringify(method)},`);
+  lines.push(`        body,`);
+  lines.push(`        signal: controller.signal,`);
+  lines.push(`        headers: {`);
+  lines.push(`          "content-type": "application/json",`);
+  lines.push(`          "x-signature": signature,`);
+  lines.push(`          "x-idempotency-key": idempotencyKey,`);
+  lines.push(`        },`);
+  lines.push(`      });`);
+  lines.push(`      if (res.ok) return;`);
+  lines.push(`      // 4xx: client error — don't retry, but consume body for debugging.`);
+  lines.push(`      if (res.status >= 400 && res.status < 500) {`);
+  lines.push(`        throw new Error(\`webhook 4xx: \${res.status}\`);`);
+  lines.push(`      }`);
+  lines.push(`      lastErr = new Error(\`webhook \${res.status}\`);`);
+  lines.push(`    } catch (err) {`);
+  lines.push(`      lastErr = err;`);
+  lines.push(`      // Network / abort errors get retried.`);
+  lines.push(`    } finally {`);
+  lines.push(`      clearTimeout(t);`);
+  lines.push(`    }`);
+  lines.push(`    if (attempt < MAX_ATTEMPTS) {`);
+  lines.push(`      // Exponential backoff: 200ms, 400ms, 800ms…`);
+  lines.push(`      await sleep(200 * 2 ** (attempt - 1));`);
+  lines.push(`    }`);
+  lines.push(`  }`);
+  lines.push(`  throw lastErr;`);
+  lines.push(`}`);
+  return lines.join("\n") + "\n";
+}
+
+function buildInboundPrompt(ctx: GeneratorContext, receiverSrc: string): string {
+  const lines: string[] = [];
+  lines.push(buildServiceUserPrompt(ctx));
+  lines.push("");
+  lines.push("<hybrid-skeleton>");
+  lines.push(
+    "The HMAC-verifying webhook receiver (`receiver.ts`) is already " +
+      "generated. Signature verification (timing-safe), JSON body " +
+      "parsing, error response shaping, and 401/400/500 status mapping " +
+      "are all handled there. Your job is to write ONLY `process.ts` " +
+      "(plus `process.test.ts`) — do NOT regenerate `receiver.ts`.",
+  );
+  lines.push("");
+  lines.push("Here is the `receiver.ts` you must match:");
+  lines.push("```ts");
+  lines.push(receiverSrc.trimEnd());
+  lines.push("```");
+  lines.push("");
+  lines.push("Implement in `process.ts`:");
+  lines.push(" - `export async function process(payload: unknown): Promise<void>`");
+  lines.push(" - Validate the payload shape (Zod / hand-rolled). Throw on mismatch — receiver maps the");
+  lines.push("   exception to 500. If you want a 400 instead, do that mapping yourself before throwing.");
+  lines.push(" - Dispatch to the downstream nodes listed in `<outbound-edges>` using the clients in");
+  lines.push("   `<available-clients>`. Use durable enqueueing (not in-memory) where possible.");
+  lines.push(" - Tests in `process.test.ts` cover: valid payload happy path, schema mismatch, downstream error.");
+  lines.push(" - Do NOT log payload contents at info level — they may contain PII.");
+  lines.push("</hybrid-skeleton>");
+  return lines.join("\n");
+}
+
+function buildOutboundPrompt(ctx: GeneratorContext, emitterSrc: string): string {
+  const lines: string[] = [];
+  lines.push(buildServiceUserPrompt(ctx));
+  lines.push("");
+  lines.push("<hybrid-skeleton>");
+  lines.push(
+    "The signed-and-retrying webhook emitter (`emitter.ts`) is already " +
+      "generated. HMAC signing, idempotency-key generation, exponential " +
+      "backoff retry on 5xx/network, and per-attempt timeout are all " +
+      "handled there. Your job is to write ONLY `payload.ts` (plus " +
+      "`payload.test.ts`) — do NOT regenerate `emitter.ts`.",
+  );
+  lines.push("");
+  lines.push("Here is the `emitter.ts` you must match:");
+  lines.push("```ts");
+  lines.push(emitterSrc.trimEnd());
+  lines.push("```");
+  lines.push("");
+  lines.push("Implement in `payload.ts`:");
+  lines.push(" - `export async function buildPayload(input: unknown): Promise<unknown>`");
+  lines.push(" - Map the inbound event (from upstream services/queues) into the JSON shape the");
+  lines.push("   third party expects. Pure transform — no network calls or side effects.");
+  lines.push(" - Strip PII fields the third party doesn't need.");
+  lines.push(" - Tests in `payload.test.ts` cover: typical input → expected output, missing-field handling.");
+  lines.push("</hybrid-skeleton>");
+  return lines.join("\n");
+}
