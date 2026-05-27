@@ -2,12 +2,12 @@
  * Generator dispatch.
  *
  * Per CLAUDE.md, registry entries are the single source of truth for
- * component types. The fleshOut field on a registry entry could declare
+ * component types. The buildOut field on a registry entry could declare
  * which generator to use, but we haven't extended ComponentRegistryEntry
- * yet (see fleshout-plan.md — Registry changes). Until then, dispatch is
+ * yet (see buildout-plan.md — Registry changes). Until then, dispatch is
  * a flat map keyed by componentType.
  *
- * TODO(open-question): once we promote `fleshOut` onto registry entries
+ * TODO(open-question): once we promote `buildOut` onto registry entries
  * (Tier 2 generators land first to motivate the structured plan fields),
  * collapse this map into a registry lookup.
  */

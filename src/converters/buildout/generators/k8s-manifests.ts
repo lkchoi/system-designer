@@ -46,7 +46,7 @@ export const k8sManifestGenerator: Generator = {
               containers: [
                 {
                   name,
-                  // TODO: image is unknown at flesh-out time — caller must
+                  // TODO: image is unknown at buildout time — caller must
                   // override. We emit a placeholder that fails fast.
                   image: `TODO-${name}:latest`,
                   resources: {

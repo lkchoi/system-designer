@@ -1,5 +1,5 @@
 /**
- * Flesh-out subsystem types.
+ * Buildout subsystem types.
  *
  * Sibling to `src/converters/scaffold/`. Takes design nodes + edges and
  * produces implementation artifacts (code, schemas, configs, tests).
@@ -57,7 +57,7 @@ export interface GeneratorContext {
   /** Outbound edges (this → other). */
   outbound: EdgeRef[];
   /**
-   * Pre-resolved scaffold output for service-like nodes. The flesh-out
+   * Pre-resolved scaffold output for service-like nodes. The buildout
    * pipeline runs `resolveConcerns()` once per node before invoking the
    * generator, so the LLM sees the same client setup the scaffolded code
    * will use.
@@ -100,15 +100,15 @@ export interface LLMClient {
   }>;
 }
 
-/** Aggregated result of one flesh-out run. */
-export interface FleshOutResult {
+/** Aggregated result of one buildout run. */
+export interface BuildOutResult {
   files: GeneratedFile[];
   skipped: { nodeId: string; reason: string }[];
   errors: { nodeId: string; error: string }[];
 }
 
 /** Options surfaced via the public API and CLI. */
-export interface FleshOutOpts {
+export interface BuildOutOpts {
   /** Default language for compute nodes (overridable per node via plan.technology). */
   defaultLanguage?: ScaffoldLang;
   /** LLM client to use; omit for deterministic-only runs. */

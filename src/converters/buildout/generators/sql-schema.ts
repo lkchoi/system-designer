@@ -124,7 +124,7 @@ function parseColumnsYaml(s: string | undefined): Record<string, Column[]> {
     return parsed as Record<string, Column[]>;
   } catch (err) {
     // Bad YAML is a user error — surface it in the output rather than
-    // crash the whole flesh-out run. We return {} so renderStubTable
+    // crash the whole buildout run. We return {} so renderStubTable
     // kicks in for every table.
     console.warn(`Failed to parse plan.columns YAML: ${(err as Error).message}`);
     return {};

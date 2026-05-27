@@ -1,5 +1,5 @@
 /**
- * Flesh-out public API.
+ * Buildout public API.
  *
  * Takes a design (nodes + edges) and produces implementation artifacts.
  * Mirrors the scaffold subsystem's shape so CLI and UI callers see a
@@ -14,8 +14,8 @@ import type { ScaffoldLang } from "../scaffold/concerns/types";
 import { pickGenerator } from "./dispatch";
 import type {
   EdgeRef,
-  FleshOutOpts,
-  FleshOutResult,
+  BuildOutOpts,
+  BuildOutResult,
   GeneratedFile,
   GeneratorContext,
 } from "./types";
@@ -47,12 +47,12 @@ function techToLang(techId: string): ScaffoldLang {
  * Output paths are prefixed with `<node-label-slug>/` so multi-service
  * designs don't collide. Slug is kebab-case label.
  */
-export async function fleshOutDesign(
+export async function buildOutDesign(
   nodes: Node[],
   edges: Edge[],
-  opts: FleshOutOpts = {},
-): Promise<FleshOutResult> {
-  const result: FleshOutResult = { files: [], skipped: [], errors: [] };
+  opts: BuildOutOpts = {},
+): Promise<BuildOutResult> {
+  const result: BuildOutResult = { files: [], skipped: [], errors: [] };
 
   for (const node of nodes) {
     const data = node.data as SystemNodeData | undefined;

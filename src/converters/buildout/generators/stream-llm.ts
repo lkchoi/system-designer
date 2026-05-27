@@ -6,7 +6,7 @@
  * bodies for the transform code.
  *
  * **Reality check (v1):** `operations` doesn't exist on the registry yet
- * — that's blocked on the registry-promotion task (see fleshout-plan.md).
+ * — that's blocked on the registry-promotion task (see buildout-plan.md).
  * So v1 emits an LLM-only generator with strong guidance for the
  * operator-chain pattern derived from `windowType`, `inputSource`, and
  * `outputSink` plan fields.

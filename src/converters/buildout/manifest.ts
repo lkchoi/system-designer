@@ -1,17 +1,17 @@
 /**
  * Prompt-hash manifest helpers.
  *
- * Decision: regenerate is opt-in. A generated file carries a `// flesh-out:
+ * Decision: regenerate is opt-in. A generated file carries a `// buildout:
  * <sha256>` header line; the next run skips regeneration if the prompt hash
  * matches. This avoids surprising the user with rewritten business logic
  * just because they re-ran the CLI.
  *
  * Browser/Node compatibility: we use the Web Crypto API (`crypto.subtle`),
  * which is available in modern Node (>= 16) and in browsers — no Node-only
- * `crypto` import. This keeps fleshout usable from the UI later.
+ * `crypto` import. This keeps buildout usable from the UI later.
  */
 
-const HEADER_PREFIX = "// flesh-out: ";
+const HEADER_PREFIX = "// buildout: ";
 
 /** Hash a string with SHA-256 and return the hex digest. */
 export async function sha256Hex(input: string): Promise<string> {
@@ -24,16 +24,16 @@ export async function sha256Hex(input: string): Promise<string> {
 
 /** Build a header line carrying the prompt hash. */
 export function buildHeader(promptHash: string, commentSyntax: "//" | "#" | "--" = "//"): string {
-  // The `// flesh-out:` token is recognized across language families; we
+  // The `// buildout:` token is recognized across language families; we
   // emit the language-appropriate comment prefix so the file still parses.
-  return `${commentSyntax} flesh-out: ${promptHash}\n`;
+  return `${commentSyntax} buildout: ${promptHash}\n`;
 }
 
 /** Extract the prompt hash from a generated file's header, if present. */
 export function extractPromptHash(contents: string): string | undefined {
   const first = contents.split("\n", 1)[0] ?? "";
   // Accept any of the comment styles we emit.
-  for (const prefix of [HEADER_PREFIX, "# flesh-out: ", "-- flesh-out: "]) {
+  for (const prefix of [HEADER_PREFIX, "# buildout: ", "-- buildout: "]) {
     if (first.startsWith(prefix)) return first.slice(prefix.length).trim();
   }
   return undefined;

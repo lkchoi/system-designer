@@ -16,7 +16,7 @@
     "pricing:fetch": "npx tsx scripts/pricing/run.ts",
     "pricing:list": "npx tsx scripts/pricing/run.ts --list",
     "export": "bun run scripts/export-design.ts",
-    "fleshout": "bun run scripts/fleshout.ts",
+    "buildout": "bun run scripts/buildout.ts",
     "predeploy": "bunx oxlint . && bunx tsc --noEmit && bunx vitest run src/ --exclude '.claude/**' --reporter=dot",
     "deploy": "bun run build && wrangler deploy && git tag deploy-$(date +%Y%m%d-%H%M%S) && echo '✓ Tagged deploy'",
     "changelog": "git log $(git tag -l 'deploy-*' --sort=-creatordate | sed -n '2p')..$(git tag -l 'deploy-*' --sort=-creatordate | head -1) --oneline --no-merges",

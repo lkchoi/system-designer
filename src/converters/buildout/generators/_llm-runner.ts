@@ -37,6 +37,6 @@ export async function runLLMGenerator(
 }
 
 function prependHeaderIfMissing(contents: string, header: string): string {
-  if (contents.startsWith("// flesh-out:") || contents.startsWith("# flesh-out:")) return contents;
+  if (contents.startsWith("// buildout:") || contents.startsWith("# buildout:")) return contents;
   return header + contents;
 }

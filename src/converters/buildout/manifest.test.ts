@@ -17,7 +17,7 @@ describe("sha256Hex", () => {
 describe("buildHeader / extractPromptHash", () => {
   it("round-trips for // comments", () => {
     const h = buildHeader("abc123", "//");
-    expect(h).toBe("// flesh-out: abc123\n");
+    expect(h).toBe("// buildout: abc123\n");
     expect(extractPromptHash(h + "rest of file")).toBe("abc123");
   });
 

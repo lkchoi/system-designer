@@ -1,34 +1,34 @@
 #!/usr/bin/env bun
 /**
- * Flesh-out CLI: take a DesignJSON file, generate implementation
+ * Buildout CLI: take a DesignJSON file, generate implementation
  * artifacts per node, write them under an output directory.
  *
  * Usage:
- *   bun run scripts/fleshout.ts <input.json> [--out <dir>] [--only <type,...>]
+ *   bun run scripts/buildout.ts <input.json> [--out <dir>] [--only <type,...>]
  *     [--only-node <id,...>] [--lang node|python|go] [--no-llm] [--dry-run]
  *
  * Examples:
  *   # Generate everything (services need ANTHROPIC_API_KEY in env):
- *   bun run scripts/fleshout.ts my-design.json --out ./generated
+ *   bun run scripts/buildout.ts my-design.json --out ./generated
  *
  *   # Deterministic-only run — skip LLM-driven nodes (Tier 2 only):
- *   bun run scripts/fleshout.ts my-design.json --no-llm
+ *   bun run scripts/buildout.ts my-design.json --no-llm
  *
  *   # Just one node type:
- *   bun run scripts/fleshout.ts my-design.json --only database,api-gateway
+ *   bun run scripts/buildout.ts my-design.json --only database,api-gateway
  *
  * Mirrors the shape of scripts/export-design.ts so callers see a
- * consistent CLI style across exporters and fleshouts.
+ * consistent CLI style across exporters and buildouts.
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import {
-  fleshOutDesign,
+  buildOutDesign,
   makeDefaultLLMClient,
-  type FleshOutOpts,
-} from "../src/converters/fleshout/index";
-import { shouldRegenerate } from "../src/converters/fleshout/manifest";
+  type BuildOutOpts,
+} from "../src/converters/buildout/index";
+import { shouldRegenerate } from "../src/converters/buildout/manifest";
 import type { ComponentType } from "../src/types";
 import type { ScaffoldLang } from "../src/converters/scaffold/concerns/types";
 
@@ -93,7 +93,7 @@ function parseArgs(argv: string[]): Args {
 function printHelp() {
   console.log(
     [
-      "Usage: bun run scripts/fleshout.ts <input.json> [options]",
+      "Usage: bun run scripts/buildout.ts <input.json> [options]",
       "",
       "Options:",
       "  --out <dir>            Output directory (default ./generated)",
@@ -133,7 +133,7 @@ async function main() {
     );
   }
 
-  const opts: FleshOutOpts = {
+  const opts: BuildOutOpts = {
     llm,
     onlyTypes: args.only,
     onlyNodeIds: args.onlyNode,
@@ -141,9 +141,9 @@ async function main() {
     dryRun: args.dryRun,
   };
 
-  console.log(`Fleshing out ${json.nodes.length} nodes...`);
-  const result = await fleshOutDesign(
-    // We loose-cast here; fleshOutDesign validates internally and skips
+  console.log(`Building out ${json.nodes.length} nodes...`);
+  const result = await buildOutDesign(
+    // We loose-cast here; buildOutDesign validates internally and skips
     // nodes that aren't system nodes (sticky/text/container).
     json.nodes as never,
     json.edges as never,

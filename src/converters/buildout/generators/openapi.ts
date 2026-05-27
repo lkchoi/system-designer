@@ -61,7 +61,7 @@ export const openApiGenerator: Generator = {
 
     // Collect endpoints from downstream service-like nodes. We rely on
     // the caller to have populated outbound edges with the right shape.
-    // TODO: when fleshOutDesign() learns to pass the full node objects
+    // TODO: when buildOutDesign() learns to pass the full node objects
     // (not just refs), use those directly. Today the EdgeRef only carries
     // labels/tech ids, so we attach endpoints to a placeholder path.
     //

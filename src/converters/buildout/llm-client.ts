@@ -20,7 +20,7 @@
  * deterministic generators we don't call the LLM at all. For Tier 1, the
  * generated handlers are typically <200 lines so the per-node cost is
  * small ($0.10–$0.50 range). Cost capping is left to the CLI level as a
- * TODO — see fleshout-plan.md "LLM budget".
+ * TODO — see buildout-plan.md "LLM budget".
  */
 
 import Anthropic from "@anthropic-ai/sdk";
