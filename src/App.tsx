@@ -2126,20 +2126,14 @@ export default function App() {
       if (formatId && formatId !== "native-json") {
         const converter = importFormats.find((c) => c.id === formatId);
         if (converter?.importDesign) {
-          const { design, warnings } = converter.importDesign(content);
+          const design = converter.importDesign(content);
           const result = importDesign(JSON.stringify(design));
-          if (warnings.length > 0) {
-            setImportWarnings(warnings.map((w) => w.message));
-          }
           refreshDesigns();
           setDesignId(result.id);
           return;
         }
       }
       const result = importDesign(content);
-      if (result.warnings.length > 0) {
-        setImportWarnings(result.warnings.map((w) => w.message));
-      }
       refreshDesigns();
       setDesignId(result.id);
     } catch {
