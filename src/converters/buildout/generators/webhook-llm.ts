@@ -137,7 +137,7 @@ function renderInboundReceiver(ctx: GeneratorContext): string {
   lines.push(`})();`);
   lines.push(``);
   lines.push(`/** Signature header name. Override per third-party convention. */`);
-  lines.push(`const SIGNATURE_HEADER = process.env.WEBHOOK_SIGNATURE_HEADER ?? "x-signature";`);
+  lines.push(`const SIGNATURE_HEADER = (process.env.WEBHOOK_SIGNATURE_HEADER ?? "x-signature").toLowerCase();`);
   lines.push(``);
   lines.push(`/**`);
   lines.push(` * Verify the HMAC-SHA256 signature using timing-safe comparison.`);
