@@ -53,6 +53,11 @@ export async function buildOutDesign(
 ): Promise<BuildOutResult> {
   const result: BuildOutResult = { files: [], skipped: [], errors: [] };
 
+  // Output folders are keyed by slugified label. Two nodes whose labels
+  // slug to the same value would otherwise overwrite each other's files,
+  // so track assigned slugs and disambiguate collisions.
+  const usedSlugs = new Set<string>();
+
   for (const node of nodes) {
     const data = node.data as SystemNodeData | undefined;
     if (!data || typeof data !== "object" || !("componentType" in data)) {
@@ -119,7 +124,7 @@ export async function buildOutDesign(
 
     try {
       const files = await gen.generate(ctx);
-      const slug = slugify(data.label || node.id);
+      const slug = uniqueSlug(slugify(data.label || node.id), usedSlugs);
       for (const f of files) {
         result.files.push({ ...f, path: `${slug}/${f.path}` });
       }
@@ -158,6 +163,18 @@ function slugify(s: string): string {
       .replace(/^-+|-+$/g, "")
       .slice(0, 64) || "node"
   );
+}
+
+/**
+ * Return `base` if unused, else append `-2`, `-3`, … until unique.
+ * Records the chosen slug in `used` so later nodes don't collide.
+ */
+function uniqueSlug(base: string, used: Set<string>): string {
+  let slug = base;
+  let n = 2;
+  while (used.has(slug)) slug = `${base}-${n++}`;
+  used.add(slug);
+  return slug;
 }
 
 // Re-export GeneratedFile to surface it for CLI/UI callers.
