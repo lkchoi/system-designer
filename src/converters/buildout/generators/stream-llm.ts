@@ -611,7 +611,11 @@ function renderPipelineGo(
   lines.push(`		for attempts < maxRetries {`);
   lines.push(`			err := func() error {`);
   lines.push(`				var value Event = event`);
-  lines.push(`				var opErr error`);
+  // Only declare opErr when a map/aggregate operator will assign it —
+  // Go errors on a declared-but-unused local, so filter/window-only
+  // pipelines must not emit it.
+  const needsOpErr = operations.some((o) => o.kind === "map" || o.kind === "aggregate");
+  if (needsOpErr) lines.push(`				var opErr error`);
 
   let windowSeen = 0;
   for (const op of operations) {
