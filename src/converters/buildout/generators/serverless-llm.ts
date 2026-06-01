@@ -453,6 +453,7 @@ function renderHttpHandlerPython(ctx: GeneratorContext): string {
     `Business logic in process.py is LLM-generated.`,
     `"""`,
     ``,
+    `import asyncio`,
     `import base64`,
     `import json`,
     `import logging`,
@@ -477,7 +478,7 @@ function renderHttpHandlerPython(ctx: GeneratorContext): string {
     `            return None`,
     `    return raw`,
     ``,
-    `async def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `async def _handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
     `    """API Gateway v2 (HTTP API) handler."""`,
     `    http = event.get("requestContext", {}).get("http", {})`,
     `    input_ = {`,
@@ -503,6 +504,10 @@ function renderHttpHandlerPython(ctx: GeneratorContext): string {
     `        "body": None if body is None else json.dumps(body),`,
     `    }`,
     ``,
+    `def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `    """Sync Lambda entrypoint; the runtime invokes this and drives the async body."""`,
+    `    return asyncio.run(_handler(event, context))`,
+    ``,
   ].join("\n");
 }
 
@@ -514,6 +519,7 @@ function renderS3HandlerPython(ctx: GeneratorContext): string {
     `Business logic in process.py is LLM-generated.`,
     `"""`,
     ``,
+    `import asyncio`,
     `import logging`,
     `from typing import Any`,
     `from urllib.parse import unquote_plus`,
@@ -522,7 +528,7 @@ function renderS3HandlerPython(ctx: GeneratorContext): string {
     ``,
     `log = logging.getLogger(__name__)`,
     ``,
-    `async def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `async def _handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
     `    """Iterate S3 records; report partial-batch failures."""`,
     `    failures = []`,
     `    for r in event.get("Records", []):`,
@@ -541,6 +547,10 @@ function renderS3HandlerPython(ctx: GeneratorContext): string {
     `            failures.append({"itemIdentifier": f"{record['bucket']}/{record['key']}"})`,
     `    return {"batchItemFailures": failures}`,
     ``,
+    `def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `    """Sync Lambda entrypoint; the runtime invokes this and drives the async body."""`,
+    `    return asyncio.run(_handler(event, context))`,
+    ``,
   ].join("\n");
 }
 
@@ -552,6 +562,7 @@ function renderSqsHandlerPython(ctx: GeneratorContext): string {
     `Business logic in process.py is LLM-generated.`,
     `"""`,
     ``,
+    `import asyncio`,
     `import json`,
     `import logging`,
     `from typing import Any`,
@@ -566,7 +577,7 @@ function renderSqsHandlerPython(ctx: GeneratorContext): string {
     `    except json.JSONDecodeError:`,
     `        return raw`,
     ``,
-    `async def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `async def _handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
     `    """Iterate SQS messages; report partial-batch failures."""`,
     `    failures = []`,
     `    for r in event.get("Records", []):`,
@@ -583,6 +594,10 @@ function renderSqsHandlerPython(ctx: GeneratorContext): string {
     `            failures.append({"itemIdentifier": message["id"]})`,
     `    return {"batchItemFailures": failures}`,
     ``,
+    `def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:`,
+    `    """Sync Lambda entrypoint; the runtime invokes this and drives the async body."""`,
+    `    return asyncio.run(_handler(event, context))`,
+    ``,
   ].join("\n");
 }
 
@@ -594,12 +609,13 @@ function renderScheduleHandlerPython(ctx: GeneratorContext): string {
     `Business logic in process.py is LLM-generated.`,
     `"""`,
     ``,
+    `import asyncio`,
     `from datetime import datetime`,
     `from typing import Any`,
     ``,
     `from process import process as process_tick  # process.py defines ScheduleEvent`,
     ``,
-    `async def handler(event: dict[str, Any], context: Any) -> None:`,
+    `async def _handler(event: dict[str, Any], context: Any) -> None:`,
     `    """EventBridge Scheduled Event handler."""`,
     `    tick = {`,
     `        "firedAt": datetime.fromisoformat(event["time"].replace("Z", "+00:00")),`,
@@ -607,6 +623,10 @@ function renderScheduleHandlerPython(ctx: GeneratorContext): string {
     `    }`,
     `    # Let exceptions propagate — EventBridge surfaces them.`,
     `    await process_tick(tick)`,
+    ``,
+    `def handler(event: dict[str, Any], context: Any) -> None:`,
+    `    """Sync Lambda entrypoint; the runtime invokes this and drives the async body."""`,
+    `    asyncio.run(_handler(event, context))`,
     ``,
   ].join("\n");
 }

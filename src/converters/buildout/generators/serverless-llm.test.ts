@@ -39,7 +39,11 @@ describe("serverlessLLMGenerator — Python (HTTP)", () => {
     expect(py).toContain("requestContext");
     expect(py).toContain('event.get("isBase64Encoded")');
     expect(py).toContain("from process import process as process_input");
-    expect(py).toContain("async def handler");
+    // Lambda's Python runtime invokes the handler synchronously, so the
+    // entrypoint must be a sync `def handler` that drives the async body.
+    expect(py).toContain("async def _handler");
+    expect(py).toContain("def handler(event: dict[str, Any], context: Any)");
+    expect(py).toContain("asyncio.run(_handler(event, context))");
   });
 
   it("Python prompt asks for TypedDict definitions", async () => {
