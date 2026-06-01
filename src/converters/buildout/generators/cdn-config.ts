@@ -29,7 +29,9 @@ export const cdnConfigGenerator: Generator = {
       const ttl = m?.[2] ?? "1h";
       return {
         PathPattern: path,
-        TargetOriginId: `origin-${Math.min(i, origins.length - 1)}`,
+        // Clamp to a real origin id. When no origins are declared the CFN
+        // emits a single fallback `origin-0`, so behaviors must target that.
+        TargetOriginId: `origin-${origins.length > 0 ? Math.min(i, origins.length - 1) : 0}`,
         ViewerProtocolPolicy: "redirect-to-https",
         DefaultTTL: durationToSeconds(ttl),
       };
