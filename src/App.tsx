@@ -81,8 +81,8 @@ import {
   saveDesignState,
   forkDesign,
 } from "./db";
-import { importDesign, parseDesignJSON, pickAndReadFile, type DesignJSON } from "./db/io";
-import { detectFormat } from "./converters/detect";
+import { importDesign, pickAndReadFile } from "./db/io";
+import { resolveImport } from "./converters/resolve-import";
 import type { Design } from "./db";
 import {
   CollabProvider,
@@ -2136,28 +2136,12 @@ export default function App() {
     setImportError(null);
     try {
       const { content, filename } = file;
-      const formatId = detectFormat(filename, content);
-
-      let design: DesignJSON;
-      if (formatId && formatId !== "native-json") {
-        const converter = importFormats.find((c) => c.id === formatId);
-        if (!converter?.importDesign) {
-          throw new Error(`No importer is available for ${formatId} files.`);
-        }
-        design = converter.importDesign(content);
-      } else {
-        design = parseDesignJSON(content);
-      }
+      const { design, warnings } = resolveImport(content, filename, importFormats);
 
       const result = importDesign(JSON.stringify(design));
       refreshDesigns();
       setDesignId(result.id);
-
-      if (design.nodes.length === 0) {
-        setImportWarnings([
-          "No components were recognized in this file, so the imported design is empty.",
-        ]);
-      }
+      setImportWarnings(warnings);
     } catch (err) {
       const detail = err instanceof Error ? err.message : String(err);
       setImportError(`Could not import "${file.filename}": ${detail}`);
