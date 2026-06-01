@@ -5,6 +5,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "database",
     label: "Database",
+    description: "Persistent relational or NoSQL data store",
     color: "#6366f1",
     icon: "M4 7v10c0 2.2 3.6 4 8 4s8-1.8 8-4V7M4 7c0 2.2 3.6 4 8 4s8-1.8 8-4M4 7c0-2.2 3.6-4 8-4s8 1.8 8 4M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4",
     category: "data",
@@ -22,6 +23,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "api-gateway",
     label: "API Gateway",
+    description: "Routes and secures incoming API requests",
     color: "#f97316",
     icon: "M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5",
     category: "networking",
@@ -38,6 +40,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "service",
     label: "Service",
+    description: "Backend application or microservice",
     color: "#22c55e",
     icon: "M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zm3 4h2m-2 4h2m-2 4h2",
     category: "compute",
@@ -64,6 +67,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "cache",
     label: "Cache",
+    description: "In-memory store for fast data access",
     color: "#a855f7",
     icon: "M13 2L3 14h9l-1 8 10-12h-9l1-8",
     category: "data",
@@ -81,6 +85,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "message-queue",
     label: "Message Queue",
+    description: "Async messaging between services",
     color: "#eab308",
     icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
     category: "messaging",
@@ -98,6 +103,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "storage",
     label: "Storage",
+    description: "Object or blob file storage",
     color: "#14b8a6",
     icon: "M3 3h7v7H3V3zm11 0h7v7h-7V3zM3 14h7v7H3v-7zm11 0h7v7h-7v-7z",
     category: "storage",
@@ -115,6 +121,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "cdn",
     label: "CDN",
+    description: "Caches content at edge locations",
     color: "#ec4899",
     icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z",
     category: "networking",
@@ -131,6 +138,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "load-balancer",
     label: "Load Balancer",
+    description: "Distributes traffic across targets",
     color: "#6366f1",
     icon: "M12 3v18m-7-7l7 7 7-7M5 8h14M8 5h8",
     category: "networking",
@@ -154,6 +162,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "firewall",
     label: "Firewall",
+    description: "Filters inbound and outbound traffic",
     color: "#ef4444",
     icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
     category: "networking",
@@ -171,6 +180,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "webhook",
     label: "Webhook",
+    description: "HTTP callback for event notifications",
     color: "#06b6d4",
     icon: "M15 7h3a5 5 0 015 5 5 5 0 01-5 5h-3m-6 0H6a5 5 0 01-5-5 5 5 0 015-5h3M8 12h8",
     category: "messaging",
@@ -188,6 +198,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "cron",
     label: "Cron",
+    description: "Runs scheduled, recurring jobs",
     color: "#8b5cf6",
     icon: "M12 2a10 10 0 100 20 10 10 0 000-20zm0 4v6l4 2",
     category: "scheduling",
@@ -205,6 +216,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "client",
     label: "Client",
+    description: "End-user app or device",
     color: "#f59e0b",
     icon: "M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 3a4 4 0 100 8 4 4 0 000-8z",
     category: "client",
@@ -221,6 +233,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "search-engine",
     label: "Search Engine",
+    description: "Full-text and vector search index",
     color: "#d97706",
     icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
     category: "data",
@@ -238,6 +251,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "dns",
     label: "DNS",
+    description: "Resolves domain names to addresses",
     color: "#0ea5e9",
     icon: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z",
     category: "networking",
@@ -259,6 +273,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "serverless",
     label: "Serverless",
+    description: "Event-driven functions, no servers to manage",
     color: "#f472b6",
     icon: "M13 10V3L4 14h7v7l9-11h-7z",
     category: "compute",
@@ -286,6 +301,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "container-orchestration",
     label: "Containers",
+    description: "Runs and scales containerized workloads",
     color: "#0891b2",
     icon: "M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z",
     category: "compute",
@@ -303,6 +319,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "stream-processor",
     label: "Stream Processor",
+    description: "Processes real-time event streams",
     color: "#10b981",
     icon: "M4 4h16v4H4zm0 6h16v4H4zm0 6h16v4H4z",
     category: "messaging",
@@ -320,6 +337,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
   {
     id: "data-warehouse",
     label: "Data Warehouse",
+    description: "Analytical store for large-scale queries",
     color: "#7c3aed",
     icon: "M4 7v10c0 2.2 3.6 4 8 4s8-1.8 8-4V7M4 7c0-2.2 3.6-4 8-4s8 1.8 8 4M4 7c0 2.2 3.6 4 8 4s8-1.8 8-4M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4",
     category: "data",

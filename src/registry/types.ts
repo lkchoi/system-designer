@@ -15,6 +15,7 @@ export type ComponentCategory =
 export interface ComponentRegistryEntry {
   id: ComponentTypeId;
   label: string;
+  description?: string;
   color: string;
   icon: string;
   category: ComponentCategory;
