@@ -293,6 +293,56 @@ test("import design from JSON file", async ({ page }) => {
   fs.unlinkSync(fixturePath);
 });
 
+test("import shows an error banner for an unreadable file", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+  await expect(page.locator(".react-flow__node")).toHaveCount(0);
+
+  // A .json file with malformed contents fails to parse during import.
+  const fixturePath = path.join(__dirname, "test-import-broken.json");
+  fs.writeFileSync(fixturePath, "{ this is not valid json");
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.locator("[title='Import (⌘I)']").click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(fixturePath);
+
+  // The red error banner names the file and surfaces the failure.
+  await expect(page.getByText("Import failed")).toBeVisible();
+  await expect(page.getByText(/Could not import "test-import-broken\.json"/)).toBeVisible();
+
+  // The canvas is left untouched.
+  await expect(page.locator(".react-flow__node")).toHaveCount(0);
+
+  // Dismissing clears the banner.
+  await page.getByRole("button", { name: "Dismiss import error" }).click();
+  await expect(page.getByText("Import failed")).not.toBeVisible();
+
+  fs.unlinkSync(fixturePath);
+});
+
+test("import shows a warning banner when nothing is recognized", async ({ page }) => {
+  await page.goto("/");
+  await canvasBounds(page);
+
+  // A valid Excalidraw file with no importable shapes imports to an empty design.
+  const fixture = { type: "excalidraw", version: 2, elements: [] };
+  const fixturePath = path.join(__dirname, "test-import-empty.excalidraw");
+  fs.writeFileSync(fixturePath, JSON.stringify(fixture));
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.locator("[title='Import (⌘I)']").click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles(fixturePath);
+
+  // The yellow warning banner explains why the imported design is empty.
+  await expect(page.getByText(/Imported with 1 warning/)).toBeVisible();
+  await expect(page.getByText(/No components were recognized/)).toBeVisible();
+  await expect(page.locator(".react-flow__node")).toHaveCount(0);
+
+  fs.unlinkSync(fixturePath);
+});
+
 test("auto-save persists across page reload", async ({ page }) => {
   await page.goto("/");
   await canvasBounds(page);
