@@ -81,12 +81,22 @@ export const dynamoSchemaGenerator: Generator = {
     }
     const gsis: GSI[] = [];
 
+    // Index satisfying each pattern, by pattern position. patterns[0] is
+    // the base table; subsequent patterns are either a new GSI or a
+    // refinement of the base SK query (when they reuse the base PK). We
+    // track this per-pattern so the access-pattern doc stays aligned even
+    // when some patterns don't produce a GSI.
+    const indexLabelByPattern: string[] = ["base"];
+
     for (let i = 1; i < patterns.length; i++) {
       const p = patterns[i];
       const pk = attrFromTemplate(p.partition, `GSI${i}PK`);
       // If the partition reuses the base attribute, no new index needed —
       // it's a refinement of the base SK query.
-      if (pk.name === basePk.name) continue;
+      if (pk.name === basePk.name) {
+        indexLabelByPattern.push("base");
+        continue;
+      }
 
       const sk = p.sort ? attrFromTemplate(p.sort, `GSI${i}SK`) : undefined;
       const projection = p.projection === "keys_only" ? "keys_only" : "all";
@@ -94,8 +104,10 @@ export const dynamoSchemaGenerator: Generator = {
       attrs.set(pk.name, pk.type);
       if (sk) attrs.set(sk.name, sk.type);
 
+      const indexName = slugifyIndexName(p.name) || `GSI${i}`;
+      indexLabelByPattern.push(indexName);
       gsis.push({
-        indexName: slugifyIndexName(p.name) || `GSI${i}`,
+        indexName,
         pk,
         sk,
         projection,
@@ -142,7 +154,7 @@ export const dynamoSchemaGenerator: Generator = {
       ...(baseSk ? [`- SK: \`${baseSk.name}\` ← ${base.sort}`] : []),
       "",
       "## Queries",
-      ...patterns.map((p, i) => `- ${i === 0 ? "[base]" : `[${gsis[i - 1]?.indexName ?? "base"}]`} ${p.name}`),
+      ...patterns.map((p, i) => `- [${indexLabelByPattern[i]}] ${p.name}`),
     ].join("\n");
 
     return [
