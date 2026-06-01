@@ -158,9 +158,14 @@ function TableEditor({ name, columns, onColumnsChange, onRename, onDelete }: Tab
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-1.5">
         <input
+          // Uncontrolled + onBlur so we rename once the user finishes editing
+          // rather than on every keystroke (which would rewrite the YAML key
+          // mid-typing and make the field impossible to clear). `key={name}`
+          // resets the field when the active table changes or is renamed.
+          key={name}
           className="flex-1 bg-surface border border-border rounded px-2 py-1 text-[12px] font-mono text-text-bright outline-none focus:border-accent"
-          value={name}
-          onChange={(e) => onRename(e.target.value)}
+          defaultValue={name}
+          onBlur={(e) => onRename(e.target.value)}
         />
         <button
           className="text-[10px] px-2 py-1 rounded text-text-dim hover:text-[#ef4444] hover:bg-[rgba(239,68,68,0.12)] transition-colors"
