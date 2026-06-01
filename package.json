@@ -34,8 +34,7 @@
     "tailwindcss": "^4.2.2",
     "ulid": "^3.0.2",
     "y-websocket": "^3.0.0",
-    "yjs": "^13.6.30",
-    "zod": "^4.4.3"
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
