@@ -81,7 +81,7 @@ import {
   saveDesignState,
   forkDesign,
 } from "./db";
-import { importDesign, pickAndReadFile } from "./db/io";
+import { importDesign, parseDesignJSON, pickAndReadFile, type DesignJSON } from "./db/io";
 import { detectFormat } from "./converters/detect";
 import type { Design } from "./db";
 import {
@@ -2116,28 +2116,51 @@ export default function App() {
   );
 
   const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [importError, setImportError] = useState<string | null>(null);
   const handleImport = useCallback(async () => {
     const { getImportFormats } = await import("./converters");
     const importFormats = getImportFormats();
     const extensions = [...new Set(importFormats.flatMap((f) => f.fileExtensions))].join(",");
+
+    // The file picker rejects when the user cancels or selects nothing — that
+    // is not an error, so swallow it and leave the canvas untouched.
+    let file: { content: string; filename: string };
     try {
-      const { content, filename } = await pickAndReadFile(extensions);
+      file = await pickAndReadFile(extensions);
+    } catch {
+      return;
+    }
+
+    // From here on, any failure is a real import problem worth surfacing.
+    setImportWarnings([]);
+    setImportError(null);
+    try {
+      const { content, filename } = file;
       const formatId = detectFormat(filename, content);
+
+      let design: DesignJSON;
       if (formatId && formatId !== "native-json") {
         const converter = importFormats.find((c) => c.id === formatId);
-        if (converter?.importDesign) {
-          const design = converter.importDesign(content);
-          const result = importDesign(JSON.stringify(design));
-          refreshDesigns();
-          setDesignId(result.id);
-          return;
+        if (!converter?.importDesign) {
+          throw new Error(`No importer is available for ${formatId} files.`);
         }
+        design = converter.importDesign(content);
+      } else {
+        design = parseDesignJSON(content);
       }
-      const result = importDesign(content);
+
+      const result = importDesign(JSON.stringify(design));
       refreshDesigns();
       setDesignId(result.id);
-    } catch {
-      // user cancelled file picker or invalid format
+
+      if (design.nodes.length === 0) {
+        setImportWarnings([
+          "No components were recognized in this file, so the imported design is empty.",
+        ]);
+      }
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      setImportError(`Could not import "${file.filename}": ${detail}`);
     }
   }, [refreshDesigns]);
 
@@ -2179,6 +2202,32 @@ export default function App() {
           onImportDesign={handleImport}
           onStartCompare={handleStartCompare}
         />
+        {importError && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-lg bg-red-900/90 border border-red-600/50 text-red-200 rounded-lg shadow-lg px-4 py-3 text-[13px]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="font-medium mb-1">Import failed</div>
+                <div className="text-red-300/80 break-words">{importError}</div>
+              </div>
+              <button
+                className="text-red-400 hover:text-red-200 shrink-0 mt-0.5"
+                onClick={() => setImportError(null)}
+                aria-label="Dismiss import error"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
         {importWarnings.length > 0 && (
           <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-lg bg-yellow-900/90 border border-yellow-600/50 text-yellow-200 rounded-lg shadow-lg px-4 py-3 text-[13px]">
             <div className="flex items-start justify-between gap-3">
