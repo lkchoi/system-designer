@@ -62,6 +62,10 @@ jobs:
   e2e:
     name: E2E tests
     runs-on: ubuntu-latest
+    # PRs run chromium only for speed; pushes to main run the full matrix.
+    env:
+      PW_BROWSERS: ${{ github.event_name == 'pull_request' && 'chromium' || 'chromium firefox' }}
+      PW_PROJECTS: ${{ github.event_name == 'pull_request' && '--project=chromium' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -72,11 +76,21 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Get Playwright version
+        id: pw
+        run: echo "version=$(bunx playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.pw.outputs.version }}
+
       - name: Install Playwright browsers
-        run: bunx playwright install --with-deps chromium firefox
+        run: bunx playwright install --with-deps $PW_BROWSERS
 
       - name: Run Playwright tests
-        run: bun run test:e2e
+        run: bunx playwright test $PW_PROJECTS
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
