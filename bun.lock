@@ -5,7 +5,6 @@
     "": {
       "name": "tmp-jy1remcgyb",
       "dependencies": {
-        "@anthropic-ai/sdk": "^0.98.0",
         "@tailwindcss/vite": "^4.2.2",
         "@xyflow/react": "^12.10.2",
         "js-yaml": "^4.1.1",
@@ -21,6 +20,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
+        "@anthropic-ai/sdk": "^0.98.0",
         "@playwright/test": "^1.59.1",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.2",
