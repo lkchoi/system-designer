@@ -22,6 +22,7 @@ const ANNOTATION_ITEMS = [
   {
     type: "sticky",
     label: "Sticky Note",
+    description: "Pin a freeform note to the canvas",
     bg: "#fde68a",
     stroke: "#92400e",
     icon: "M15.5 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V8.5L15.5 3zM14 3v5h7",
@@ -29,6 +30,7 @@ const ANNOTATION_ITEMS = [
   {
     type: "text",
     label: "Text",
+    description: "Add a standalone text label",
     bg: "var(--surface-3)",
     stroke: "#9ca3af",
     icon: "M4 7V4h16v3M9 20h6M12 4v16",
@@ -36,6 +38,7 @@ const ANNOTATION_ITEMS = [
   {
     type: "container",
     label: "Container",
+    description: "Group nodes inside a labeled box",
     bg: "var(--surface-3)",
     stroke: "#9ca3af",
     icon: "M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2zM3 9h18M9 21V9",
@@ -336,7 +339,14 @@ export default function Sidebar({
                       <path d={entry.icon} />
                     </svg>
                   </div>
-                  <span>{entry.label}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span>{entry.label}</span>
+                    {entry.description && (
+                      <span className="text-[11px] text-text-dim truncate">
+                        {entry.description}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -399,7 +409,8 @@ export default function Sidebar({
                     title={item.label}
                   >
                     <div
-                      className={`w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0 ${item.bg}`}
+                      className="w-[34px] h-[34px] rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: item.bg }}
                     >
                       <svg
                         width="18"
@@ -410,10 +421,14 @@ export default function Sidebar({
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        dangerouslySetInnerHTML={{ __html: `<${item.icon}" />` }}
-                      />
+                      >
+                        <path d={item.icon} />
+                      </svg>
                     </div>
-                    <span>{item.label}</span>
+                    <div className="flex flex-col min-w-0">
+                      <span>{item.label}</span>
+                      <span className="text-[11px] text-text-dim truncate">{item.description}</span>
+                    </div>
                   </div>
                 ))}
               </div>
