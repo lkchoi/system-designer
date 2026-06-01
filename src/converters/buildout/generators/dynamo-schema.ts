@@ -88,6 +88,10 @@ export const dynamoSchemaGenerator: Generator = {
     // when some patterns don't produce a GSI.
     const indexLabelByPattern: string[] = ["base"];
 
+    // DynamoDB requires unique GSI names. Two patterns whose names slugify
+    // to the same value would otherwise collide, so track and disambiguate.
+    const usedIndexNames = new Set<string>();
+
     for (let i = 1; i < patterns.length; i++) {
       const p = patterns[i];
       const pk = attrFromTemplate(p.partition, `GSI${i}PK`);
@@ -104,7 +108,7 @@ export const dynamoSchemaGenerator: Generator = {
       attrs.set(pk.name, pk.type);
       if (sk) attrs.set(sk.name, sk.type);
 
-      const indexName = slugifyIndexName(p.name) || `GSI${i}`;
+      const indexName = uniqueIndexName(slugifyIndexName(p.name) || `GSI${i}`, usedIndexNames);
       indexLabelByPattern.push(indexName);
       gsis.push({
         indexName,
@@ -214,6 +218,18 @@ function slugifyIndexName(name: string): string {
     .replace(/[^A-Za-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 80);
+}
+
+/**
+ * Return `base` if unused, else append `_2`, `_3`, … until unique.
+ * Records the chosen name in `used` so later indexes don't collide.
+ */
+function uniqueIndexName(base: string, used: Set<string>): string {
+  let name = base;
+  let n = 2;
+  while (used.has(name)) name = `${base}_${n++}`;
+  used.add(name);
+  return name;
 }
 
 function stubTable(tableName: string, plan: Record<string, string>): string {
