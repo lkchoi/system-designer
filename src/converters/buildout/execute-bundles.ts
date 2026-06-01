@@ -86,7 +86,15 @@ export async function executeBundlesInDir(
   generated: GeneratedFile[],
   opts: ExecuteOpts = {},
 ): Promise<void> {
-  const cfg = { ...DEFAULT_OPTS, ...opts };
+  // Coalesce per-field: the CLI always passes all keys, and they are
+  // `undefined` when their flags are omitted. A plain spread would let
+  // those `undefined` values clobber DEFAULT_OPTS, so use `??`.
+  const cfg: Required<ExecuteOpts> = {
+    maxTokens: opts.maxTokens ?? DEFAULT_OPTS.maxTokens,
+    timeoutMs: opts.timeoutMs ?? DEFAULT_OPTS.timeoutMs,
+    effort: opts.effort ?? DEFAULT_OPTS.effort,
+    model: opts.model ?? DEFAULT_OPTS.model,
+  };
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
     console.error("--execute requires ANTHROPIC_API_KEY in env. Skipping.");
