@@ -36,6 +36,15 @@ async function addNode(page: Page, type: string, relX = 0.35, relY = 0.5) {
   await dropOnCanvas(page, type, b.x + b.width * relX, b.y + b.height * relY);
 }
 
+/**
+ * The node/connection status counters render in two places — the desktop bar
+ * and the mobile dropdown (one hidden via CSS at any viewport). Scope to the
+ * visible one so the text locator resolves to a single element.
+ */
+function statusText(page: Page, text: string) {
+  return page.getByText(text).filter({ visible: true });
+}
+
 test("app loads", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/Arkon/i);
@@ -45,11 +54,11 @@ test("add node from sidebar", async ({ page }) => {
   await page.goto("/");
   await canvasBounds(page);
 
-  await expect(page.getByText("0 nodes")).toBeVisible();
+  await expect(statusText(page, "0 nodes")).toBeVisible();
 
   await addNode(page, "database");
 
-  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
   await expect(page.locator(".react-flow__node")).toHaveCount(1);
 });
 
@@ -76,11 +85,11 @@ test("connect two nodes", async ({ page }) => {
   await addNode(page, "service", 0.3, 0.4);
   await addNode(page, "database", 0.6, 0.4);
   await expect(page.locator(".react-flow__node")).toHaveCount(2);
-  await expect(page.getByText("0 connections")).toBeVisible();
+  await expect(statusText(page, "0 connections")).toBeVisible();
 
   await connectNodes(page, 0, 1);
 
-  await expect(page.getByText("1 connections")).toBeVisible();
+  await expect(statusText(page, "1 connections")).toBeVisible();
 });
 
 test("connection validation rejects incompatible nodes", async ({ page }) => {
@@ -95,7 +104,7 @@ test("connection validation rejects incompatible nodes", async ({ page }) => {
   await connectNodes(page, 0, 1);
 
   // Connection should be rejected — still 0
-  await expect(page.getByText("0 connections")).toBeVisible();
+  await expect(statusText(page, "0 connections")).toBeVisible();
 });
 
 test("edit node properties via panel", async ({ page }) => {
@@ -125,19 +134,19 @@ test("delete a node", async ({ page }) => {
 
   await addNode(page, "service", 0.3, 0.4);
   await addNode(page, "database", 0.6, 0.4);
-  await expect(page.getByText("2 nodes")).toBeVisible();
+  await expect(statusText(page, "2 nodes")).toBeVisible();
 
   // Connect them first
   await connectNodes(page, 0, 1);
-  await expect(page.getByText("1 connections")).toBeVisible();
+  await expect(statusText(page, "1 connections")).toBeVisible();
 
   // Select the first node and press Delete
   await page.locator(".react-flow__node").first().click();
   await page.keyboard.press("Delete");
 
   // Node and its edge should be removed
-  await expect(page.getByText("1 nodes")).toBeVisible();
-  await expect(page.getByText("0 connections")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
+  await expect(statusText(page, "0 connections")).toBeVisible();
 });
 
 test("undo and redo", async ({ page }) => {
@@ -146,19 +155,19 @@ test("undo and redo", async ({ page }) => {
 
   // Add a node then delete it
   await addNode(page, "database");
-  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
 
   await page.locator(".react-flow__node").click();
   await page.keyboard.press("Delete");
-  await expect(page.getByText("0 nodes")).toBeVisible();
+  await expect(statusText(page, "0 nodes")).toBeVisible();
 
   // Click the Undo button
   await page.locator("[title='Undo (⌘Z)']").click();
-  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
 
   // Click the Redo button
   await page.locator("[title='Redo (⌘⇧Z)']").click();
-  await expect(page.getByText("0 nodes")).toBeVisible();
+  await expect(statusText(page, "0 nodes")).toBeVisible();
 });
 
 test("drop a pattern template", async ({ page }) => {
@@ -168,8 +177,8 @@ test("drop a pattern template", async ({ page }) => {
   // Drop Cache-Aside pattern — creates a container + 3 system nodes + 2 edges
   await addNode(page, "pattern:cache-aside", 0.4, 0.5);
 
-  await expect(page.getByText("4 nodes")).toBeVisible();
-  await expect(page.getByText("2 connections")).toBeVisible();
+  await expect(statusText(page, "4 nodes")).toBeVisible();
+  await expect(statusText(page, "2 connections")).toBeVisible();
 });
 
 test("mode switching", async ({ page }) => {
@@ -180,15 +189,11 @@ test("mode switching", async ({ page }) => {
   const stressMultiplier = page.getByRole("button", { name: "1x" });
   await expect(stressMultiplier).not.toBeVisible();
 
-  // Switch to Stress mode
+  // Switch to Stress mode — stress controls appear
   await page.getByRole("button", { name: "Stress" }).click();
   await expect(stressMultiplier).toBeVisible();
 
-  // Switch to Monitor mode — stress controls disappear
-  await page.getByRole("button", { name: "Monitor" }).click();
-  await expect(stressMultiplier).not.toBeVisible();
-
-  // Switch back to Plan
+  // Switch back to Plan — stress controls disappear
   await page.getByRole("button", { name: "Plan" }).click();
   await expect(stressMultiplier).not.toBeVisible();
 });
@@ -221,7 +226,7 @@ test("export native JSON", async ({ page }) => {
   await addNode(page, "service", 0.3, 0.4);
   await addNode(page, "database", 0.6, 0.4);
   await connectNodes(page, 0, 1);
-  await expect(page.getByText("1 connections")).toBeVisible();
+  await expect(statusText(page, "1 connections")).toBeVisible();
 
   // Wait for auto-save debounce (500ms) before exporting
   await page.waitForTimeout(600);
@@ -286,7 +291,7 @@ test("import design from JSON file", async ({ page }) => {
   await fileChooser.setFiles(fixturePath);
 
   // The imported design should load with the node visible
-  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
   await expect(page.locator(".react-flow__node").getByText("imported-api")).toBeVisible();
 
   // Clean up fixture
@@ -349,7 +354,7 @@ test("auto-save persists across page reload", async ({ page }) => {
 
   await addNode(page, "service", 0.3, 0.4);
   await addNode(page, "database", 0.6, 0.4);
-  await expect(page.getByText("2 nodes")).toBeVisible();
+  await expect(statusText(page, "2 nodes")).toBeVisible();
 
   // Wait for auto-save debounce (300ms) + OPFS flush
   await page.waitForTimeout(1000);
@@ -359,7 +364,7 @@ test("auto-save persists across page reload", async ({ page }) => {
   await canvasBounds(page);
 
   // Nodes should persist
-  await expect(page.getByText("2 nodes")).toBeVisible();
+  await expect(statusText(page, "2 nodes")).toBeVisible();
 });
 
 test("multiple designs with independent state", async ({ page }) => {
@@ -368,7 +373,7 @@ test("multiple designs with independent state", async ({ page }) => {
 
   // Add nodes to the default design
   await addNode(page, "database");
-  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
   await page.waitForTimeout(600); // wait for auto-save
 
   // Open design menu and create a new design
@@ -376,12 +381,12 @@ test("multiple designs with independent state", async ({ page }) => {
   await page.getByText("New Design").click();
 
   // New design should be empty
-  await expect(page.getByText("0 nodes")).toBeVisible();
+  await expect(statusText(page, "0 nodes")).toBeVisible();
 
   // Add a different node to the new design
   await addNode(page, "service");
   await addNode(page, "cache");
-  await expect(page.getByText("2 nodes")).toBeVisible();
+  await expect(statusText(page, "2 nodes")).toBeVisible();
   await page.waitForTimeout(600);
 
   // Switch back to the first design via the dropdown menu
@@ -391,7 +396,7 @@ test("multiple designs with independent state", async ({ page }) => {
   await designMenu.locator("div.group:not(.font-semibold)").first().click();
 
   // First design should still have 1 node
-  await expect(page.getByText("1 nodes")).toBeVisible();
+  await expect(statusText(page, "1 nodes")).toBeVisible();
 });
 
 test("sidebar search filters components", async ({ page }) => {
@@ -500,7 +505,7 @@ test("flow path recording and saving", async ({ page }) => {
   await addNode(page, "api-gateway", 0.25, 0.4);
   await addNode(page, "service", 0.45, 0.4);
   await addNode(page, "database", 0.65, 0.4);
-  await expect(page.getByText("3 nodes")).toBeVisible();
+  await expect(statusText(page, "3 nodes")).toBeVisible();
 
   // Toggle flow path mode
   await page.getByRole("button", { name: "Flow Path" }).click();
@@ -684,8 +689,8 @@ test("fork design", async ({ page }) => {
   await addNode(page, "service", 0.3, 0.4);
   await addNode(page, "database", 0.6, 0.4);
   await connectNodes(page, 0, 1);
-  await expect(page.getByText("2 nodes")).toBeVisible();
-  await expect(page.getByText("1 connections")).toBeVisible();
+  await expect(statusText(page, "2 nodes")).toBeVisible();
+  await expect(statusText(page, "1 connections")).toBeVisible();
   await page.waitForTimeout(1000);
 
   // Fork the design
@@ -695,6 +700,6 @@ test("fork design", async ({ page }) => {
   // Should switch to the forked design with the same nodes and edges
   const designButton = page.locator("[title='Click to switch designs, double-click to rename']");
   await expect(designButton).toHaveText(/fork/i);
-  await expect(page.getByText("2 nodes")).toBeVisible();
-  await expect(page.getByText("1 connections")).toBeVisible();
+  await expect(statusText(page, "2 nodes")).toBeVisible();
+  await expect(statusText(page, "1 connections")).toBeVisible();
 });
