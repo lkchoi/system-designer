@@ -19,6 +19,28 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["database"],
     connectsTo: ["message-queue", "stream-processor"],
+    // dynamo-schema first so it wins when technology=dynamodb; sql-schema is
+    // the postgres/mysql/sqlite/cockroachdb/tidb fallback.
+    buildOut: {
+      kind: "deterministic",
+      generators: ["dynamo-schema", "sql-schema"],
+      structuredFields: [
+        {
+          key: "columns",
+          label: "Columns",
+          type: "columns-table",
+          description:
+            "Per-table column definitions used by the SQL generator. Each table name from above gets its own column list.",
+        },
+        {
+          key: "accessPatterns",
+          label: "Access patterns",
+          type: "access-patterns-list",
+          description:
+            "DynamoDB only. Each pattern derives a partition/sort attribute and optional GSI.",
+        },
+      ],
+    },
   },
   {
     id: "api-gateway",
@@ -36,6 +58,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["api-gateway"],
     connectsTo: ["service", "serverless", "container-orchestration", "api-gateway"],
+    buildOut: { kind: "deterministic", generators: ["openapi"] },
   },
   {
     id: "service",
@@ -63,6 +86,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
       "webhook",
       "service",
     ],
+    buildOut: { kind: "llm", generators: ["service-llm"] },
   },
   {
     id: "cache",
@@ -81,6 +105,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["cache"],
     connectsTo: [],
+    buildOut: { kind: "deterministic", generators: ["cache-config"] },
   },
   {
     id: "message-queue",
@@ -99,6 +124,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["message-queue"],
     connectsTo: ["service", "serverless", "stream-processor", "webhook"],
+    buildOut: { kind: "deterministic", generators: ["queue-config"] },
   },
   {
     id: "storage",
@@ -117,6 +143,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["storage"],
     connectsTo: ["serverless", "stream-processor"],
+    buildOut: { kind: "deterministic", generators: ["storage-config"] },
   },
   {
     id: "cdn",
@@ -134,6 +161,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["cdn"],
     connectsTo: ["load-balancer", "api-gateway", "storage"],
+    buildOut: { kind: "deterministic", generators: ["cdn-config"] },
   },
   {
     id: "load-balancer",
@@ -158,6 +186,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
       "container-orchestration",
       "load-balancer",
     ],
+    buildOut: { kind: "deterministic", generators: ["lb-config"] },
   },
   {
     id: "firewall",
@@ -176,6 +205,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["firewall"],
     connectsTo: ["load-balancer", "api-gateway", "service", "serverless"],
+    buildOut: { kind: "deterministic", generators: ["firewall-config"] },
   },
   {
     id: "webhook",
@@ -194,6 +224,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["webhook"],
     connectsTo: ["service", "serverless", "api-gateway"],
+    buildOut: { kind: "llm", generators: ["webhook-llm"] },
   },
   {
     id: "cron",
@@ -212,6 +243,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["cron"],
     connectsTo: ["service", "serverless", "message-queue", "webhook", "database"],
+    buildOut: { kind: "llm", generators: ["cron-llm"] },
   },
   {
     id: "client",
@@ -229,6 +261,8 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["client"],
     connectsTo: ["api-gateway", "cdn", "load-balancer", "dns", "firewall"],
+    // Intentionally no buildOut — client nodes represent the end-user
+    // device and don't produce server-side build artifacts in v1.
   },
   {
     id: "search-engine",
@@ -247,6 +281,18 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["search-engine"],
     connectsTo: [],
+    buildOut: {
+      kind: "deterministic",
+      generators: ["search-mapping"],
+      structuredFields: [
+        {
+          key: "mappings",
+          label: "Field mappings",
+          type: "mappings-object",
+          description: "Field → type (text/keyword/date/integer/...) for the index.",
+        },
+      ],
+    },
   },
   {
     id: "dns",
@@ -269,6 +315,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["dns"],
     connectsTo: ["cdn", "load-balancer", "api-gateway", "firewall", "storage"],
+    buildOut: { kind: "deterministic", generators: ["dns-config"] },
   },
   {
     id: "serverless",
@@ -297,6 +344,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
       "webhook",
       "serverless",
     ],
+    buildOut: { kind: "llm", generators: ["serverless-llm"] },
   },
   {
     id: "container-orchestration",
@@ -315,6 +363,7 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["container-orchestration"],
     connectsTo: ["service", "database", "cache", "message-queue", "storage", "serverless"],
+    buildOut: { kind: "deterministic", generators: ["k8s-manifests"] },
   },
   {
     id: "stream-processor",
@@ -333,6 +382,23 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["stream-processor"],
     connectsTo: ["database", "data-warehouse", "storage", "message-queue", "service", "serverless"],
+    // Declared as "hybrid" to signal the planned direction (deterministic
+    // operator skeleton + LLM bodies). v1 ships a single bundle-emitting
+    // generator. The structured `operations` field is what unlocks the
+    // hybrid split.
+    buildOut: {
+      kind: "hybrid",
+      generators: ["stream-llm"],
+      structuredFields: [
+        {
+          key: "operations",
+          label: "Operations",
+          type: "operations-list",
+          description:
+            "Ordered list of operators (map/filter/window/aggregate). Each operator's body is filled by the bundle's LLM.",
+        },
+      ],
+    },
   },
   {
     id: "data-warehouse",
@@ -351,5 +417,17 @@ export const BUILTIN_ENTRIES: ComponentRegistryEntry[] = [
     ],
     technologies: TECHNOLOGY_CATALOG["data-warehouse"],
     connectsTo: [],
+    buildOut: {
+      kind: "deterministic",
+      generators: ["warehouse-schema"],
+      structuredFields: [
+        {
+          key: "columns",
+          label: "Columns",
+          type: "columns-table",
+          description: "Per-table column definitions used by the DDL generator.",
+        },
+      ],
+    },
   },
 ];

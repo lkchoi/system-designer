@@ -46,6 +46,8 @@ import HotkeyHelpOverlay from "./components/HotkeyHelpOverlay";
 const CapacityCalculator = lazy(() => import("./tools/capacity-calculator/CapacityCalculator"));
 const CronTranslator = lazy(() => import("./tools/cron-translator/CronTranslator"));
 const ExportDialog = lazy(() => import("./components/ExportDialog"));
+const BuildItDialog = lazy(() => import("./components/BuildItDialog"));
+const NodeContextMenu = lazy(() => import("./components/NodeContextMenu"));
 const CompareView = lazy(() => import("./components/CompareView"));
 import { useHotkeys } from "./hooks/useHotkeys";
 import { useUndoRedo } from "./hooks/useUndoRedo";
@@ -215,6 +217,10 @@ function Canvas({
   const [showCapacityCalc, setShowCapacityCalc] = useState(false);
   const [showCronTranslator, setShowCronTranslator] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showBuildItDialog, setShowBuildItDialog] = useState(false);
+  const [nodeContextMenu, setNodeContextMenu] = useState<
+    { node: Node; x: number; y: number } | null
+  >(null);
   const [stressConfig, setStressConfig] = useState<StressConfig>(defaultStressConfig);
   const [showDesignMenu, setShowDesignMenu] = useState(false);
   const [editingDesignName, setEditingDesignName] = useState(false);
@@ -1527,6 +1533,27 @@ function Canvas({
                   </button>
                   <button
                     className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
+                    onClick={() => setShowBuildItDialog(true)}
+                    title="Build it — generate per-node implementation files"
+                  >
+                    {/* Hammer icon */}
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M14.5 4l5.5 5.5-2 2L12.5 6z" />
+                      <path d="M12.5 6L4 14.5l3 3 8.5-8.5" />
+                      <path d="M7 17.5l-3 3" />
+                    </svg>
+                  </button>
+                  <button
+                    className="flex items-center justify-center w-8 h-8 rounded-lg text-text-dim transition-all duration-150 hover:bg-surface-2 hover:text-text-bright"
                     onClick={onImportDesign}
                     title="Import (⌘I)"
                   >
@@ -1825,6 +1852,12 @@ function Canvas({
                 onDrop={onDrop}
                 onDragOver={onDragOver}
                 onNodeClick={onNodeClick}
+                onNodeContextMenu={(event, node) => {
+                  // Show our menu instead of the browser default.
+                  event.preventDefault();
+                  setSelectedNodeId(node.id);
+                  setNodeContextMenu({ node, x: event.clientX, y: event.clientY });
+                }}
                 onEdgeClick={onEdgeClick}
                 onPaneClick={onPaneClick}
                 nodeTypes={nodeTypes}
@@ -2034,6 +2067,27 @@ function Canvas({
               onClose={() => setShowExportDialog(false)}
               designId={designId}
               designName={currentDesign?.name ?? "design"}
+            />
+          )}
+          {showBuildItDialog && (
+            <BuildItDialog
+              open
+              onClose={() => setShowBuildItDialog(false)}
+              nodes={nodes}
+              edges={edges}
+              designName={currentDesign?.name ?? "design"}
+              selectedNodeId={selectedNodeId}
+            />
+          )}
+          {nodeContextMenu && (
+            <NodeContextMenu
+              node={nodeContextMenu.node}
+              position={{ x: nodeContextMenu.x, y: nodeContextMenu.y }}
+              onBuildIt={(node) => {
+                setSelectedNodeId(node.id);
+                setShowBuildItDialog(true);
+              }}
+              onClose={() => setNodeContextMenu(null)}
             />
           )}
         </Suspense>

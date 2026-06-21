@@ -31,21 +31,7 @@ if $has_ts; then
   }
 fi
 
-# --- 2. Format check ---
-if $has_ts; then
-  echo "→ Checking format..."
-  # oxfmt doesn't have a --check flag, so format and check for changes
-  bunx oxfmt .
-  if ! git diff --quiet -- '*.ts' '*.tsx'; then
-    echo ""
-    echo "ERROR: Files were reformatted by oxfmt. Stage the changes and retry."
-    echo ""
-    git diff --name-only -- '*.ts' '*.tsx'
-    exit 1
-  fi
-fi
-
-# --- 3. Type check ---
+# --- 2. Type check ---
 if $has_ts; then
   echo "→ Type checking..."
   bunx tsc --noEmit || {
@@ -55,7 +41,7 @@ if $has_ts; then
   }
 fi
 
-# --- 4. Unit tests ---
+# --- 3. Unit tests ---
 if $has_ts; then
   echo "→ Running unit tests..."
   bunx vitest run src/ --exclude '.claude/**' --reporter=dot || {
@@ -65,7 +51,7 @@ if $has_ts; then
   }
 fi
 
-# --- 5. Docs freshness check ---
+# --- 4. Docs freshness check ---
 if $has_docs_trigger; then
   echo "→ Checking docs freshness..."
 

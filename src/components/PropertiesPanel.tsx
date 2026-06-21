@@ -13,6 +13,7 @@ import { registry } from "../registry";
 import { ulid } from "ulid";
 import ToolLauncher from "../tools/ToolLauncher";
 import { getRecommendedTargets } from "../connections/index";
+import StructuredFieldEditor from "./widgets/StructuredFieldEditor";
 
 interface Props {
   node: Node<SystemNodeData>;
@@ -787,6 +788,24 @@ export default function PropertiesPanel({
                   />
                 )}
               </div>
+            ))}
+          </div>
+        )}
+
+        {mode === "plan" && entry.buildOut?.structuredFields && entry.buildOut.structuredFields.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-semibold text-text-dim">Build inputs</label>
+            <p className="text-[11px] text-text-dim leading-snug -mt-1">
+              Structured fields consumed by the buildout generator for this
+              component.
+            </p>
+            {entry.buildOut.structuredFields.map((field) => (
+              <StructuredFieldEditor
+                key={field.key}
+                field={field}
+                value={data.plan?.[field.key]}
+                onChange={(yaml) => updatePlanField(field.key, yaml)}
+              />
             ))}
           </div>
         )}

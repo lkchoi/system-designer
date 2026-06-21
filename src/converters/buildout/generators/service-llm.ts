@@ -1,0 +1,522 @@
+/**
+ * Service generator — hybrid.
+ *
+ * Two modes, selected by whether `node.endpoints` is non-empty:
+ *
+ * ## Hybrid mode (endpoints declared)
+ * Emits TWO artifacts:
+ *  1. `server.<ext>` — DETERMINISTIC HTTP server skeleton. Registers a
+ *     route per declared endpoint, wires error handling, and dispatches
+ *     to a named handler imported from `handlers.<ext>`.
+ *  2. A bundle (`README.md` + `prompt.md` + `validate.sh`) that asks
+ *     the LLM to produce `handlers.<ext>` exporting one focused
+ *     function per endpoint. The prompt embeds the server source so
+ *     the LLM matches signatures exactly.
+ *
+ * Why the split: route registration, parameter parsing, content-type
+ * negotiation, and error → status-code mapping are mechanical given a
+ * structured endpoint list. The actual business logic per endpoint is
+ * the only piece that needs prose understanding — focused enough to
+ * prompt for individually.
+ *
+ * ## Bundle-only fallback (no endpoints)
+ * Backward-compatible. Services without declared endpoints still get
+ * the single bundle from before — the LLM owns the whole shape.
+ *
+ * v1 scope: Node/TS skeleton only. Python/Go follow the same pattern;
+ * adding them is mechanical (mirrors what stream-llm.ts does).
+ */
+
+import { emitBundle } from "../bundle";
+import { buildServiceUserPrompt, buildSystemPrompt, languageProfile } from "../prompt";
+import type { Endpoint } from "../../../types";
+import type { ScaffoldLang } from "../../scaffold/concerns/types";
+import type { Generator, GeneratedFile, GeneratorContext } from "../types";
+
+export const serviceLLMGenerator: Generator = {
+  kind: "hybrid",
+
+  supports(ctx) {
+    return ctx.node.componentType === "service";
+  },
+
+  async generate(ctx: GeneratorContext): Promise<GeneratedFile[]> {
+    const lang = ctx.language ?? "node";
+    const endpoints = ctx.endpoints ?? ctx.node.endpoints ?? [];
+
+    if (endpoints.length === 0) {
+      return emitBundle(ctx, {
+        systemPrompt: buildSystemPrompt(lang),
+        userPrompt: buildServiceUserPrompt(ctx),
+      });
+    }
+
+    return emitHybrid(ctx, endpoints, lang);
+  },
+};
+
+function emitHybrid(
+  ctx: GeneratorContext,
+  endpoints: Endpoint[],
+  lang: ScaffoldLang,
+): GeneratedFile[] {
+  const handlers = endpoints.map((ep, idx) => ({
+    endpoint: ep,
+    idx,
+    name: handlerFnName(ep, idx, lang),
+  }));
+
+  const renderer = SERVER_RENDERERS[lang];
+  const server = renderer(ctx, handlers);
+  const serverFile = serverFilename(lang);
+  const expectedOutputs = handlerOutputPaths(lang);
+  const fence = serverFenceLang(lang);
+
+  const handlerPrompt = buildHandlerPrompt(ctx, handlers, server, serverFile, expectedOutputs, fence, lang);
+  const bundle = emitBundle(ctx, {
+    systemPrompt: buildSystemPrompt(lang),
+    userPrompt: handlerPrompt,
+    expectedOutputs,
+  });
+
+  return [{ path: serverFile, contents: server }, ...bundle];
+}
+
+type ServerRenderer = (ctx: GeneratorContext, handlers: HandlerRef[]) => string;
+
+const SERVER_RENDERERS: Record<ScaffoldLang, ServerRenderer> = {
+  node: (ctx, h) => renderServerTs(ctx, h),
+  python: (ctx, h) => renderServerPython(ctx, h),
+  go: (ctx, h) => renderServerGo(ctx, h),
+};
+
+function serverFilename(lang: ScaffoldLang): string {
+  return `server.${languageProfile(lang).ext}`;
+}
+
+function handlerOutputPaths(lang: ScaffoldLang): string[] {
+  switch (lang) {
+    case "node":
+      return ["handlers.ts", "handlers.test.ts"];
+    case "python":
+      return ["handlers.py", "test_handlers.py"];
+    case "go":
+      return ["handlers.go", "handlers_test.go"];
+  }
+}
+
+function serverFenceLang(lang: ScaffoldLang): string {
+  switch (lang) {
+    case "node":
+      return "ts";
+    case "python":
+      return "python";
+    case "go":
+      return "go";
+  }
+}
+
+interface HandlerRef {
+  endpoint: Endpoint;
+  idx: number;
+  name: string;
+}
+
+function handlerFnName(ep: Endpoint, idx: number, lang: ScaffoldLang): string {
+  const slug = ep.path
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+  const base = `${ep.method.toLowerCase()}_${String(idx + 1).padStart(2, "0")}${slug ? `_${slug}` : ""}`;
+  // Go conventions: exported (capitalized) symbols cross files in the
+  // same package, so we capitalize the first character for Go only.
+  if (lang === "go") return base[0].toUpperCase() + base.slice(1);
+  return base;
+}
+
+/**
+ * Render server.ts using the built-in `node:http` module so the
+ * skeleton runs without any extra dependency. The scaffold subsystem
+ * already chose a framework for the running server; this generator is
+ * about the BUILDOUT artifact, which prioritizes self-contained code
+ * that compiles and runs against any project shape.
+ */
+function renderServerTs(ctx: GeneratorContext, handlers: HandlerRef[]): string {
+  const lines: string[] = [];
+  const importNames = handlers.map((h) => h.name).join(", ");
+
+  lines.push(`// HTTP server for "${ctx.node.label}".`);
+  lines.push(`// Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`// Handler function bodies are LLM-generated — see handlers.ts.`);
+  lines.push(``);
+  lines.push(`import { createServer, type IncomingMessage, type ServerResponse } from "node:http";`);
+  if (handlers.length > 0) {
+    lines.push(`import { ${importNames} } from "./handlers";`);
+  }
+  lines.push(``);
+  lines.push(`export interface RouteCtx {`);
+  lines.push(`  method: string;`);
+  lines.push(`  path: string;`);
+  lines.push(`  query: Record<string, string>;`);
+  lines.push(`  headers: Record<string, string | string[] | undefined>;`);
+  lines.push(`  body: unknown;`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`export interface RouteResult {`);
+  lines.push(`  status: number;`);
+  lines.push(`  body?: unknown;`);
+  lines.push(`  headers?: Record<string, string>;`);
+  lines.push(`}`);
+  lines.push(``);
+
+  // Path → method → handler map. The skeleton resolves the path with a
+  // straightforward switch since route trees aren't worth the
+  // complexity until the user upgrades the framework.
+  lines.push(`async function dispatch(rc: RouteCtx): Promise<RouteResult> {`);
+  lines.push(`  switch (\`\${rc.method} \${rc.path}\`) {`);
+  for (const h of handlers) {
+    const route = `${h.endpoint.method.toUpperCase()} ${h.endpoint.path}`;
+    lines.push(`    case ${JSON.stringify(route)}:`);
+    lines.push(`      return ${h.name}(rc);`);
+  }
+  lines.push(`    default:`);
+  lines.push(`      return { status: 404, body: { error: "not_found", path: rc.path } };`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`async function readBody(req: IncomingMessage): Promise<unknown> {`);
+  lines.push(`  const chunks: Buffer[] = [];`);
+  lines.push(`  for await (const chunk of req) chunks.push(chunk as Buffer);`);
+  lines.push(`  if (chunks.length === 0) return undefined;`);
+  lines.push(`  const raw = Buffer.concat(chunks).toString("utf8");`);
+  lines.push(`  const ct = (req.headers["content-type"] ?? "").toLowerCase();`);
+  lines.push(`  if (ct.includes("application/json")) {`);
+  lines.push(`    try { return JSON.parse(raw); } catch { return undefined; }`);
+  lines.push(`  }`);
+  lines.push(`  return raw;`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`function parseQuery(url: string): { path: string; query: Record<string, string> } {`);
+  lines.push(`  const [path, qs = ""] = url.split("?");`);
+  lines.push(`  const query: Record<string, string> = {};`);
+  lines.push(`  for (const p of qs.split("&").filter(Boolean)) {`);
+  lines.push(`    const [k, v = ""] = p.split("=");`);
+  lines.push(`    query[decodeURIComponent(k)] = decodeURIComponent(v);`);
+  lines.push(`  }`);
+  lines.push(`  return { path, query };`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {`);
+  lines.push(`  const { path, query } = parseQuery(req.url ?? "/");`);
+  lines.push(`  const rc: RouteCtx = {`);
+  lines.push(`    method: req.method ?? "GET",`);
+  lines.push(`    path,`);
+  lines.push(`    query,`);
+  lines.push(`    headers: req.headers,`);
+  lines.push(`    body: await readBody(req),`);
+  lines.push(`  };`);
+  lines.push(`  try {`);
+  lines.push(`    const result = await dispatch(rc);`);
+  lines.push(`    res.statusCode = result.status;`);
+  lines.push(`    for (const [k, v] of Object.entries(result.headers ?? {})) res.setHeader(k, v);`);
+  lines.push(`    if (result.body !== undefined) {`);
+  lines.push(`      res.setHeader("content-type", "application/json");`);
+  lines.push(`      res.end(JSON.stringify(result.body));`);
+  lines.push(`    } else {`);
+  lines.push(`      res.end();`);
+  lines.push(`    }`);
+  lines.push(`  } catch (err) {`);
+  lines.push(`    res.statusCode = 500;`);
+  lines.push(`    res.setHeader("content-type", "application/json");`);
+  lines.push(`    res.end(JSON.stringify({ error: "internal_error", message: (err as Error).message }));`);
+  lines.push(`  }`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`export function startServer(port = Number(process.env.PORT ?? 8080)): void {`);
+  lines.push(`  const server = createServer((req, res) => { void handle(req, res); });`);
+  lines.push(`  server.listen(port, () => console.log(\`listening on :\${port}\`));`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`if (import.meta.url === \`file://\${process.argv[1]}\`) startServer();`);
+  return lines.join("\n") + "\n";
+}
+
+function buildHandlerPrompt(
+  ctx: GeneratorContext,
+  handlers: HandlerRef[],
+  serverSrc: string,
+  serverFile: string,
+  expectedOutputs: string[],
+  fenceLang: string,
+  lang: ScaffoldLang,
+): string {
+  const [handlersFile, handlersTestFile] = expectedOutputs;
+  const lines: string[] = [];
+  lines.push(buildServiceUserPrompt(ctx));
+  lines.push("");
+  lines.push("<hybrid-skeleton>");
+  lines.push(
+    `The HTTP server skeleton (\`${serverFile}\`) is already generated. It ` +
+      `registers a route per declared endpoint, parses query/body, and ` +
+      `dispatches to a named handler in \`${handlersFile}\`. Your job is to ` +
+      `write ONLY \`${handlersFile}\` (plus \`${handlersTestFile}\`) — do NOT ` +
+      `regenerate \`${serverFile}\`.`,
+  );
+  lines.push("");
+  lines.push(`Here is the \`${serverFile}\` you must match:`);
+  lines.push("```" + fenceLang);
+  lines.push(serverSrc.trimEnd());
+  lines.push("```");
+  lines.push("");
+  lines.push(`Handlers to implement in \`${handlersFile}\`:`);
+  for (const h of handlers) {
+    const codes = h.endpoint.responseCodes?.length
+      ? ` responses=[${h.endpoint.responseCodes.join(",")}]`
+      : "";
+    const qp = h.endpoint.queryParams?.length
+      ? ` query=[${h.endpoint.queryParams.map((q) => q.name + (q.required ? "" : "?")).join(",")}]`
+      : "";
+    lines.push(
+      `- \`${h.name}\` — ${h.endpoint.method.toUpperCase()} ${h.endpoint.path}${qp}${codes}`,
+    );
+  }
+  lines.push("");
+  lines.push("Rules:");
+  lines.push(...handlerRules(lang, handlersTestFile));
+  lines.push("</hybrid-skeleton>");
+  return lines.join("\n");
+}
+
+function handlerRules(lang: ScaffoldLang, handlersTestFile: string): string[] {
+  const common = [
+    " - Validate request input at the boundary; return 4xx with a structured error body on failure.",
+    " - Use ONLY the clients listed in `<available-clients>`. Do not invent new dependencies.",
+    ` - Tests in \`${handlersTestFile}\` cover at least one happy path and one error path per handler.`,
+    " - Don't log request bodies at info level — they may contain PII.",
+  ];
+  switch (lang) {
+    case "node":
+      return [
+        " - Each handler is `async (rc: RouteCtx): Promise<RouteResult>`. Match the types from server.ts.",
+        ...common,
+      ];
+    case "python":
+      return [
+        " - Each handler is `async def name(rc: RouteCtx) -> RouteResult` (Pydantic types from server.py).",
+        " - Define each at module level in handlers.py and export via __all__ or by name.",
+        ...common,
+      ];
+    case "go":
+      return [
+        " - Each handler is `func Name(rc *RouteCtx) RouteResult` — match the signature from server.go.",
+        " - Exported (capitalized) so it's reachable from the same package.",
+        ...common,
+      ];
+  }
+}
+
+/**
+ * Python server skeleton using FastAPI. FastAPI is the dominant async
+ * Python web framework and provides built-in path/query parsing,
+ * automatic OpenAPI generation, and Pydantic-typed responses. The
+ * skeleton imports handlers from a sibling `handlers` module and
+ * registers one route per declared endpoint.
+ */
+function renderServerPython(ctx: GeneratorContext, handlers: HandlerRef[]): string {
+  const lines: string[] = [];
+  lines.push(`"""HTTP server for "${ctx.node.label}".`);
+  lines.push("");
+  lines.push("Skeleton generated by Arkon buildout (deterministic).");
+  lines.push("Handler function bodies are LLM-generated — see handlers.py.");
+  lines.push(`"""`);
+  lines.push("");
+  lines.push("from __future__ import annotations");
+  lines.push("");
+  lines.push("from typing import Any");
+  lines.push("");
+  lines.push("from fastapi import FastAPI, Request, Response");
+  lines.push("from pydantic import BaseModel");
+  lines.push("");
+  if (handlers.length > 0) {
+    lines.push(`from handlers import ${handlers.map((h) => h.name).join(", ")}`);
+  }
+  lines.push("");
+  lines.push("class RouteCtx(BaseModel):");
+  lines.push("    method: str");
+  lines.push("    path: str");
+  lines.push("    query: dict[str, str]");
+  lines.push("    headers: dict[str, str]");
+  lines.push("    body: Any | None = None");
+  lines.push("");
+  lines.push("class RouteResult(BaseModel):");
+  lines.push("    status: int");
+  lines.push("    body: Any | None = None");
+  lines.push("    headers: dict[str, str] | None = None");
+  lines.push("");
+  lines.push("app = FastAPI()");
+  lines.push("");
+  lines.push("async def _to_ctx(req: Request) -> RouteCtx:");
+  lines.push(`    body: Any | None = None`);
+  lines.push(`    if req.headers.get("content-type", "").lower().startswith("application/json"):`);
+  lines.push(`        try:`);
+  lines.push(`            body = await req.json()`);
+  lines.push(`        except Exception:`);
+  lines.push(`            body = None`);
+  lines.push(`    return RouteCtx(`);
+  lines.push(`        method=req.method,`);
+  lines.push(`        path=req.url.path,`);
+  lines.push(`        query=dict(req.query_params),`);
+  lines.push(`        headers={k.lower(): v for k, v in req.headers.items()},`);
+  lines.push(`        body=body,`);
+  lines.push(`    )`);
+  lines.push("");
+  lines.push("def _respond(result: RouteResult) -> Response:");
+  lines.push("    import json");
+  lines.push("    payload = b\"\" if result.body is None else json.dumps(result.body).encode()");
+  lines.push("    headers = result.headers or {}");
+  lines.push("    if result.body is not None:");
+  lines.push("        headers.setdefault(\"content-type\", \"application/json\")");
+  lines.push("    return Response(content=payload, status_code=result.status, headers=headers)");
+  lines.push("");
+  for (const h of handlers) {
+    const method = h.endpoint.method.toLowerCase();
+    const route = JSON.stringify(h.endpoint.path);
+    lines.push(`@app.${method}(${route})`);
+    lines.push(`async def _route_${h.name}(req: Request) -> Response:`);
+    lines.push(`    rc = await _to_ctx(req)`);
+    lines.push(`    try:`);
+    lines.push(`        result = await ${h.name}(rc)`);
+    lines.push(`        return _respond(result)`);
+    lines.push(`    except Exception as err:`);
+    lines.push(`        return _respond(RouteResult(status=500, body={"error": "internal_error", "message": str(err)}))`);
+    lines.push("");
+  }
+  lines.push("if __name__ == \"__main__\":");
+  lines.push("    import os, uvicorn");
+  lines.push("    uvicorn.run(app, host=\"0.0.0.0\", port=int(os.environ.get(\"PORT\", 8080)))");
+  return lines.join("\n") + "\n";
+}
+
+/**
+ * Go server skeleton using net/http + ServeMux. No external framework
+ * deps; the generated code compiles in any module with @types/node-...
+ * (just kidding) — `gofmt` clean and ready to drop into a project.
+ * Handlers live in the same `package server`; their names are exported
+ * (capitalized) so server.go references them directly.
+ */
+function renderServerGo(ctx: GeneratorContext, handlers: HandlerRef[]): string {
+  const lines: string[] = [];
+  lines.push(`// Package server — HTTP server for "${ctx.node.label}".`);
+  lines.push(`//`);
+  lines.push(`// Skeleton generated by Arkon buildout (deterministic).`);
+  lines.push(`// Handler function bodies are LLM-generated — see handlers.go.`);
+  lines.push(`package server`);
+  lines.push(``);
+  lines.push(`import (`);
+  lines.push(`	"context"`);
+  lines.push(`	"encoding/json"`);
+  lines.push(`	"io"`);
+  lines.push(`	"log"`);
+  lines.push(`	"net/http"`);
+  lines.push(`	"os"`);
+  lines.push(`	"strings"`);
+  lines.push(`)`);
+  lines.push(``);
+  lines.push(`// RouteCtx carries the request data passed to each handler.`);
+  lines.push(`type RouteCtx struct {`);
+  lines.push(`	Method  string`);
+  lines.push(`	Path    string`);
+  lines.push(`	Query   map[string]string`);
+  lines.push(`	Headers http.Header`);
+  lines.push(`	Body    any`);
+  lines.push(`	Ctx     context.Context`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// RouteResult is what handlers return.`);
+  lines.push(`type RouteResult struct {`);
+  lines.push(`	Status  int`);
+  lines.push(`	Body    any`);
+  lines.push(`	Headers map[string]string`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func parseBody(r *http.Request) any {`);
+  lines.push(`	if r.Body == nil {`);
+  lines.push(`		return nil`);
+  lines.push(`	}`);
+  lines.push(`	defer r.Body.Close()`);
+  lines.push(`	raw, err := io.ReadAll(r.Body)`);
+  lines.push(`	if err != nil || len(raw) == 0 {`);
+  lines.push(`		return nil`);
+  lines.push(`	}`);
+  lines.push(`	ct := strings.ToLower(r.Header.Get("Content-Type"))`);
+  lines.push(`	if strings.Contains(ct, "application/json") {`);
+  lines.push(`		var v any`);
+  lines.push(`		if json.Unmarshal(raw, &v) == nil {`);
+  lines.push(`			return v`);
+  lines.push(`		}`);
+  lines.push(`	}`);
+  lines.push(`	return string(raw)`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func writeResult(w http.ResponseWriter, result RouteResult) {`);
+  lines.push(`	for k, v := range result.Headers {`);
+  lines.push(`		w.Header().Set(k, v)`);
+  lines.push(`	}`);
+  lines.push(`	if result.Body != nil {`);
+  lines.push(`		w.Header().Set("content-type", "application/json")`);
+  lines.push(`	}`);
+  lines.push(`	w.WriteHeader(result.Status)`);
+  lines.push(`	if result.Body != nil {`);
+  lines.push(`		_ = json.NewEncoder(w).Encode(result.Body)`);
+  lines.push(`	}`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`func adapt(h func(*RouteCtx) RouteResult) http.HandlerFunc {`);
+  lines.push(`	return func(w http.ResponseWriter, r *http.Request) {`);
+  lines.push(`		query := map[string]string{}`);
+  lines.push(`		for k, vs := range r.URL.Query() {`);
+  lines.push(`			if len(vs) > 0 {`);
+  lines.push(`				query[k] = vs[0]`);
+  lines.push(`			}`);
+  lines.push(`		}`);
+  lines.push(`		rc := &RouteCtx{`);
+  lines.push(`			Method:  r.Method,`);
+  lines.push(`			Path:    r.URL.Path,`);
+  lines.push(`			Query:   query,`);
+  lines.push(`			Headers: r.Header,`);
+  lines.push(`			Body:    parseBody(r),`);
+  lines.push(`			Ctx:     r.Context(),`);
+  lines.push(`		}`);
+  lines.push(`		defer func() {`);
+  lines.push(`			if rec := recover(); rec != nil {`);
+  lines.push(`				log.Printf("handler panic: %v", rec)`);
+  lines.push(`				writeResult(w, RouteResult{Status: 500, Body: map[string]any{"error": "internal_error"}})`);
+  lines.push(`			}`);
+  lines.push(`		}()`);
+  lines.push(`		writeResult(w, h(rc))`);
+  lines.push(`	}`);
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// Register attaches all routes to the mux.`);
+  lines.push(`func Register(mux *http.ServeMux) {`);
+  for (const h of handlers) {
+    const route = JSON.stringify(`${h.endpoint.method.toUpperCase()} ${h.endpoint.path}`);
+    lines.push(`	mux.HandleFunc(${route}, adapt(${h.name}))`);
+  }
+  lines.push(`}`);
+  lines.push(``);
+  lines.push(`// Run starts the server on $PORT (default 8080).`);
+  lines.push(`func Run() error {`);
+  lines.push(`	port := os.Getenv("PORT")`);
+  lines.push(`	if port == "" {`);
+  lines.push(`		port = "8080"`);
+  lines.push(`	}`);
+  lines.push(`	mux := http.NewServeMux()`);
+  lines.push(`	Register(mux)`);
+  lines.push(`	log.Printf("listening on :%s", port)`);
+  lines.push(`	return http.ListenAndServe(":"+port, mux)`);
+  lines.push(`}`);
+  return lines.join("\n") + "\n";
+}
+
